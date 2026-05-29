@@ -53,6 +53,9 @@ export default function Login({ user, isAdmin }) {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
     })
   }
 

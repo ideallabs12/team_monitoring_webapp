@@ -50,10 +50,12 @@ function App() {
 
   const handleSession = async (session) => {
     try {
+      setLoading(true)
       const currentUser = session?.user ?? null
       setUser(currentUser)
       
       if (currentUser) {
+        setHasProfile(null)
         await checkProfile(currentUser.id)
       } else {
         setHasProfile(false)
@@ -102,7 +104,12 @@ function App() {
     }
   }
 
-  if (loading) {
+  const handleProfileCompleted = () => {
+    setHasProfile(true)
+    setIsAdmin(false)
+  }
+
+  if (loading || (user && hasProfile === null)) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>
         Loading...
@@ -119,7 +126,11 @@ function App() {
 
         <Route 
           path="/complete-profile" 
-          element={user && !isAdmin ? <CompleteProfile user={user} /> : <Navigate to="/" replace />} 
+          element={
+            user && !isAdmin
+              ? (hasProfile ? <Navigate to="/home" replace /> : <CompleteProfile user={user} onComplete={handleProfileCompleted} />)
+              : <Navigate to="/" replace />
+          } 
         />
 
         {/* Regular User Routes */}

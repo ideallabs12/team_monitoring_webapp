@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
-export default function CompleteProfile({ user }) {
+export default function CompleteProfile({ user, onComplete }) {
   const navigate = useNavigate()
   
   // Try to pre-fill from Google if available
-  const [firstName, setFirstName] = useState(user?.user_metadata?.given_name || '')
-  const [lastName, setLastName] = useState(user?.user_metadata?.family_name || '')
+  const metadataName = user?.user_metadata?.full_name || user?.user_metadata?.name || ''
+  const nameParts = metadataName.trim().split(/\s+/)
+  const [firstName, setFirstName] = useState(user?.user_metadata?.given_name || nameParts[0] || '')
+  const [lastName, setLastName] = useState(user?.user_metadata?.family_name || nameParts.slice(1).join(' ') || '')
   
   const [phone, setPhone] = useState('')
   const [teams, setTeams] = useState([])
@@ -70,6 +72,13 @@ export default function CompleteProfile({ user }) {
       return
     }
 
+    const uniqueTeams = [...new Set(validTeams)]
+    if (uniqueTeams.length !== validTeams.length) {
+      setError('Please select different teams, not the same team twice.')
+      setLoading(false)
+      return
+    }
+
     try {
       // 1. Insert/Update Profile
       const { error: profileError } = await supabase
@@ -103,9 +112,7 @@ export default function CompleteProfile({ user }) {
       if (deleteError) console.warn('Team cleanup warning:', deleteError)
 
       // 4. Insert fresh team memberships
-      if (validTeams.length > 0) {
-        const uniqueTeams = [...new Set(validTeams)]
-        
+      if (uniqueTeams.length > 0) {
         const teamMemberships = uniqueTeams.map(teamId => ({
           user_id: user.id,
           team_id: teamId
@@ -113,13 +120,13 @@ export default function CompleteProfile({ user }) {
 
         const { error: teamError } = await supabase
           .from('team_members')
-          .insert(teamMemberships)
+          .upsert(teamMemberships, { onConflict: 'user_id,team_id' })
 
         if (teamError) throw teamError
       }
 
-      // Success — full page reload to re-run session check
-      window.location.href = '/home'
+      onComplete?.()
+      navigate('/home', { replace: true })
       
     } catch (err) {
       console.error('CompleteProfile save error:', err)
