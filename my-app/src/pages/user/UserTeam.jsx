@@ -81,90 +81,109 @@ export default function UserTeam({ user }) {
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading team data...</div>
 
   return (
-    <div>
-      <div className="dashboard-header" style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>My Teams</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-          View your teammates and their revenue contributions.
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+      {/* Premium Header */}
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }}>
+        <div className="apple-kicker">Collaboration Network</div>
+        <h1 className="apple-title-large">My Teams</h1>
+        <p className="apple-lead">
+          View your teammates, their roles, and their direct revenue contributions.
         </p>
       </div>
 
       {teamsData.length === 0 ? (
-        <div style={{ padding: '60px 20px', background: 'var(--card-bg)', borderRadius: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>👥</div>
-          <h3>You are not assigned to any teams</h3>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Please contact an administrator to be added to a team.</p>
+        <div className="apple-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '20px' }}>👥</div>
+          <h3 className="apple-title-medium">You are not assigned to any teams</h3>
+          <p className="apple-lead" style={{ marginTop: '8px' }}>Please contact an administrator to be added to an active team.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           {teamsData.map(team => (
-            <div key={team.id} style={{ 
-              background: 'var(--card-bg)', 
-              border: '1px solid var(--border-color)', 
-              borderRadius: '16px',
-              overflow: 'hidden'
-            }}>
+            <div key={team.id} className="apple-card" style={{ padding: '0 !important', overflow: 'hidden' }}>
+              
               {/* Team Header */}
               <div style={{ 
-                padding: '24px 32px', 
-                background: 'rgba(255,255,255,0.02)', 
-                borderBottom: '1px solid var(--border-color)',
+                padding: '24px clamp(16px, 4vw, 32px)', 
+                background: 'rgba(255,255,255,0.01)', 
+                borderBottom: '1px solid var(--apple-border)',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px'
               }}>
                 <div>
-                  <h2 style={{ fontSize: '1.8rem', color: '#fff', marginBottom: '4px' }}>{team.name}</h2>
-                  <div style={{ color: 'var(--text-secondary)' }}>{team.members.length} Members</div>
+                  <h2 className="apple-title-medium" style={{ margin: 0, textTransform: 'capitalize' }}>{team.name}</h2>
+                  <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem', fontWeight: '500', marginTop: '2px' }}>
+                    {team.members.length} {team.members.length === 1 ? 'Member' : 'Members'}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Team Revenue</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4ade80' }}>
-                    ${team.total_revenue.toFixed(2)}
+                  <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Team Total Revenue</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
+                    ${team.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
 
               {/* Members List */}
-              <div style={{ padding: '0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {team.members.map((member, idx) => (
                   <div key={member.user_id} style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'space-between',
-                    padding: '20px 32px',
-                    borderBottom: idx < team.members.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                    background: member.user_id === user.id ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
+                    padding: '20px clamp(16px, 4vw, 32px)',
+                    borderBottom: idx < team.members.length - 1 ? '1px solid var(--apple-border)' : 'none',
+                    background: member.user_id === user.id ? 'rgba(0, 113, 227, 0.04)' : 'transparent',
+                    flexWrap: 'wrap',
+                    gap: '16px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '240px', flex: '1' }}>
                       <div style={{ 
-                        width: '40px', 
-                        height: '40px', 
+                        width: '44px', 
+                        height: '44px', 
                         borderRadius: '50%', 
-                        background: member.user_id === user.id ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                        background: member.user_id === user.id 
+                          ? 'linear-gradient(135deg, #0071e3, #3b82f6)' 
+                          : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.15))',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 'bold',
-                        color: '#fff'
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        fontSize: '1rem',
+                        boxShadow: member.user_id === user.id ? '0 0 12px rgba(0, 113, 227, 0.3)' : 'none',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
                       }}>
                         {member.profiles?.first_name?.charAt(0) || '?'}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ fontWeight: '600', fontSize: '1.05rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {member.profiles?.first_name} {member.profiles?.last_name}
                           {member.user_id === user.id && (
-                            <span style={{ fontSize: '0.75rem', background: '#3b82f6', padding: '2px 8px', borderRadius: '12px' }}>You</span>
+                            <span className="apple-badge apple-badge-blue" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>You</span>
                           )}
                         </div>
-                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          {member.profiles?.email} • Role: {member.team_role}
+                        <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+                          <span>{member.profiles?.email}</span>
+                          <span style={{ color: 'var(--apple-border-strong)' }}>•</span>
+                          <span className={member.team_role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'} style={{ padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}>
+                            {member.team_role}
+                          </span>
                         </div>
                       </div>
                     </div>
                     
-                    <div style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: member.total_revenue > 0 ? '#4ade80' : 'var(--text-secondary)' }}>
-                      ${member.total_revenue.toFixed(2)}
+                    <div style={{ 
+                      textAlign: 'right', 
+                      fontWeight: '700', 
+                      fontSize: '1.25rem', 
+                      color: member.total_revenue > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)',
+                      marginLeft: 'auto'
+                    }}>
+                      ${member.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                 ))}

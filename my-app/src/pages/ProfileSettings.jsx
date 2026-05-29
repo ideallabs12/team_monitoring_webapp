@@ -108,133 +108,138 @@ export default function ProfileSettings({ user }) {
   if (loading) return <div style={{ color: '#fff', padding: '20px' }}>Loading profile settings...</div>
 
   return (
-    <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', marginTop: '10px' }}>
-      
-      {/* LEFT COLUMN: Manage Settings */}
-      <div style={{ flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div>
-          <h1 style={{ marginBottom: '8px' }}>Profile Settings</h1>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            Manage your personal information, email address, and security.
-          </p>
-        </div>
-
-        {message.text && (
-          <div style={{ 
-            padding: '12px', 
-            borderRadius: '8px',
-            background: message.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(74, 222, 128, 0.1)',
-            color: message.type === 'error' ? 'var(--danger)' : '#4ade80'
-          }}>
-            {message.text}
-          </div>
-        )}
-
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="card" style={{ padding: '28px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Personal Information</h3>
-            
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>First Name</label>
-                <input 
-                  type="text" 
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: '6px',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: '#fff'
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Last Name</label>
-                <input 
-                  type="text" 
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: '6px',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: '#fff'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Phone Number</label>
-              <input 
-                type="tel" 
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                style={{
-                  width: '100%', padding: '10px', borderRadius: '6px',
-                  border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: '#fff'
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="card" style={{ padding: '28px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Security & Login</h3>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Email Address</label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  width: '100%', padding: '10px', borderRadius: '6px',
-                  border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: '#fff'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>New Password (leave blank to keep current)</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                style={{
-                  width: '100%', padding: '10px', borderRadius: '6px',
-                  border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: '#fff'
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+      {/* Premium Header */}
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }}>
+        <div className="apple-kicker">Security & Details</div>
+        <h1 className="apple-title-large">Profile Settings</h1>
+        <p className="apple-lead">
+          Manage your personal information, email preferences, and security settings.
+        </p>
       </div>
 
-      {/* RIGHT COLUMN: Extra Profile Stats & Teams */}
-      <div style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '24px', flexGrow: 0, flexShrink: 0 }}>
+      {message.text && (
+        <div style={{ 
+          padding: '12px 16px', 
+          borderRadius: '10px',
+          marginBottom: '24px',
+          background: message.type === 'error' ? 'rgba(255, 69, 58, 0.08)' : 'rgba(48, 213, 200, 0.08)',
+          border: `1px solid ${message.type === 'error' ? 'var(--apple-accent-red)' : 'var(--apple-accent-green)'}`,
+          color: message.type === 'error' ? 'var(--apple-accent-red)' : 'var(--apple-accent-green)',
+          fontSize: '0.88rem',
+          fontWeight: '500'
+        }}>
+          {message.text}
+        </div>
+      )}
+
+      {/* Pane Layout */}
+      <div className="apple-pane-layout">
         
-        {/* Performance Overview */}
-        <div className="card" style={{ padding: '28px' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '20px', color: '#fff' }}>My Achievements</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '16px' }}>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>All-Time Total</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff' }}>
-                ${sumRevenues(revenues).toFixed(2)}
+        {/* LEFT COLUMN: Manage Settings */}
+        <div className="apple-right-pane" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="apple-card">
+              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Personal Information</h3>
+              
+              <div className="apple-two-col-grid" style={{ marginBottom: '16px' }}>
+                <div>
+                  <label className="apple-form-label">First Name</label>
+                  <input 
+                    type="text" 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="apple-form-control"
+                  />
+                </div>
+                <div>
+                  <label className="apple-form-label">Last Name</label>
+                  <input 
+                    type="text" 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="apple-form-control"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="apple-form-label">Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="apple-form-control"
+                />
               </div>
             </div>
-            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '16px' }}>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Contributions</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#4ade80' }}>
-                {revenues.filter(r => Number(r.amount) > 0).length} Months
+
+            <div className="apple-card">
+              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Security & Login</h3>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <label className="apple-form-label">Email Address</label>
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="apple-form-control"
+                />
+              </div>
+
+              <div>
+                <label className="apple-form-label">New Password (leave blank to keep current)</label>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="apple-form-control"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="apple-btn apple-btn-primary" disabled={saving} style={{ width: '100%' }}>
+                {saving ? 'Saving changes...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* RIGHT COLUMN: Extra Profile Stats & Achievements */}
+        <div className="apple-left-pane" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Performance Overview */}
+          <div className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>My Achievements</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ 
+                background: 'rgba(255, 255, 255, 0.02)', 
+                border: '1px solid var(--apple-border)', 
+                borderRadius: '12px', 
+                padding: '16px' 
+              }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>All-Time Contribution</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
+                  ${sumRevenues(revenues).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div style={{ 
+                background: 'rgba(255, 255, 255, 0.02)', 
+                border: '1px solid var(--apple-border)', 
+                borderRadius: '12px', 
+                padding: '16px' 
+              }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Active Billing Cycles</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
+                  {revenues.filter(r => Number(r.amount) > 0).length} Months
+                </div>
               </div>
             </div>
           </div>
+
         </div>
 
       </div>

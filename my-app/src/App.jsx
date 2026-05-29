@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // Components
 import Layout from './components/Layout'

@@ -7,9 +7,17 @@ export default function Layout({ user }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="apple-theme-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar user={user} />
-      <main className="admin-content-area" style={{ flex: 1, padding: '40px 5%', maxWidth: '1200px', margin: '0 auto', width: '100%', animation: 'fadeIn 0.3s ease-in-out' }}>
+      <main style={{ 
+        flex: 1, 
+        padding: 'clamp(20px, 4vw, 40px) clamp(16px, 5%, 48px)', 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        width: '100%', 
+        boxSizing: 'border-box',
+        animation: 'fadeIn 0.3s var(--apple-ease)' 
+      }}>
         <Outlet />
       </main>
     </div>

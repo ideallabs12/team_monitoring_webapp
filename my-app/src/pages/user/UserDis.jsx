@@ -429,84 +429,58 @@ export default function UserDis() {
   }
 
   return (
-    <div>
-      <div className="dashboard-header" style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Daily Information Sheet (DIS)</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-          Submit and track your daily sales metrics, positive leads, and revenue.
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+      {/* Premium Header */}
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }}>
+        <div className="apple-kicker">Operational Sales Sheets</div>
+        <h1 className="apple-title-large">Daily Information Sheet (DIS)</h1>
+        <p className="apple-lead">
+          Submit and audit your daily sales metrics, positive leads, and revenue targets.
         </p>
       </div>
 
-      {/* ===== NAVIGATION TABS ===== */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '32px', gap: '8px' }}>
-        <button
-          onClick={() => setActiveTab('submit')}
-          style={{
-            padding: '12px 24px',
-            background: activeTab === 'submit' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-            border: 'none',
-            borderBottom: activeTab === 'submit' ? '2px solid #3b82f6' : '2px solid transparent',
-            color: activeTab === 'submit' ? '#fff' : 'var(--text-secondary)',
-            fontWeight: '600',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            transition: 'all 0.2s'
-          }}
-        >
-          📝 Submit DIS
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          style={{
-            padding: '12px 24px',
-            background: activeTab === 'history' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-            border: 'none',
-            borderBottom: activeTab === 'history' ? '2px solid #3b82f6' : '2px solid transparent',
-            color: activeTab === 'history' ? '#fff' : 'var(--text-secondary)',
-            fontWeight: '600',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            transition: 'all 0.2s'
-          }}
-        >
-          📂 My History
-        </button>
-        {isTeamLead && (
+      {/* ===== NAVIGATION TABS (Apple Pill Selector) ===== */}
+      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'center' }}>
+        <div className="apple-pill-tabs">
           <button
-            onClick={() => setActiveTab('team')}
-            style={{
-              padding: '12px 24px',
-              background: activeTab === 'team' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'team' ? '2px solid #3b82f6' : '2px solid transparent',
-              color: activeTab === 'team' ? '#fff' : 'var(--text-secondary)',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              transition: 'all 0.2s'
-            }}
+            onClick={() => setActiveTab('submit')}
+            className={`apple-pill-tab ${activeTab === 'submit' ? 'active' : ''}`}
           >
-            👥 Team Reports
+            📝 Submit DIS
           </button>
-        )}
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`apple-pill-tab ${activeTab === 'history' ? 'active' : ''}`}
+          >
+            📂 My History
+          </button>
+          {isTeamLead && (
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`apple-pill-tab ${activeTab === 'team' ? 'active' : ''}`}
+            >
+              👥 Team Reports
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ===== TAB CONTENT: SUBMIT FORM ===== */}
       {activeTab === 'submit' && (
-        <div className="card" style={{ maxWidth: '650px', margin: '0 auto' }}>
-          <h3 style={{ marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '12px' }}>
-            {isEditMode ? '🔒 View DIS Report' : '📝 New DIS Report'}
+        <div className="apple-card" style={{ maxWidth: '650px', margin: '0 auto' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+            {isEditMode ? '🔒 View DIS Report' : '📝 Log New DIS Report'}
           </h3>
 
           {isEditMode && (
             <div style={{
               padding: '14px 18px',
-              borderRadius: '8px',
+              borderRadius: '12px',
               marginBottom: '24px',
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#f87171',
-              fontSize: '0.9rem',
+              background: 'rgba(255, 69, 58, 0.08)',
+              border: '1px solid rgba(255, 69, 58, 0.25)',
+              color: 'var(--apple-accent-red)',
+              fontSize: '0.85rem',
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
@@ -514,7 +488,7 @@ export default function UserDis() {
             }}>
               <span style={{ fontSize: '1.2rem' }}>🔒</span>
               <div>
-                <strong>DIS Report Locked:</strong> You have already submitted a report for this date. Submissions cannot be edited once saved. If changes are necessary, please contact your team lead.
+                <strong>DIS Report Locked:</strong> You have submitted a report for this date. Submissions cannot be edited once locked. Contact your team lead for changes.
               </div>
             </div>
           )}
@@ -522,12 +496,13 @@ export default function UserDis() {
           {message.text && (
             <div style={{
               padding: '12px 16px',
-              borderRadius: '8px',
+              borderRadius: '10px',
               marginBottom: '20px',
-              background: message.type === 'success' ? 'rgba(74,222,128,0.1)' : message.type === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(59,130,246,0.1)',
-              border: `1px solid ${message.type === 'success' ? '#4ade80' : message.type === 'error' ? '#ef4444' : '#3b82f6'}`,
-              color: message.type === 'success' ? '#4ade80' : message.type === 'error' ? '#ef4444' : '#60a5fa',
-              fontSize: '0.9rem'
+              background: message.type === 'success' ? 'rgba(48, 213, 200, 0.08)' : 'rgba(255, 69, 58, 0.08)',
+              border: `1px solid ${message.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)'}`,
+              color: message.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)',
+              fontSize: '0.88rem',
+              fontWeight: '500'
             }}>
               {message.text}
             </div>
@@ -535,42 +510,52 @@ export default function UserDis() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Auto-filled details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '16px', 
+              background: 'rgba(255,255,255,0.01)', 
+              padding: '16px', 
+              borderRadius: '12px', 
+              border: '1px solid var(--apple-border)' 
+            }} className="apple-two-col-grid">
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase' }}>Reporter Name & Teams</label>
-                <span style={{ fontWeight: '600', color: '#fff', display: 'block' }}>{profile ? `${profile.first_name} ${profile.last_name}` : '...'}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
-                  {userTeams.map(t => t.name).join(', ') || 'No Team'}
+                <label className="apple-form-label" style={{ marginBottom: '4px' }}>Reporter & Team</label>
+                <span style={{ fontWeight: '600', color: '#ffffff', display: 'block', fontSize: '0.95rem' }}>
+                  {profile ? `${profile.first_name} ${profile.last_name}` : '...'}
+                </span>
+                <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '1px 6px', marginTop: '4px', textTransform: 'capitalize' }}>
+                  {userTeams.map(t => t.name).join(', ') || 'No Assigned Team'}
                 </span>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase' }}>Month-to-Date Revenue (All Teams)</label>
-                <span style={{ fontWeight: '600', color: '#4ade80', display: 'block', fontSize: '1.25rem' }}>
-                  {loadingMTD ? 'Calculating...' : `$${mtdRevenue.toFixed(2)}`}
+                <label className="apple-form-label" style={{ marginBottom: '4px' }}>MTD Revenue (All Teams)</label>
+                <span style={{ fontWeight: '700', color: 'var(--apple-accent-green)', display: 'block', fontSize: '1.2rem' }}>
+                  {loadingMTD ? 'Calculating...' : `$${mtdRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </span>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Month: {getMonthStrFromDate(reportDate) || 'None'}
+                <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
+                  Billing Month: {getMonthStrFromDate(reportDate) || 'None'}
                 </div>
               </div>
             </div>
 
             {/* Date Selection */}
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>DIS Date</label>
+              <label className="apple-form-label">DIS Report Date</label>
               <input
                 type="date"
                 value={reportDate}
                 onChange={(e) => setReportDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
                 required
-                className="form-control"
+                className="apple-form-control"
               />
             </div>
 
             {/* Metrics */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="apple-two-col-grid">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Positive Leads</label>
+                <label className="apple-form-label">Positive Leads</label>
                 <input
                   type="number"
                   placeholder="0"
@@ -578,12 +563,12 @@ export default function UserDis() {
                   value={positiveLeads}
                   onChange={(e) => setPositiveLeads(e.target.value)}
                   required
-                  className="form-control"
+                  className="apple-form-control"
                   disabled={isEditMode}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Expected Revenue ($)</label>
+                <label className="apple-form-label">Expected Revenue ($)</label>
                 <input
                   type="number"
                   placeholder="0.00"
@@ -592,7 +577,7 @@ export default function UserDis() {
                   value={expectedRevenue}
                   onChange={(e) => setExpectedRevenue(e.target.value)}
                   required
-                  className="form-control"
+                  className="apple-form-control"
                   disabled={isEditMode}
                 />
               </div>
@@ -601,10 +586,10 @@ export default function UserDis() {
             <button
               type="submit"
               disabled={submitting || isEditMode}
-              className="btn btn-primary"
-              style={{ padding: '12px', fontSize: '1rem', marginTop: '12px' }}
+              className="apple-btn apple-btn-primary"
+              style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '12px' }}
             >
-              {submitting ? 'Submitting...' : isEditMode ? '🔒 Locked (Submitted)' : '🚀 Submit DIS Report'}
+              {submitting ? 'Submitting...' : isEditMode ? '🔒 Locked (Submitted)' : '🚀 Log DIS Report'}
             </button>
           </form>
         </div>
@@ -612,134 +597,123 @@ export default function UserDis() {
 
       {/* ===== TAB CONTENT: HISTORY LIST ===== */}
       {activeTab === 'history' && (
-        <div className="card">
-          <h3 style={{ marginBottom: '20px' }}>DIS Submission History</h3>
+        <div className="apple-card">
+          <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>DIS Submission History</h3>
           {loadingHistory ? (
-            <div style={{ color: 'var(--text-secondary)' }}>Loading history...</div>
+            <div style={{ color: 'var(--apple-text-secondary)' }}>Loading history...</div>
           ) : history.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    <th style={{ padding: '12px' }}>Date</th>
-                    <th style={{ padding: '12px' }}>Team</th>
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Positive Leads</th>
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Revenue Generated (MTD)</th>
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Expected Revenue</th>
-                    <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map(row => (
-                    <tr key={row.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem' }}>
-                      <td style={{ padding: '14px 12px', fontWeight: '600', color: '#fff' }}>
-                        {new Date(row.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                      </td>
-                      <td style={{ padding: '14px 12px', textTransform: 'capitalize' }}>
-                        {row.teams?.name || userTeams.map(t => t.name).join(', ') || 'None'}
-                      </td>
-                      <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: 'bold', color: row.positive_leads > 0 ? '#fbbf24' : 'var(--text-secondary)' }}>
-                        {row.positive_leads}
-                      </td>
-                      <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: 'bold', color: row.revenue_generated > 0 ? '#4ade80' : 'var(--text-secondary)' }}>
-                        ${Number(row.revenue_generated).toFixed(2)}
-                      </td>
-                      <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: 'bold', color: row.expected_revenue > 0 ? '#60a5fa' : 'var(--text-secondary)' }}>
-                        ${Number(row.expected_revenue).toFixed(2)}
-                      </td>
-                      <td style={{ padding: '14px 12px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => {
-                            setReportDate(row.report_date)
-                            setActiveTab('submit')
-                          }}
-                          className="btn btn-secondary"
-                          style={{ padding: '4px 10px', fontSize: '0.8rem', minWidth: 'auto' }}
-                        >
-                          ✏️ Edit
-                        </button>
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)' }}>
+                      <th style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
+                      <th style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Team</th>
+                      <th style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Positive Leads</th>
+                      <th style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Revenue Generated (MTD)</th>
+                      <th style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Expected Revenue</th>
+                      <th style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {history.map(row => (
+                      <tr key={row.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
+                        <td style={{ padding: '16px 20px', fontWeight: '600', color: '#ffffff' }}>
+                          {new Date(row.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                        </td>
+                        <td style={{ padding: '16px 20px', textTransform: 'capitalize', color: 'var(--apple-text-secondary)' }}>
+                          {row.teams?.name || userTeams.map(t => t.name).join(', ') || 'None'}
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: '700', color: row.positive_leads > 0 ? 'var(--apple-accent-orange)' : 'var(--apple-text-secondary)' }}>
+                          {row.positive_leads}
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: '700', color: row.revenue_generated > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }}>
+                          ${Number(row.revenue_generated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: '700', color: row.expected_revenue > 0 ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)' }}>
+                          ${Number(row.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => {
+                              setReportDate(row.report_date)
+                              setActiveTab('submit')
+                            }}
+                            className="apple-btn apple-btn-secondary"
+                            style={{ padding: '6px 14px !important', fontSize: '0.8rem', borderRadius: '12px !important' }}
+                          >
+                            ✏️ Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards List View */}
+              <div className="apple-mobile-list-card">
+                {history.map(row => (
+                  <div key={row.id} className="apple-mobile-list-item" style={{ gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--apple-border)', paddingBottom: '8px' }}>
+                      <span style={{ fontWeight: '700', color: '#ffffff', fontSize: '0.95rem' }}>
+                        {new Date(row.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                      </span>
+                      <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '1px 6px', textTransform: 'capitalize' }}>
+                        {row.teams?.name || userTeams.map(t => t.name).join(', ') || 'None'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--apple-text-secondary)' }}>Positive Leads:</span>
+                        <span style={{ fontWeight: '700', color: 'var(--apple-accent-orange)' }}>{row.positive_leads}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--apple-text-secondary)' }}>MTD Revenue:</span>
+                        <span style={{ fontWeight: '700', color: 'var(--apple-accent-green)' }}>${Number(row.revenue_generated).toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--apple-text-secondary)' }}>Expected Revenue:</span>
+                        <span style={{ fontWeight: '700', color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setReportDate(row.report_date)
+                        setActiveTab('submit')
+                      }}
+                      className="apple-btn apple-btn-secondary"
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px !important', 
+                        fontSize: '0.85rem', 
+                        marginTop: '4px',
+                        borderRadius: '10px !important'
+                      }}
+                    >
+                      ✏️ Edit Report
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
-            <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>No past reports submitted.</p>
+            <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>No past reports submitted.</p>
           )}
         </div>
       )}
 
       {/* ===== TAB CONTENT: TEAM LEAD VIEW ===== */}
       {activeTab === 'team' && isTeamLead && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="apple-pane-layout">
           
-          {/* Header & Filter Controls */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Team DIS Reports Dashboard</h3>
-                <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  Manage performance reports and verify daily activity.
-                </p>
-              </div>
-              
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>Time Period</label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {[
-                      { value: 'date', label: 'Single Date' },
-                      { value: '1week', label: '1 Week' },
-                      { value: '2weeks', label: '2 Weeks' },
-                      { value: '1month', label: '1 Month' }
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setTeamFilterPeriod(opt.value)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: teamFilterPeriod === opt.value ? '1px solid #3b82f6' : '1px solid var(--border-color)',
-                          background: teamFilterPeriod === opt.value ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.02)',
-                          color: teamFilterPeriod === opt.value ? '#3b82f6' : 'var(--text-secondary)',
-                          cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          fontWeight: '600',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {teamFilterPeriod === 'date' && (
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>Select Date</label>
-                    <input
-                      type="date"
-                      value={teamSelectedDate}
-                      onChange={(e) => setTeamSelectedDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="form-control"
-                      style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                )}
-              </div>
+          {/* LEFT SIDEBAR: Teams List */}
+          <div className="apple-left-pane">
+            <div className="apple-kicker" style={{ paddingLeft: '4px', marginBottom: '12px' }}>
+              My Teams Ledger
             </div>
-          </div>
-
-          {/* TWO COLUMN CONTENT AREA */}
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-            
-            {/* LEFT SIDEBAR: Teams List */}
-            <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '10px', flexGrow: 0, flexShrink: 0 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingLeft: '8px' }}>
-                My Teams
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {ledTeams.map(team => {
                 const isSelected = selectedLedTeamId === team.id
                 const stats = teamMetrics[team.id] || { total: 0, submitted: 0 }
@@ -747,149 +721,206 @@ export default function UserDis() {
                   <button
                     key={team.id}
                     onClick={() => setSelectedLedTeamId(team.id)}
+                    className="apple-card"
                     style={{
+                      padding: '16px 20px !important',
+                      background: isSelected ? 'rgba(0, 113, 227, 0.08) !important' : 'var(--apple-card) !important',
+                      borderColor: isSelected ? 'var(--apple-accent-blue) !important' : 'var(--apple-border) !important',
+                      textAlign: 'left',
+                      width: '100%',
+                      cursor: 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '6px',
-                      padding: '14px 18px',
-                      borderRadius: '10px',
-                      border: isSelected ? '1px solid #3b82f6' : '1px solid var(--border-color)',
-                      background: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'rgba(255,255,255,0.02)',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.2s',
-                      width: '100%',
-                      boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.1)' : 'none'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+                      gap: '4px'
                     }}
                   >
-                    <span style={{ fontWeight: '600', fontSize: '1rem', textTransform: 'capitalize' }}>{team.name}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <span style={{ fontWeight: '700', fontSize: '1rem', textTransform: 'capitalize', color: '#ffffff' }}>{team.name}</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>
                       {stats.submitted} / {stats.total} submitted today
                     </span>
                   </button>
                 )
               })}
             </div>
+          </div>
 
-            {/* RIGHT SIDEBAR CONTENT: Selected Team Details */}
-            <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {selectedLedTeamId ? (() => {
-                const currentTeam = ledTeams.find(t => t.id === selectedLedTeamId)
-                
-                // Aggregates for the selected team (using team-specific dynamic revenues)
-                const teamUserLatestRevenue = {}
-                let totalLeads = 0
-                let totalExpected = 0
-                for (const r of teamSubmissions) {
-                  totalLeads += Number(r.positive_leads)
-                  totalExpected += Number(r.expected_revenue)
-                  if (teamUserLatestRevenue[r.user_id] === undefined) {
-                    const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
-                    const revRecord = teamRevenues.find(
-                      rv => rv.user_id === r.user_id && 
-                            rv.team_id === selectedLedTeamId && 
-                            rv.revenue_month === monthStr
-                    )
-                    teamUserLatestRevenue[r.user_id] = revRecord ? Number(revRecord.amount) : 0
-                  }
+          {/* RIGHT SIDEBAR CONTENT: Selected Team Details */}
+          <div className="apple-right-pane">
+            {selectedLedTeamId ? (() => {
+              const currentTeam = ledTeams.find(t => t.id === selectedLedTeamId)
+              
+              // Aggregates for the selected team
+              const teamUserLatestRevenue = {}
+              let totalLeads = 0
+              let totalExpected = 0
+              for (const r of teamSubmissions) {
+                totalLeads += Number(r.positive_leads)
+                totalExpected += Number(r.expected_revenue)
+                if (teamUserLatestRevenue[r.user_id] === undefined) {
+                  const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
+                  const revRecord = teamRevenues.find(
+                    rv => rv.user_id === r.user_id && 
+                          rv.team_id === selectedLedTeamId && 
+                          rv.revenue_month === monthStr
+                  )
+                  teamUserLatestRevenue[r.user_id] = revRecord ? Number(revRecord.amount) : 0
                 }
-                const totalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
+              }
+              const totalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
 
-                return (
-                  <>
-                    {/* Team summary header stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-                      <div className="card" style={{ padding: '16px 20px', background: 'rgba(74, 222, 128, 0.03)', border: '1px solid rgba(74, 222, 128, 0.15)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>This Month ({currentTeam?.name})</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4ade80' }}>${totalRevenue.toFixed(2)}</div>
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  
+                  {/* Team Filter Control Panel */}
+                  <div className="apple-card" style={{ padding: '20px !important' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                      <div>
+                        <h3 className="apple-title-small" style={{ margin: 0, textTransform: 'capitalize' }}>{currentTeam?.name} DIS Ledger</h3>
+                        <p style={{ margin: '4px 0 0 0', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
+                          Manage performance reports and audit daily team entries.
+                        </p>
                       </div>
-                      <div className="card" style={{ padding: '16px 20px', background: 'rgba(96, 165, 250, 0.03)', border: '1px solid rgba(96, 165, 250, 0.15)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>This Expected Revenue ({currentTeam?.name})</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>${totalExpected.toFixed(2)}</div>
-                      </div>
-                      <div className="card" style={{ padding: '16px 20px', background: 'rgba(251, 191, 36, 0.03)', border: '1px solid rgba(251, 191, 36, 0.15)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>This Positive Leads ({currentTeam?.name})</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fbbf24' }}>{totalLeads}</div>
-                      </div>
-                    </div>
-
-                    {/* Missing reports block */}
-                    {teamFilterPeriod === 'date' && (
-                      <div className="card" style={{ border: '1px solid rgba(239, 68, 68, 0.15)', background: 'rgba(239, 68, 68, 0.02)', padding: '20px' }}>
-                        <h4 style={{ color: '#ef4444', fontSize: '1.05rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0 }}>
-                          ⚠️ Missing DIS Submissions ({missingTeamSubmissions.length})
-                        </h4>
-                        {missingTeamSubmissions.length > 0 ? (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
-                            {missingTeamSubmissions.map(m => (
-                              <div key={m.user_id} style={{ padding: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                                <div style={{ fontWeight: '500', color: '#fff', fontSize: '0.85rem' }}>{m.profiles?.first_name} {m.profiles?.last_name}</div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{m.profiles?.email}</div>
-                              </div>
+                      
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                        <div>
+                          <label className="apple-form-label" style={{ fontSize: '0.7rem', marginBottom: '4px' }}>Timeframe</label>
+                          <div className="apple-pill-tabs" style={{ padding: '2px' }}>
+                            {[
+                              { value: 'date', label: 'Single Day' },
+                              { value: '1week', label: '1 W' },
+                              { value: '2weeks', label: '2 W' },
+                              { value: '1month', label: '1 M' }
+                            ].map(opt => (
+                              <button
+                                key={opt.value}
+                                onClick={() => setTeamFilterPeriod(opt.value)}
+                                className={`apple-pill-tab ${teamFilterPeriod === opt.value ? 'active' : ''}`}
+                                style={{ padding: '4px 12px', fontSize: '0.78rem' }}
+                              >
+                                {opt.label}
+                              </button>
                             ))}
                           </div>
-                        ) : (
-                          <p style={{ color: '#4ade80', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>🎉 All team members have submitted their reports!</p>
+                        </div>
+
+                        {teamFilterPeriod === 'date' && (
+                          <div>
+                            <label className="apple-form-label" style={{ fontSize: '0.7rem', marginBottom: '4px' }}>Select Date</label>
+                            <input
+                              type="date"
+                              value={teamSelectedDate}
+                              onChange={(e) => setTeamSelectedDate(e.target.value)}
+                              max={new Date().toISOString().split('T')[0]}
+                              className="apple-form-control"
+                              style={{ padding: '6px 12px !important', fontSize: '0.82rem !important', width: '135px', borderRadius: '10px !important' }}
+                            />
+                          </div>
                         )}
                       </div>
-                    )}
+                    </div>
+                  </div>
+                  
+                  {/* Team summary header stats */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                    <div className="apple-card" style={{ padding: '16px 20px !important', background: 'rgba(48, 213, 200, 0.03) !important', border: '1px solid rgba(48, 213, 200, 0.15) !important' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px', fontWeight: '500' }}>This Month MTD</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div className="apple-card" style={{ padding: '16px 20px !important', background: 'rgba(0, 113, 227, 0.03) !important', border: '1px solid rgba(0, 113, 227, 0.15) !important' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px', fontWeight: '500' }}>Expected Revenue</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>${totalExpected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div className="apple-card" style={{ padding: '16px 20px !important', background: 'rgba(255, 159, 10, 0.03) !important', border: '1px solid rgba(255, 159, 10, 0.15) !important' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px', fontWeight: '500' }}>Positive Leads</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>{totalLeads}</div>
+                    </div>
+                  </div>
 
-                    {/* Submissions grid (3-in-a-row) */}
-                    <div>
-                      <h4 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: '#fff' }}>Submitted Reports</h4>
-                      {loadingTeamData ? (
-                        <div style={{ color: 'var(--text-secondary)' }}>Loading submissions...</div>
-                      ) : teamSubmissions.length > 0 ? (
-                        <div className="dis-grid">
-                          {teamSubmissions.map(row => {
-                            const monthStr = `${row.report_date.split('-')[0]}-${row.report_date.split('-')[1]}-01`
-                            const revRecord = teamRevenues.find(
-                              rv => rv.user_id === row.user_id && 
-                                    rv.team_id === selectedLedTeamId && 
-                                    rv.revenue_month === monthStr
-                            )
-                            const teamSpecificRevenue = revRecord ? Number(revRecord.amount) : 0
+                  {/* Missing reports block */}
+                  {teamFilterPeriod === 'date' && (
+                    <div className="apple-card" style={{ border: '1px solid rgba(255, 69, 58, 0.15) !important', background: 'rgba(255, 69, 58, 0.02) !important', padding: '20px !important' }}>
+                      <h4 style={{ color: 'var(--apple-accent-red)', fontSize: '0.95rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0 }}>
+                        ⚠️ Missing DIS Submissions ({missingTeamSubmissions.length})
+                      </h4>
+                      {missingTeamSubmissions.length > 0 ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                          {missingTeamSubmissions.map(m => (
+                            <div key={m.user_id} style={{ padding: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--apple-border)', borderRadius: '10px' }}>
+                              <div style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.85rem' }}>{m.profiles?.first_name} {m.profiles?.last_name}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{m.profiles?.email}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--apple-accent-green)', fontStyle: 'italic', margin: 0, fontSize: '0.88rem', fontWeight: '500' }}>🎉 Great! All active team members have logged their daily DIS report.</p>
+                      )}
+                    </div>
+                  )}
 
-                            return (
-                              <div key={row.id} className="card" style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '12px', transition: 'transform 0.2s', position: 'relative' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}>
-                                <div>
-                                  <div style={{ fontWeight: '600', color: '#fff', fontSize: '1.05rem' }}>{row.profiles?.first_name} {row.profiles?.last_name}</div>
-                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{row.profiles?.email}</div>
+                  {/* Submissions grid */}
+                  <div>
+                    <h4 className="apple-title-small" style={{ marginBottom: '16px' }}>Submitted Team Reports</h4>
+                    {loadingTeamData ? (
+                      <div style={{ color: 'var(--apple-text-secondary)' }}>Loading submissions...</div>
+                    ) : teamSubmissions.length > 0 ? (
+                      <div className="dis-grid">
+                        {teamSubmissions.map(row => {
+                          const monthStr = `${row.report_date.split('-')[0]}-${row.report_date.split('-')[1]}-01`
+                          const revRecord = teamRevenues.find(
+                            rv => rv.user_id === row.user_id && 
+                                  rv.team_id === selectedLedTeamId && 
+                                  rv.revenue_month === monthStr
+                          )
+                          const teamSpecificRevenue = revRecord ? Number(revRecord.amount) : 0
+
+                          return (
+                            <div 
+                              key={row.id} 
+                              className="apple-card" 
+                              style={{ 
+                                padding: '20px !important', 
+                                background: 'rgba(255, 255, 255, 0.015) !important',
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '12px' 
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontWeight: '600', color: '#ffffff', fontSize: '1rem' }}>{row.profiles?.first_name} {row.profiles?.last_name}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>{row.profiles?.email}</div>
+                              </div>
+
+                              {teamFilterPeriod !== 'date' && (
+                                <div style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', borderBottom: '1px solid var(--apple-border)', paddingBottom: '8px' }}>
+                                  Date: {new Date(row.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
                                 </div>
+                              )}
 
-                                {teamFilterPeriod !== 'date' && (
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-                                    Date: {new Date(row.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                                  </div>
-                                )}
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>Positive Leads:</span>
-                                    <span style={{ fontWeight: 'bold', color: '#fbbf24' }}>{row.positive_leads}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>MTD Revenue:</span>
-                                    <span style={{ fontWeight: 'bold', color: '#4ade80' }}>${teamSpecificRevenue.toFixed(2)}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>Expected Revenue:</span>
-                                    <span style={{ fontWeight: 'bold', color: '#60a5fa' }}>${Number(row.expected_revenue).toFixed(2)}</span>
-                                  </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--apple-text-secondary)' }}>Positive Leads:</span>
+                                  <span style={{ fontWeight: '700', color: 'var(--apple-accent-orange)' }}>{row.positive_leads}</span>
                                 </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--apple-text-secondary)' }}>MTD Revenue:</span>
+                                  <span style={{ fontWeight: '700', color: 'var(--apple-accent-green)' }}>${teamSpecificRevenue.toFixed(2)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--apple-text-secondary)' }}>Expected Revenue:</span>
+                                  <span style={{ fontWeight: '700', color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toFixed(2)}</span>
+                                </div>
+                              </div>
 
-                              <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 'auto', paddingTop: '12px' }}>
+                              <div style={{ borderTop: '1px solid var(--apple-border)', marginTop: 'auto', paddingTop: '12px' }}>
                                 <button
                                   onClick={() => handleOpenEdit(row)}
-                                  className="btn btn-secondary"
-                                  style={{ padding: '6px 14px', fontSize: '0.8rem', width: '100%', borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', color: '#fff', cursor: 'pointer' }}
+                                  className="apple-btn apple-btn-secondary"
+                                  style={{ 
+                                    padding: '6px 14px !important', 
+                                    fontSize: '0.8rem', 
+                                    width: '100%', 
+                                    borderRadius: '10px !important' 
+                                  }}
                                 >
                                   ✏️ Edit Report
                                 </button>
@@ -897,53 +928,27 @@ export default function UserDis() {
                             </div>
                           );
                         })}
-                        </div>
-                      ) : (
-                        <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.95rem' }}>No reports submitted for the selected timeframe.</p>
-                      )}
-                    </div>
-                  </>
-                )
-              })() : (
-                <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '40px' }}>
-                  Select a team from the left to view reports.
+                      </div>
+                    ) : (
+                      <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>No reports submitted for the selected timeframe.</p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-
+              )
+            })() : (
+              <div className="apple-card" style={{ color: 'var(--apple-text-secondary)', textAlign: 'center', padding: '40px' }}>
+                Select a team from the left to view reports.
+              </div>
+            )}
           </div>
+
         </div>
       )}
 
-      {/* EDIT MODAL FOR TEAM LEAD */}
+      {/* EDIT MODAL FOR TEAM LEAD (Apple Overlay Sheet) */}
       {editingReport && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }} onClick={() => setEditingReport(null)}>
-          <div style={{
-            background: '#1e293b',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '500px',
-            padding: '28px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-            position: 'relative'
-          }} onClick={(e) => e.stopPropagation()}>
+        <div className="apple-modal-overlay" onClick={() => setEditingReport(null)}>
+          <div className="apple-modal-card" onClick={(e) => e.stopPropagation()}>
             
             <button 
               onClick={() => setEditingReport(null)}
@@ -953,7 +958,7 @@ export default function UserDis() {
                 right: '20px',
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: 'none',
-                color: '#94a3b8',
+                color: '#ffffff',
                 borderRadius: '50%',
                 width: '32px',
                 height: '32px',
@@ -967,40 +972,40 @@ export default function UserDis() {
               &times;
             </button>
 
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '12px' }}>
-              ✏️ Edit DIS Report (Team Lead)
+            <h3 className="apple-title-small" style={{ marginBottom: '16px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+              ✏️ Override DIS Report
             </h3>
 
             {editError && (
-              <div style={{ padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ padding: '10px', background: 'rgba(255, 69, 58, 0.1)', border: '1px solid var(--apple-accent-red)', color: 'var(--apple-accent-red)', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
                 {editError}
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Team Member</span>
-              <span style={{ fontWeight: '600', color: '#fff' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px', background: 'rgba(255,255,255,0.01)', padding: '14px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <span className="apple-form-label" style={{ marginBottom: '2px' }}>Team Member</span>
+              <span style={{ fontWeight: '700', color: '#ffffff', fontSize: '1rem' }}>
                 {editingReport.profiles?.first_name} {editingReport.profiles?.last_name}
               </span>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Report Date: {new Date(editingReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+              <span style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>
+                Report Day: {new Date(editingReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
               </span>
             </div>
 
-            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '0.9rem' }}>Positive Leads</label>
+                <label className="apple-form-label">Positive Leads</label>
                 <input
                   type="number"
                   min="0"
                   value={editLeads}
                   onChange={(e) => setEditLeads(e.target.value)}
                   required
-                  className="form-control"
+                  className="apple-form-control"
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '0.9rem' }}>Expected Revenue ($)</label>
+                <label className="apple-form-label">Expected Revenue ($)</label>
                 <input
                   type="number"
                   min="0"
@@ -1008,7 +1013,7 @@ export default function UserDis() {
                   value={editExpected}
                   onChange={(e) => setEditExpected(e.target.value)}
                   required
-                  className="form-control"
+                  className="apple-form-control"
                 />
               </div>
 
@@ -1016,15 +1021,14 @@ export default function UserDis() {
                 <button
                   type="button"
                   onClick={() => setEditingReport(null)}
-                  className="btn btn-secondary"
-                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                  className="apple-btn apple-btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="btn btn-primary"
+                  className="apple-btn apple-btn-primary"
                 >
                   {editSaving ? 'Saving...' : 'Save Changes'}
                 </button>

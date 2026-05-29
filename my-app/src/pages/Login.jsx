@@ -57,7 +57,7 @@ export default function Login({ user, isAdmin }) {
   }
 
   return (
-    <div className="auth-container">
+    <div className="auth-container login-auth-container">
       <section className="auth-identity" aria-label="Company application overview">
         <div className="auth-brand-mark">
           <Building2 size={30} />

@@ -98,57 +98,66 @@ export default function UserHome({ user, isAdminView }) {
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading your dashboard...</div>
 
   return (
-    <div>
-      <div className="dashboard-header" style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>
-          {isAdminView ? `Dashboard for ${profile?.first_name || user?.user_metadata?.full_name || 'User'}` : `Welcome, ${profile?.first_name || user?.user_metadata?.full_name || 'User'}!`}
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+      {/* Premium Header */}
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 48px)' }}>
+        <div className="apple-kicker">Performance Center</div>
+        <h1 className="apple-title-large">
+          {isAdminView 
+            ? `Dashboard: ${profile?.first_name || user?.user_metadata?.full_name || 'Member'}` 
+            : `Welcome, ${profile?.first_name || user?.user_metadata?.full_name || 'Member'}!`}
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-          {isAdminView ? `Overview of teams, performance, and actions.` : `Here is an overview of your teams, performance, and actions.`}
+        <p className="apple-lead">
+          {isAdminView 
+            ? `Detailed metrics, team assignments, and target achievements.` 
+            : `Here is an elegant overview of your teams, active revenue metrics, and performance.`}
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      {/* Main Grid Wrapper */}
+      <div className="apple-responsive-grid">
         
         {/* LEFT COLUMN: Profile & Teams Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Card 1: My Profile & Teams */}
-          <div className="card" style={{ padding: '32px' }}>
-            <h3 style={{ fontSize: '1.4rem', marginBottom: '24px', color: '#fff' }}>My Profile</h3>
+          <div className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>My Profile</h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Email Address</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '500' }}>{profile?.email || user?.email}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Email Address</div>
+                <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff' }}>{profile?.email || user?.email}</div>
               </div>
               
-              <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Phone Number</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '500' }}>{profile?.phone || 'Not provided'}</div>
+              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Phone Number</div>
+                <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff' }}>{profile?.phone || 'Not provided'}</div>
               </div>
 
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>My Active Teams</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>My Active Teams</div>
                 {userTeams.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {userTeams.map(t => (
-                      <span key={t.id} style={{
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        background: t.role === 'lead' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(74, 222, 128, 0.12)',
-                        border: t.role === 'lead' ? '1px solid rgba(234, 179, 8, 0.25)' : '1px solid rgba(74, 222, 128, 0.25)',
-                        fontSize: '0.8rem',
-                        color: t.role === 'lead' ? '#eab308' : '#4ade80',
-                        textTransform: 'capitalize',
-                        fontWeight: '500'
-                      }}>
+                      <span 
+                        key={t.id} 
+                        className={t.role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'}
+                        style={{ textTransform: 'capitalize' }}
+                      >
+                        <span style={{ 
+                          width: '6px', 
+                          height: '6px', 
+                          borderRadius: '50%', 
+                          background: t.role === 'lead' ? 'var(--apple-accent-orange)' : 'var(--apple-accent-green)',
+                          boxShadow: t.role === 'lead' ? '0 0 6px var(--apple-accent-orange)' : '0 0 6px var(--apple-accent-green)'
+                        }}></span>
                         {t.name} ({t.role})
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
                     No Teams Assigned (Please contact Admin)
                   </span>
                 )}
@@ -158,16 +167,36 @@ export default function UserHome({ user, isAdminView }) {
 
           {/* Card 2: Quick Actions */}
           {!isAdminView && (
-            <div className="card" style={{ padding: '28px' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '20px', color: '#fff' }}>Quick Actions</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <Link to="/dis" className="btn" style={{ textAlign: 'center', padding: '12px 8px', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', justifyContent: 'center', background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>
+            <div className="apple-card">
+              <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Quick Actions</h3>
+              <div className="apple-two-col-grid">
+                <Link 
+                  to="/dis" 
+                  className="apple-btn apple-btn-secondary" 
+                  style={{ 
+                    textAlign: 'center', 
+                    padding: '16px 8px !important', 
+                    flexDirection: 'column', 
+                    gap: '8px',
+                    borderRadius: '16px !important'
+                  }}
+                >
                   <span style={{ fontSize: '1.4rem' }}>📝</span>
-                  Submit Daily DIS
+                  <span style={{ fontSize: '0.85rem' }}>Submit Daily DIS</span>
                 </Link>
-                <Link to="/revenue" className="btn" style={{ textAlign: 'center', padding: '12px 8px', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', justifyContent: 'center', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', color: '#4ade80' }}>
+                <Link 
+                  to="/revenue" 
+                  className="apple-btn apple-btn-secondary" 
+                  style={{ 
+                    textAlign: 'center', 
+                    padding: '16px 8px !important', 
+                    flexDirection: 'column', 
+                    gap: '8px',
+                    borderRadius: '16px !important'
+                  }}
+                >
                   <span style={{ fontSize: '1.4rem' }}>💰</span>
-                  Submit Revenue
+                  <span style={{ fontSize: '0.85rem' }}>Submit Revenue</span>
                 </Link>
               </div>
             </div>
@@ -179,50 +208,91 @@ export default function UserHome({ user, isAdminView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Card 3: Revenue Metrics */}
-          <div className="card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <h3 style={{ fontSize: '1.4rem', margin: 0, color: '#fff' }}>Revenue Summary</h3>
+          <div className="apple-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h3 className="apple-title-small" style={{ margin: 0 }}>Revenue Summary</h3>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '20px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>This Month (All Teams)</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4ade80' }}>
-                  ${thisMonthRevenue.toFixed(2)}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ 
+                background: 'rgba(255, 255, 255, 0.02)', 
+                border: '1px solid var(--apple-border)', 
+                borderRadius: '14px', 
+                padding: '16px' 
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>This Month</div>
+                <div className="apple-stat-hero" style={{ color: 'var(--apple-accent-green)' }}>
+                  ${thisMonthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
               
-              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '20px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>All Time Total</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#fff' }}>
-                  ${allTimeRevenue.toFixed(2)}
+              <div style={{ 
+                background: 'rgba(255, 255, 255, 0.02)', 
+                border: '1px solid var(--apple-border)', 
+                borderRadius: '14px', 
+                padding: '16px' 
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>All Time Total</div>
+                <div className="apple-stat-hero" style={{ color: '#ffffff' }}>
+                  ${allTimeRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             </div>
 
-            <div style={{ background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ 
+              background: 'rgba(0, 113, 227, 0.04)', 
+              border: '1px solid rgba(0, 113, 227, 0.2)', 
+              borderRadius: '14px', 
+              padding: '18px' 
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Target (All Teams)</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#60a5fa' }}>${thisMonthTarget.toFixed(2)}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Monthly Target</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
+                    ${thisMonthTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reached vs Target</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: targetAchievement >= 100 ? '#4ade80' : '#fbbf24' }}>
-                    {thisMonthTarget > 0 ? `${targetAchievement.toFixed(1)}%` : 'No target'}
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Target Achievement</div>
+                  <div style={{ 
+                    fontSize: '1.25rem', 
+                    fontWeight: '700', 
+                    color: targetAchievement >= 100 ? 'var(--apple-accent-green)' : 'var(--apple-accent-orange)' 
+                  }}>
+                    {thisMonthTarget > 0 ? `${targetAchievement.toFixed(1)}%` : 'No Active Target'}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '14px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            <div style={{ 
+              background: 'rgba(255, 255, 255, 0.01)', 
+              border: '1px solid var(--apple-border)', 
+              borderRadius: '14px', 
+              padding: '16px' 
+            }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
                 Target vs Reached (Last 6 Months)
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', 
+                gap: '8px' 
+              }}>
                 {targetHistory.map(row => (
-                  <div key={row.month} style={{ padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{formatRevenueMonthShort(row.month)}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>T: ${row.expected.toFixed(0)}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>R: ${row.reached.toFixed(0)}</div>
+                  <div 
+                    key={row.month} 
+                    style={{ 
+                      padding: '8px', 
+                      borderRadius: '8px', 
+                      border: '1px solid var(--apple-border)', 
+                      background: 'rgba(255, 255, 255, 0.01)',
+                      textAlign: 'center' 
+                    }}
+                  >
+                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', fontWeight: '600', marginBottom: '4px' }}>
+                      {formatRevenueMonthShort(row.month).split(" '")[0]}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-accent-blue)', fontWeight: '500' }}>T: ${row.expected.toFixed(0)}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-accent-green)', fontWeight: '600' }}>R: ${row.reached.toFixed(0)}</div>
                   </div>
                 ))}
               </div>
@@ -230,39 +300,59 @@ export default function UserHome({ user, isAdminView }) {
           </div>
 
           {/* Card 4: Latest DIS Report */}
-          <div className="card" style={{ padding: '32px' }}>
-            <h3 style={{ fontSize: '1.4rem', marginBottom: '24px', color: '#fff' }}>Latest Daily DIS Report</h3>
+          <div className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Latest Daily DIS Report</h3>
             
             {latestReport ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Report Date</span>
-                  <span style={{ fontWeight: '600', color: '#fff' }}>{latestReport.report_date}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  borderBottom: '1px solid var(--apple-border)', 
+                  paddingBottom: '12px' 
+                }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Report Date</span>
+                  <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.9rem' }}>
+                    {new Date(latestReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                  </span>
                 </div>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ textAlign: 'center', background: 'rgba(96, 165, 250, 0.04)', border: '1px solid rgba(96, 165, 250, 0.15)', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Expected Revenue</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#60a5fa' }}>
+                <div className="apple-two-col-grid">
+                  <div style={{ 
+                    textAlign: 'center', 
+                    background: 'rgba(0, 113, 227, 0.03)', 
+                    border: '1px solid rgba(0, 113, 227, 0.15)', 
+                    borderRadius: '10px', 
+                    padding: '12px' 
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Expected Revenue</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
                       ${Number(latestReport.expected_revenue).toFixed(2)}
                     </div>
                   </div>
                   
-                  <div style={{ textAlign: 'center', background: 'rgba(251, 191, 36, 0.04)', border: '1px solid rgba(251, 191, 36, 0.15)', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>Positive Leads</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fbbf24' }}>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    background: 'rgba(255, 159, 10, 0.03)', 
+                    border: '1px solid rgba(255, 159, 10, 0.15)', 
+                    borderRadius: '10px', 
+                    padding: '12px' 
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Positive Leads</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>
                       {latestReport.positive_leads}
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0' }}>
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>
                   {isAdminView ? "This user hasn't submitted any daily reports yet." : "You haven't submitted any daily reports yet."}
                 </p>
                 {!isAdminView && (
-                  <Link to="/dis" className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                  <Link to="/dis" className="apple-btn apple-btn-secondary" style={{ padding: '8px 20px !important', fontSize: '0.85rem' }}>
                     Create First Report
                   </Link>
                 )}
