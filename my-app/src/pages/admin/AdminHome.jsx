@@ -156,6 +156,7 @@ export default function AdminHome() {
       </div>
 
       <div className="card" style={{ marginBottom: '24px' }}>
+        {/* Card header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: '18px' }}>
           <div>
             <h3 style={{ margin: '0 0 6px 0' }}>Assign Monthly Targets</h3>
@@ -168,7 +169,8 @@ export default function AdminHome() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', alignItems: 'end', marginBottom: '18px' }}>
+        {/* Team + Month dropdowns */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', alignItems: 'end', marginBottom: '20px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Team</label>
             <select
@@ -201,6 +203,46 @@ export default function AdminHome() {
           </div>
         </div>
 
+        {/* ===== SUMMARY CARDS (moved here from the bottom) ===== */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+          <div style={{
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid rgba(96,165,250,0.35)',
+            background: 'rgba(96,165,250,0.08)'
+          }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Target — {formatRevenueMonth(selectedMonth)}
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#60a5fa' }}>${summary.expected.toFixed(2)}</div>
+          </div>
+
+          <div style={{
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid rgba(74,222,128,0.35)',
+            background: 'rgba(74,222,128,0.08)'
+          }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Reached — {formatRevenueMonth(selectedMonth)}
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#4ade80' }}>${summary.reached.toFixed(2)}</div>
+          </div>
+
+          <div style={{
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid rgba(251,191,36,0.35)',
+            background: 'rgba(251,191,36,0.08)'
+          }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Achievement</div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#fbbf24' }}>
+              {summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}
+            </div>
+          </div>
+        </div>
+
+        {/* Members table */}
         {memberTargets.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>No non-admin members found for this team.</p>
         ) : (
@@ -230,12 +272,16 @@ export default function AdminHome() {
                       <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                         {isEditing ? (
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             className="form-control"
                             value={editAmount}
-                            onChange={(e) => setEditAmount(e.target.value)}
+                            onChange={(e) => {
+                              // Only allow numeric input with optional decimal
+                              const val = e.target.value
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
+                            }}
                             placeholder="0.00"
                             style={{ width: '140px', marginLeft: 'auto', textAlign: 'right' }}
                             autoFocus
@@ -314,23 +360,6 @@ export default function AdminHome() {
             {message.text}
           </div>
         )}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-        <div className="card" style={{ border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Target ({formatRevenueMonth(selectedMonth)})</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#60a5fa' }}>${summary.expected.toFixed(2)}</div>
-        </div>
-        <div className="card" style={{ border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.08)' }}>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Reached ({formatRevenueMonth(selectedMonth)})</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80' }}>${summary.reached.toFixed(2)}</div>
-        </div>
-        <div className="card" style={{ border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }}>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Achievement</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#fbbf24' }}>
-            {summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}
-          </div>
-        </div>
       </div>
     </div>
   )

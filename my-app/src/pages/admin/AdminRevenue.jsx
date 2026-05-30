@@ -18,7 +18,8 @@ export default function AdminRevenue() {
   const [memberships, setMemberships] = useState([])
   const [targets, setTargets] = useState([])
 
-  const [periodFilter, setPeriodFilter] = useState(12)
+  // Period filter now lives inside the "Expected vs Actual" section
+  const [periodFilter, setPeriodFilter] = useState(1)
   const [averagePeriod, setAveragePeriod] = useState(6)
   const [selectedTeamId, setSelectedTeamId] = useState('')
 
@@ -70,12 +71,8 @@ export default function AdminRevenue() {
     [revenues, nonAdminIds]
   )
 
-  const filteredRevenues = useMemo(
-    () => filterRevenuesByPeriod(nonAdminRevenues, periodFilter),
-    [nonAdminRevenues, periodFilter]
-  )
-
-  const filterLabel = TIME_PERIOD_OPTIONS.find(o => o.value === periodFilter)?.label || 'All Time'
+  // Use all-time revenues for top-level cards (no global period filter)
+  const allTimeTotal = sumRevenues(nonAdminRevenues)
 
   const averagePeriodOptions = [
     { label: '1M', value: 1 },
@@ -108,45 +105,23 @@ export default function AdminRevenue() {
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#f43f5e']
 
-  const allTimeTotal = sumRevenues(nonAdminRevenues)
-  const filteredTotal = sumRevenues(filteredRevenues)
-
+  // All-time team leaderboard
   const teamRevenues = teams.map(team => {
-    const teamFilteredRevs = filteredRevenues.filter(r => r.team_id === team.id)
-    const filteredSum = sumRevenues(teamFilteredRevs)
     const allTimeSum = sumRevenues(nonAdminRevenues.filter(r => r.team_id === team.id))
-    return { ...team, filteredTotal: filteredSum, allTimeTotal: allTimeSum }
-  }).sort((a, b) => b.filteredTotal - a.filteredTotal)
+    return { ...team, allTimeTotal: allTimeSum }
+  }).sort((a, b) => b.allTimeTotal - a.allTimeTotal)
 
-  const highestTeam = teamRevenues.length > 0 && teamRevenues[0].filteredTotal > 0 ? teamRevenues[0] : null
+  const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
 
   const topContributors = nonAdminProfiles.map(profile => {
-    const memberFilteredRevs = filteredRevenues.filter(r => r.user_id === profile.id)
-    const filteredSum = sumRevenues(memberFilteredRevs)
     const allTimeSum = sumRevenues(nonAdminRevenues.filter(r => r.user_id === profile.id))
+    return { ...profile, allTimeTotal: allTimeSum }
+  }).filter(m => m.allTimeTotal > 0)
+    .sort((a, b) => b.allTimeTotal - a.allTimeTotal)
 
-    const activeTeamIds = memberships.filter(m => m.user_id === profile.id).map(m => m.team_id)
-    const revTeamIds = nonAdminRevenues.filter(r => r.user_id === profile.id).map(r => r.team_id)
-    const memberTeamIds = [...new Set([...activeTeamIds, ...revTeamIds])]
-    const perTeam = teams
-      .filter(t => memberTeamIds.includes(t.id))
-      .map(t => {
-        const teamFilteredRev = memberFilteredRevs.filter(r => r.team_id === t.id)
-        const teamAllRev = nonAdminRevenues.filter(r => r.user_id === profile.id && r.team_id === t.id)
-        return {
-          teamName: t.name,
-          filteredTotal: sumRevenues(teamFilteredRev),
-          allTimeTotal: sumRevenues(teamAllRev)
-        }
-      })
-      .filter(t => t.allTimeTotal > 0 || t.filteredTotal > 0)
+  const highestMember = topContributors.length > 0 ? topContributors[0] : null
 
-    return { ...profile, filteredTotal: filteredSum, allTimeTotal: allTimeSum, perTeam }
-  }).filter(m => m.allTimeTotal > 0 || m.filteredTotal > 0)
-    .sort((a, b) => b.filteredTotal - a.filteredTotal)
-
-  const highestMember = topContributors.length > 0 && topContributors[0].filteredTotal > 0 ? topContributors[0] : null
-
+  // Period-based month set — for the Expected vs Actual section
   const monthSet = useMemo(() => {
     if (periodFilter === 0) {
       const allMonths = [
@@ -198,50 +173,26 @@ export default function AdminRevenue() {
     return { expected, actual, achievement }
   }, [memberStats])
 
+  const filterLabel = TIME_PERIOD_OPTIONS.find(o => o.value === periodFilter)?.label || 'All Time'
+
   if (loading) return <div style={{ color: 'var(--text-secondary)' }}>Loading analytics...</div>
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ margin: 0 }}>Revenue Analytics</h2>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', flexWrap: 'wrap' }}>
-        {TIME_PERIOD_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => setPeriodFilter(opt.value)}
-            style={{
-              padding: '6px 16px',
-              borderRadius: '20px',
-              border: periodFilter === opt.value ? '1px solid #4ade80' : '1px solid var(--border-color)',
-              background: periodFilter === opt.value ? 'rgba(74, 222, 128, 0.15)' : 'rgba(255,255,255,0.03)',
-              color: periodFilter === opt.value ? '#4ade80' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: periodFilter === opt.value ? '600' : '400',
-              transition: 'all 0.2s'
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
+      {/* ===== TOP SUMMARY CARDS (all-time) ===== */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '24px' }}>
         <div className="card" style={{
           background: 'linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(59, 130, 246, 0.1))',
           border: '1px solid rgba(74, 222, 128, 0.3)'
         }}>
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>{filterLabel} Revenue</h3>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>All Time Revenue</h3>
           <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#4ade80' }}>
-            ${filteredTotal.toFixed(2)}
+            ${allTimeTotal.toFixed(2)}
           </div>
-          {periodFilter !== 0 && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
-              All Time: <span style={{ color: '#e2e8f0', fontWeight: '600' }}>${allTimeTotal.toFixed(2)}</span>
-            </div>
-          )}
         </div>
 
         <div className="card">
@@ -249,12 +200,7 @@ export default function AdminRevenue() {
           {highestTeam ? (
             <div>
               <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff' }}>{highestTeam.name}</div>
-              <div style={{ color: '#60a5fa', fontWeight: 'bold', marginTop: '4px' }}>${highestTeam.filteredTotal.toFixed(2)}</div>
-              {periodFilter !== 0 && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  All Time: ${highestTeam.allTimeTotal.toFixed(2)}
-                </div>
-              )}
+              <div style={{ color: '#60a5fa', fontWeight: 'bold', marginTop: '4px' }}>${highestTeam.allTimeTotal.toFixed(2)}</div>
             </div>
           ) : (
             <div style={{ color: 'var(--text-secondary)' }}>No revenue data</div>
@@ -265,31 +211,12 @@ export default function AdminRevenue() {
           <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Individual Contributor</h3>
           {highestMember ? (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
-                  {highestMember.first_name} {highestMember.last_name}
-                </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#a78bfa' }}>
-                  ${highestMember.filteredTotal.toFixed(2)}
-                </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
+                {highestMember.first_name} {highestMember.last_name}
               </div>
-              {periodFilter !== 0 && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'right' }}>
-                  All Time: ${highestMember.allTimeTotal.toFixed(2)}
-                </div>
-              )}
-              {highestMember.perTeam.length > 0 && (
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px', marginTop: '8px' }}>
-                  {highestMember.perTeam.map(t => (
-                    <div key={t.teamName} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', fontSize: '0.85rem' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>{t.teamName}</span>
-                      <span style={{ fontWeight: '600', color: t.filteredTotal > 0 ? '#4ade80' : 'var(--text-secondary)' }}>
-                        ${t.filteredTotal.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#a78bfa', marginTop: '4px' }}>
+                ${highestMember.allTimeTotal.toFixed(2)}
+              </div>
             </div>
           ) : (
             <div style={{ color: 'var(--text-secondary)' }}>No revenue data</div>
@@ -297,9 +224,12 @@ export default function AdminRevenue() {
         </div>
       </div>
 
+      {/* ===== TEAM MEMBERS EXPECTED VS ACTUAL ===== */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '16px' }}>Team Members Expected vs Actual</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr', gap: '20px', alignItems: 'end', marginBottom: '18px' }}>
+
+        {/* Team selector + period dropdown in the same row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr', gap: '16px', alignItems: 'end', marginBottom: '18px', flexWrap: 'wrap' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Team</label>
             <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="form-control">
@@ -308,15 +238,25 @@ export default function AdminRevenue() {
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Period</label>
+            <select value={periodFilter} onChange={e => setPeriodFilter(Number(e.target.value))} className="form-control">
+              {TIME_PERIOD_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
+        {/* Summary mini-cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <div className="card" style={{ border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Expected</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Expected ({filterLabel})</div>
             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#60a5fa' }}>${summary.expected.toFixed(2)}</div>
           </div>
           <div className="card" style={{ border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.08)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Actual</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Actual ({filterLabel})</div>
             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#4ade80' }}>${summary.actual.toFixed(2)}</div>
           </div>
           <div className="card" style={{ border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }}>
@@ -367,6 +307,7 @@ export default function AdminRevenue() {
         )}
       </div>
 
+      {/* ===== TEAM AVERAGE REVENUE ===== */}
       <div className="card" style={{ marginBottom: '40px', padding: '24px', background: 'var(--card-bg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
@@ -412,7 +353,6 @@ export default function AdminRevenue() {
                overflow: 'hidden'
              }}>
                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: COLORS[idx % COLORS.length] }} />
-
                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '8px', paddingLeft: '8px' }}>
                  {team.teamName}
                </div>
@@ -427,13 +367,14 @@ export default function AdminRevenue() {
         </div>
       </div>
 
+      {/* ===== TEAM LEADERBOARD (all-time) ===== */}
       <div className="card" style={{ marginBottom: '40px' }}>
         <h3 style={{ marginBottom: '20px' }}>Team Leaderboard</h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {teamRevenues.map((team, index) => {
-            const maxRev = highestTeam?.filteredTotal || 1
-            const percentage = Math.max(5, (team.filteredTotal / maxRev) * 100)
+            const maxRev = highestTeam?.allTimeTotal || 1
+            const percentage = Math.max(5, (team.allTimeTotal / maxRev) * 100)
 
             return (
               <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '30px 150px 1fr 100px', alignItems: 'center', gap: '16px' }}>
@@ -454,13 +395,8 @@ export default function AdminRevenue() {
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 'bold', color: '#e2e8f0' }}>
-                    ${team.filteredTotal.toFixed(2)}
+                    ${team.allTimeTotal.toFixed(2)}
                   </div>
-                  {periodFilter !== 0 && (
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      All: ${team.allTimeTotal.toFixed(2)}
-                    </div>
-                  )}
                 </div>
               </div>
             )
