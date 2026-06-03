@@ -66,7 +66,7 @@ export default function AdminLayout({ user }) {
         <div className="admin-sidebar-brand-icon">
           <BarChart2 size={20} strokeWidth={2.5} />
         </div>
-        <span className="admin-sidebar-brand-name">IdealLabs</span>
+        <span className="admin-sidebar-brand-name">iDEALAB</span>
       </div>
 
       {/* ── Navigation ── */}
@@ -136,7 +136,7 @@ export default function AdminLayout({ user }) {
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
-            IdealLabs Admin
+            iDEALAB Admin
           </div>
         </div>
 

@@ -6,6 +6,7 @@ create table public.profiles (
   phone text,
   email text,
   platform_role text default 'user' not null, -- 'admin' or 'user'. We will update this manually in Supabase.
+  is_deactivated boolean default false not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

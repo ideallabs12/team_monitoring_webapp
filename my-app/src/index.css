@@ -607,6 +607,11 @@ a:hover {
   cursor: not-allowed;
 }
 
+.form-control option {
+  background-color: #0f172a;
+  color: #fff;
+}
+
 /* Chrome/Safari calendar picker icon styling */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
@@ -1287,6 +1292,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 .apple-form-control:hover:not(:disabled) {
   border-color: var(--apple-border-strong) !important;
+}
+
+.apple-form-control option {
+  background-color: #161617;
+  color: #f5f5f7;
+}
+
+.admin-profile-grid-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .admin-profile-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }
 
 /* Tab Pill Selectors */

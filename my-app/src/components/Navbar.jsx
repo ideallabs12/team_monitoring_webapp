@@ -67,7 +67,7 @@ export default function Navbar({ user }) {
             WebkitBackgroundClip: 'text', 
             WebkitTextFillColor: 'transparent' 
           }}>
-            IdealLabs
+            iDEALAB
           </span>
         </Link>
         

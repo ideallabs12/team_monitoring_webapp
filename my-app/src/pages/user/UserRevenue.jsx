@@ -228,39 +228,6 @@ export default function UserRevenue({ user, isAdminView }) {
         )}
       </div>
 
-      {/* ===== SUMMARY CARDS ===== */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-
-        {/* All-Time Total */}
-        <div className="apple-card" style={{
-          background: 'linear-gradient(135deg, rgba(48, 213, 200, 0.08), rgba(0, 113, 227, 0.08)) !important',
-          border: '1px solid rgba(48, 213, 200, 0.2) !important',
-          textAlign: 'center',
-          padding: '24px !important'
-        }}>
-          <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>All-Time Revenue</h3>
-          <div style={{ fontSize: '2.4rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
-            ${allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-
-        {/* Last 12 Months */}
-        <div className="apple-card" style={{
-          textAlign: 'center',
-          padding: '24px !important'
-        }}>
-          <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Last 12 Months</h3>
-          <div style={{ fontSize: '2.4rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
-            ${last12Total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-      </div>
-
-      {/* ===== AVERAGE REVENUE CHART ===== */}
-      <div style={{ marginBottom: '32px' }}>
-        <AverageRevenueChart data={averageData} title={isAdminView ? "Average Performance Trend" : "My Average Performance Trend"} />
-      </div>
-
       {/* ===== ADD / EDIT REVENUE FORM ===== */}
       {!isAdminView && (
         <div id="revenue-form" className="apple-card" style={{
@@ -466,6 +433,38 @@ export default function UserRevenue({ user, isAdminView }) {
           )}
         </div>
       )}
+
+      {/* ===== SUMMARY CARDS ===== */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+
+        {/* All-Time Total */}
+        <div className="apple-card" style={{
+          background: 'linear-gradient(135deg, rgba(48, 213, 200, 0.08), rgba(0, 113, 227, 0.08)) !important',
+          border: '1px solid rgba(48, 213, 200, 0.2) !important',
+          textAlign: 'center',
+          padding: '24px !important'
+        }}>
+          <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>All-Time Revenue</h3>
+          <div style={{ fontSize: '2.4rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
+            ${allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        {/* Last 12 Months */}
+        <div className="apple-card" style={{
+          textAlign: 'center',
+          padding: '24px !important'
+        }}>
+          <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Last 12 Months</h3>
+          <div style={{ fontSize: '2.4rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
+            ${last12Total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <AverageRevenueChart data={averageData} title={isAdminView ? "Average Performance Trend" : "My Average Performance Trend"} />
+      </div>
 
       {/* ===== MY TEAMS BREAKDOWN ===== */}
       <div className="apple-card" style={{ marginBottom: '32px' }}>

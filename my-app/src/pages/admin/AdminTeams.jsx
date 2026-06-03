@@ -8,10 +8,8 @@ import {
   formatRevenueMonth,
   toRevenueMonthString
 } from '../../utils/revenueUtils'
-import UserHome from '../user/UserHome'
 import UserRevenue from '../user/UserRevenue'
-
-
+import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText } from 'lucide-react'
 
 export default function AdminTeams() {
   const [loading, setLoading] = useState(true)
@@ -19,18 +17,20 @@ export default function AdminTeams() {
   const [memberships, setMemberships] = useState([])
   const [profiles, setProfiles] = useState([])
   const [revenues, setRevenues] = useState([])
-  const [selectedTeamId, setSelectedTeamId] = useState('all')
-  const [viewingProfileUser, setViewingProfileUser] = useState(null)
+  
+  // Navigation & Detail States
+  const [activeTeam, setActiveTeam] = useState(null) // selected team object for detail view
+  const [viewingProfileUser, setViewingProfileUser] = useState(null) // selected user profile object for profile view
+
+  // User Profile DIS history state
+  const [disReports, setDisReports] = useState([])
+  const [loadingDis, setLoadingDis] = useState(false)
 
   // Month picker for revenue column – default to current month
   const now = new Date()
   const [selectedRevenueMonth, setSelectedRevenueMonth] = useState(
     toRevenueMonthString(now.getFullYear(), now.getMonth())
   )
-
-  useEffect(() => {
-    setViewingProfileUser(null)
-  }, [selectedTeamId])
 
   useEffect(() => {
     async function loadData() {
@@ -51,298 +51,448 @@ export default function AdminTeams() {
     loadData()
   }, [])
 
+  // Load DIS Reports for user profile dynamically
+  useEffect(() => {
+    if (!viewingProfileUser) {
+      setDisReports([])
+      return
+    }
+
+    async function fetchUserDis() {
+      setLoadingDis(true)
+      try {
+        const { data, error } = await supabase
+          .from('dis_reports')
+          .select('*')
+          .eq('user_id', viewingProfileUser.id)
+          .order('report_date', { ascending: false })
+          .limit(6)
+        if (data) setDisReports(data)
+      } catch (err) {
+        console.error("Error loading user DIS reports:", err)
+      } finally {
+        setLoadingDis(false)
+      }
+    }
+    fetchUserDis()
+  }, [viewingProfileUser])
+
   // Build list of months available for picker (last 24 months)
   const monthOptions = useMemo(() => getLastNMonths(24), [])
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)' }}>Loading teams...</div>
+  // Find teams this viewing member belongs to
+  const memberTeams = useMemo(() => {
+    if (!viewingProfileUser) return []
+    return memberships
+      .filter(m => m.user_id === viewingProfileUser.id)
+      .map(m => {
+        const t = teams.find(team => team.id === m.team_id)
+        return {
+          name: t ? t.name : 'Unknown Team',
+          role: m.team_role
+        }
+      })
+  }, [viewingProfileUser, memberships, teams])
 
+  // Current Month String
+  const currentMonthStr = useMemo(() => {
+    const d = new Date()
+    return toRevenueMonthString(d.getFullYear(), d.getMonth())
+  }, [])
+
+  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading teams ledger...</div>
+
+  // ==========================================
+  // VIEW 1: MEMBER PROFILE VIEW (2-column layout)
+  // ==========================================
   if (viewingProfileUser) {
     return (
-      <div style={{ animation: 'fadeIn 0.2s ease-in-out', paddingBottom: '60px' }}>
+      <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)', paddingBottom: '60px' }}>
+        {/* Back navigation left top hero section */}
         <button
           onClick={() => setViewingProfileUser(null)}
           style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid var(--border-color)',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid var(--apple-border)',
             color: '#fff',
-            padding: '10px 20px',
-            borderRadius: '8px',
+            padding: '10px 18px',
+            borderRadius: '12px',
             cursor: 'pointer',
-            fontSize: '0.95rem',
+            fontSize: '0.88rem',
             fontWeight: '600',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            marginBottom: '30px',
-            transition: 'all 0.2s',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            marginBottom: '28px',
+            transition: 'all 0.25s var(--apple-ease)'
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          className="apple-btn-secondary"
         >
-          ← Back to Manage Teams
+          <ArrowLeft size={16} /> Back to Members
         </button>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '60px' }}>
-          <UserHome user={viewingProfileUser} isAdminView={true} />
+
+        {/* Full-width stacked rows: Profile → Latest DIS → Revenue */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
           
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', width: '100%' }}></div>
-          
-          <UserRevenue user={viewingProfileUser} isAdminView={true} />
+          {/* ROW 1: My Profile Card */}
+          <div className="apple-card" style={{ padding: '24px !important' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+              <div style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#fff'
+              }}>
+                {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', fontWeight: '700' }}>
+                  {viewingProfileUser.first_name} {viewingProfileUser.last_name}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
+                  {viewingProfileUser.platform_role || 'Member'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                  <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{viewingProfileUser.email}</div>
+              </div>
+
+              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                  <Phone size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Phone Number
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{viewingProfileUser.phone || '—'}</div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '500' }}>
+                  Team Assignments
+                </div>
+                {memberTeams.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {memberTeams.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className={t.role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
+                        style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                      >
+                        {t.name} ({t.role})
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
+                    No teams assigned
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 2: Latest DIS Reports */}
+          <div className="apple-card" style={{ padding: '24px !important' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <FileText size={18} style={{ color: 'var(--apple-accent-orange)' }} />
+              <h3 className="apple-title-small" style={{ margin: 0 }}>Latest Daily DIS</h3>
+            </div>
+
+            {loadingDis ? (
+              <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
+            ) : disReports.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                {disReports.map(rep => (
+                  <div
+                    key={rep.id}
+                    style={{
+                      padding: '12px',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid var(--apple-border)',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
+                      <span style={{ color: '#fff' }}>
+                        {new Date(rep.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                      </span>
+                      <span style={{ color: 'var(--apple-accent-green)' }}>
+                        + {rep.positive_leads} Leads
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
+                      <span>Exp Revenue:</span>
+                      <span style={{ color: '#fff', fontWeight: '500' }}>${Number(rep.expected_revenue).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.85rem' }}>
+                No DIS entries submitted yet.
+              </p>
+            )}
+          </div>
+
+          {/* ROW 3: Revenue (full width) */}
+          <div>
+            <UserRevenue user={viewingProfileUser} isAdminView={true} />
+          </div>
+
         </div>
       </div>
     )
   }
 
-  // ---------- Compute members to display ----------
-
-  const isAllTeams = selectedTeamId === 'all'
-
-  // Get all non-admin profiles
-  const allNonAdminProfiles = profiles.filter(p => p.platform_role !== 'admin')
-  const allNonAdminIds = new Set(allNonAdminProfiles.map(p => p.id))
-
-  let combinedTeamUsers = []
-
-  if (isAllTeams) {
-    // Show every non-admin profile across all teams
-    combinedTeamUsers = allNonAdminProfiles.map(profile => {
-      const activeMem = memberships.find(m => m.user_id === profile.id)
-      const team = activeMem ? teams.find(t => t.id === activeMem.team_id) : null
-      return {
-        userId: profile.id,
-        profile,
-        activeMem,
-        isFormer: !activeMem,
-        role: activeMem ? activeMem.team_role : 'no team',
-        teamName: team ? team.name : '—',
-        keyId: activeMem ? activeMem.id : `nteam-${profile.id}`
-      }
-    }).sort((a, b) => {
-      const getPriority = (u) => {
-        if (u.isFormer) return 3
-        if (u.role === 'lead') return 1
-        return 2
-      }
-      return getPriority(a) - getPriority(b)
-    })
-  } else {
-    const teamObj = teams.find(t => t.id === selectedTeamId)
-    if (teamObj) {
-      const teamMemberships = memberships.filter(m => m.team_id === selectedTeamId)
-      const nonAdminMemberships = teamMemberships.filter(m => {
+  // ==========================================
+  // VIEW 2: TEAM MEMBERS DETAILS VIEW
+  // ==========================================
+  if (activeTeam) {
+    const teamMemberships = memberships.filter(m => m.team_id === activeTeam.id)
+    const teamProfiles = teamMemberships
+      .map(m => {
         const profile = profiles.find(p => p.id === m.user_id)
-        return profile && profile.platform_role !== 'admin'
-      })
-
-      const teamRevenues = revenues.filter(r => r.team_id === selectedTeamId && allNonAdminIds.has(r.user_id))
-      const historicalUserIds = teamRevenues.map(r => r.user_id)
-      const combinedUserIds = [...new Set([
-        ...nonAdminMemberships.map(m => m.user_id),
-        ...historicalUserIds
-      ])]
-
-      combinedTeamUsers = combinedUserIds.map(userId => {
-        const profile = profiles.find(p => p.id === userId)
-        const activeMem = nonAdminMemberships.find(m => m.user_id === userId)
-        const team = teams.find(t => t.id === selectedTeamId)
         return {
-          userId,
           profile,
-          activeMem,
-          isFormer: !activeMem,
-          role: activeMem ? activeMem.team_role : 'former member',
-          teamName: team ? team.name : '—',
-          keyId: activeMem ? activeMem.id : `former-${userId}`
+          role: m.team_role,
+          joinedAt: m.joined_at,
+          membershipId: m.id
         }
-      }).filter(u => u.profile !== undefined)
-      .sort((a, b) => {
-        const getPriority = (u) => {
-          if (u.isFormer) return 3
-          if (u.role === 'lead') return 1
-          return 2
-        }
-        return getPriority(a) - getPriority(b)
       })
-    }
-  }
+      .filter(m => m.profile && m.profile.platform_role !== 'admin')
+      .sort((a, b) => (a.role === 'lead' ? -1 : 1))
 
-  return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <h2 style={{ margin: 0 }}>Manage Teams</h2>
-        <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '0.9rem' }}>
-          Total Teams: {teams.length}
-        </span>
-      </div>
+    return (
+      <div style={{ animation: 'fadeIn 0.25s var(--apple-ease)' }}>
+        {/* Back navigation left top hero section */}
+        <button
+          onClick={() => setActiveTeam(null)}
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid var(--apple-border)',
+            color: '#fff',
+            padding: '10px 18px',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            fontSize: '0.88rem',
+            fontWeight: '600',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '28px',
+            transition: 'all 0.25s var(--apple-ease)'
+          }}
+          className="apple-btn-secondary"
+        >
+          <ArrowLeft size={16} /> Back to Teams
+        </button>
 
-      {/* Filter controls */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '28px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '500' }}>Team</label>
-          <select
-            value={selectedTeamId}
-            onChange={e => { setSelectedTeamId(e.target.value); setViewingProfileUser(null) }}
-            className="form-control"
-          >
-            <option value="all">All Teams</option>
-            {teams.map(team => (
-              <option key={team.id} value={team.id}>{team.name}</option>
-            ))}
-          </select>
+        <div style={{ marginBottom: '32px' }}>
+          <span className="apple-kicker">Team Roster</span>
+          <h2 className="apple-title-medium" style={{ textTransform: 'capitalize' }}>
+            {activeTeam.name} Members
+          </h2>
+          <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', margin: '4px 0 0 0' }}>
+            Review role hierarchy and revenue contributions for this team roster.
+          </p>
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '500' }}>Revenue Month</label>
-          <select
-            value={selectedRevenueMonth}
-            onChange={e => setSelectedRevenueMonth(e.target.value)}
-            className="form-control"
-          >
-            {monthOptions.map(m => (
-              <option key={m} value={m}>{formatRevenueMonth(m)}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Full-width members table */}
-      <div className="card" style={{ padding: '24px' }}>
-        {/* Table header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {isAllTeams
-              ? `All Members (${combinedTeamUsers.length})`
-              : `${teams.find(t => t.id === selectedTeamId)?.name || ''} — Members (${combinedTeamUsers.length})`}
-          </h4>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Revenue for: <strong style={{ color: '#4ade80' }}>{formatRevenueMonth(selectedRevenueMonth)}</strong>
-          </span>
+        {/* Month Filter */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', alignItems: 'center' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Revenue Month
+            </label>
+            <select
+              value={selectedRevenueMonth}
+              onChange={e => setSelectedRevenueMonth(e.target.value)}
+              className="apple-form-control"
+              style={{ padding: '8px 16px !important', fontSize: '0.88rem !important', width: 'auto', borderRadius: '10px !important' }}
+            >
+              {monthOptions.map(m => (
+                <option key={m} value={m}>{formatRevenueMonth(m)}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {combinedTeamUsers.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Table Header Row */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isAllTeams
-                ? 'minmax(160px, 1fr) 130px 90px 120px 100px'
-                : 'minmax(160px, 1fr) 90px 120px 100px',
-              gap: '12px',
-              padding: '0 0 12px 0',
-              fontSize: '0.8rem',
-              color: 'var(--text-secondary)',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              <div>Member</div>
-              {isAllTeams && <div style={{ textAlign: 'center' }}>Team</div>}
-              <div style={{ textAlign: 'center' }}>Role</div>
-              <div style={{ textAlign: 'right' }}>{formatRevenueMonth(selectedRevenueMonth)}</div>
-              <div style={{ textAlign: 'center' }}>Action</div>
-            </div>
+        {/* Member list details */}
+        <div className="apple-card" style={{ padding: '24px !important' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>
+              Roster Members ({teamProfiles.length})
+            </h4>
+            <span style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)' }}>
+              Audit month: <strong style={{ color: 'var(--apple-accent-green)' }}>{formatRevenueMonth(selectedRevenueMonth)}</strong>
+            </span>
+          </div>
 
-            {/* Member Rows */}
-            {combinedTeamUsers.map(u => {
-              const { profile, isFormer, role, teamName, keyId, userId } = u
+          {teamProfiles.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              
+              {/* Table Header Row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
+                gap: '12px',
+                padding: '0 0 12px 0',
+                fontSize: '0.78rem',
+                color: 'var(--apple-text-secondary)',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                borderBottom: '1px solid var(--apple-border)'
+              }}>
+                <div>Member Details</div>
+                <div style={{ textAlign: 'center' }}>Role</div>
+                <div style={{ textAlign: 'right' }}>Revenue</div>
+                <div style={{ textAlign: 'center' }}>Action</div>
+              </div>
 
-              // Revenue for the selected month
-              let monthRevenue = 0
-              if (isAllTeams) {
-                // Sum across all teams for this user in the selected month
-                monthRevenue = revenues
-                  .filter(r => r.user_id === userId && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
+              {/* Rows */}
+              {teamProfiles.map(item => {
+                const { profile, role, membershipId } = item
+                
+                // Get member revenue for the selected team & selected month
+                const monthRevenue = revenues
+                  .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0)
-              } else {
-                monthRevenue = revenues
-                  .filter(r => r.user_id === userId && r.team_id === selectedTeamId && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
-                  .reduce((sum, r) => sum + Number(r.amount || 0), 0)
-              }
 
-              return (
-                <div
-                  key={keyId}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: isAllTeams
-                      ? 'minmax(160px, 1fr) 130px 90px 120px 100px'
-                      : 'minmax(160px, 1fr) 90px 120px 100px',
-                    gap: '12px',
-                    alignItems: 'center',
-                    padding: '14px 0',
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    fontSize: '0.95rem'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: '500', color: '#fff' }}>
-                      {profile.first_name} {profile.last_name}
+                return (
+                  <div
+                    key={membershipId}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
+                      gap: '12px',
+                      alignItems: 'center',
+                      padding: '14px 0',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      fontSize: '0.92rem'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#fff' }}>{profile.first_name} {profile.last_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{profile.email}</div>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{profile.email}</div>
-                  </div>
-                  {isAllTeams && (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        textTransform: 'capitalize',
-                        background: 'rgba(96,165,250,0.1)',
-                        border: '1px solid rgba(96,165,250,0.2)',
-                        color: '#60a5fa',
-                        display: 'inline-block'
-                      }}>
-                        {teamName}
+                    
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <span className={role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'} style={{ padding: '2px 8px', fontSize: '0.68rem', textTransform: 'capitalize' }}>
+                        {role}
                       </span>
                     </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      fontWeight: '600',
-                      textTransform: 'capitalize',
-                      background: isFormer ? 'rgba(239, 68, 68, 0.1)' : role === 'lead' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                      border: isFormer ? '1px solid rgba(239, 68, 68, 0.2)' : role === 'lead' ? '1px solid rgba(234, 179, 8, 0.2)' : '1px solid rgba(255, 255, 255, 0.08)',
-                      color: isFormer ? '#f87171' : role === 'lead' ? '#eab308' : '#94a3b8',
-                      display: 'inline-block'
-                    }}>
-                      {isFormer ? 'Former Member' : role}
-                    </span>
+
+                    <div style={{ textAlign: 'right', fontWeight: '700', color: monthRevenue > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }}>
+                      ${monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <button
+                        onClick={() => setViewingProfileUser(profile)}
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '6px 12px !important', fontSize: '0.78rem', borderRadius: '10px !important' }}
+                      >
+                        Profile
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right', fontWeight: 'bold', color: monthRevenue > 0 ? '#4ade80' : 'var(--text-secondary)' }}>
-                    ${monthRevenue.toFixed(2)}
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <button
-                      onClick={() => setViewingProfileUser(profile)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(96, 165, 250, 0.3)',
-                        background: 'rgba(96, 165, 250, 0.1)',
-                        color: '#60a5fa',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                        fontWeight: '500',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      View Profile
-                    </button>
+                )
+              })}
+
+            </div>
+          ) : (
+            <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>
+              No roster members in this team.
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ==========================================
+  // VIEW 3: TEAMS CARD SUMMARY VIEW (Default view)
+  // ==========================================
+  return (
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }}>
+        <div className="apple-kicker">Platform Organization</div>
+        <h1 className="apple-title-large">Manage Teams</h1>
+        <p className="apple-lead">
+          View organizational team cards, analyze member sizes, and track current month contributions.
+        </p>
+      </div>
+
+      {/* Grid of Team Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', width: '100%' }}>
+        {teams.length > 0 ? (
+          teams.map(team => {
+            // Count total members (excluding platform admins)
+            const teamMemberCount = memberships.filter(m => {
+              if (m.team_id !== team.id) return false
+              const profile = profiles.find(p => p.id === m.user_id)
+              return profile && profile.platform_role !== 'admin'
+            }).length
+
+            // Sum this month's revenue
+            const teamThisMonthRevenues = revenues.filter(
+              r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr
+            )
+            const teamThisMonthTotal = teamThisMonthRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+
+            return (
+              <div
+                key={team.id}
+                onClick={() => setActiveTeam(team)}
+                className="apple-card"
+                style={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  background: 'var(--apple-card) !important',
+                  padding: '24px !important',
+                  position: 'relative'
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', fontWeight: '700', textTransform: 'capitalize' }}>
+                    {team.name}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
+                    <Users size={14} />
+                    <span>{teamMemberCount} {teamMemberCount === 1 ? 'member' : 'members'}</span>
                   </div>
                 </div>
-              )
-            })}
-          </div>
+
+                <div style={{ borderTop: '1px solid var(--apple-border)', paddingTop: '14px', marginTop: 'auto' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                    <TrendingUp size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> This Month Revenue
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '800', color: teamThisMonthTotal > 0 ? 'var(--apple-accent-green)' : '#fff' }}>
+                    ${teamThisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            )
+          })
         ) : (
-          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
-            {teams.length === 0 ? 'No teams exist.' : 'No non-admin members in this team yet.'}
-          </p>
+          <div className="apple-card" style={{ textAlign: 'center', padding: '40px !important', gridColumn: '1 / -1' }}>
+            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '12px' }}>👥</span>
+            <p style={{ color: 'var(--apple-text-secondary)', margin: 0 }}>No teams found in the database. Add teams in Settings.</p>
+          </div>
         )}
       </div>
     </div>
