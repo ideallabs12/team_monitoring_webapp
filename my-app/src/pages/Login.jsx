@@ -65,7 +65,7 @@ export default function Login({ user, isAdmin }) {
 
         <div>
           <p className="auth-kicker">Internal Operations Portal</p>
-          <h1>Ideallabs Team Monitoring</h1>
+          <h1>iDEALABS Team Monitoring</h1>
           <p className="auth-copy">
             One workspace for admins, team leads, and employees to track revenue, team activity,
             daily reporting, and operational performance.
