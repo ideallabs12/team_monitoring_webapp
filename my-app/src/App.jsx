@@ -213,16 +213,26 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login user={user} isAdmin={isAdmin} />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Login/Auth Routes - only accessible when NOT logged in */}
+        <Route 
+          path="/" 
+          element={
+            user ? (isAdmin ? <Navigate to="/admin/home" replace /> : <Navigate to={hasProfile ? "/home" : "/complete-profile"} replace />) 
+            : <Login user={user} isAdmin={isAdmin} />
+          } 
+        />
+        <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <ForgotPassword />} />
+        <Route path="/reset-password" element={user ? <Navigate to="/" replace /> : <ResetPassword />} />
 
+        {/* Complete Profile - only for logged-in users without complete profile */}
         <Route 
           path="/complete-profile" 
           element={
-            user && !isAdmin
-              ? (hasProfile ? <Navigate to="/home" replace /> : <CompleteProfile user={user} onComplete={handleProfileCompleted} />)
-              : <Navigate to="/" replace />
+            !user ? <Navigate to="/" replace /> 
+            : isAdmin ? <Navigate to="/admin/home" replace /> 
+            : hasProfile === null ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
+            : hasProfile ? <Navigate to="/home" replace /> 
+            : <CompleteProfile user={user} onComplete={handleProfileCompleted} />
           } 
         />
 
@@ -278,7 +288,11 @@ function App() {
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
-        <Route path="*" element={<Navigate to={user ? (isAdmin ? "/admin/home" : (hasProfile ? "/home" : "/complete-profile")) : "/"} replace />} />
+        <Route path="*" element={
+          loading || (user && hasProfile === null) 
+            ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
+            : <Navigate to={user ? (isAdmin ? "/admin/home" : (hasProfile ? "/home" : "/complete-profile")) : "/"} replace />
+        } />
       </Routes>
     </Router>
   )
