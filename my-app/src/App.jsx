@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import { SpeedInsights } from "@vercel/speed-insights/react"
@@ -26,6 +26,9 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 
+// Events that should NOT trigger a full re-check
+const SKIP_EVENTS = ['TOKEN_REFRESHED', 'MFA_CHALLENGE_VERIFIED']
+
 function App() {
   const [user, setUser] = useState(null)
   const [hasProfile, setHasProfile] = useState(null)
@@ -33,36 +36,64 @@ function App() {
   const [isDeactivated, setIsDeactivated] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // Prevent duplicate profile checks
+  const profileFetchedFor = useRef(null)
+
   useEffect(() => {
+    // On mount — restore session from localStorage, no loading flash
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error("Error getting session:", error)
         setLoading(false)
         return
       }
-      handleSession(session)
+      handleSession(session, 'INITIAL_SESSION')
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleSession(session)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Skip events that don't need a full profile re-check
+      if (SKIP_EVENTS.includes(event)) return
+
+      // If same user is already loaded, skip re-check
+      if (
+        event === 'SIGNED_IN' &&
+        session?.user?.id &&
+        profileFetchedFor.current === session.user.id
+      ) return
+
+      handleSession(session, event)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleSession = async (session) => {
+  const handleSession = async (session, event) => {
     try {
-      setLoading(true)
       const currentUser = session?.user ?? null
-      setUser(currentUser)
-      
-      if (currentUser) {
-        setHasProfile(null)
-        await checkProfile(currentUser.id)
-      } else {
+
+      // User signed out
+      if (!currentUser) {
+        setUser(null)
         setHasProfile(false)
+        setIsAdmin(false)
+        setIsDeactivated(false)
+        profileFetchedFor.current = null
         setLoading(false)
+        return
       }
+
+      // Same user already checked — don't re-fetch, just ensure loading is off
+      if (profileFetchedFor.current === currentUser.id) {
+        setLoading(false)
+        return
+      }
+
+      // New user — do full check
+      setLoading(true)
+      setUser(currentUser)
+      setHasProfile(null)
+      await checkProfile(currentUser.id)
+
     } catch (err) {
       console.error("Session handler error:", err)
       setLoading(false)
@@ -72,16 +103,15 @@ function App() {
   const checkProfile = async (userId) => {
     try {
       let data = null
-      
-      // Try to select including is_deactivated
+
       const res = await supabase
         .from('profiles')
         .select('first_name, profile_completed, platform_role, is_deactivated')
         .eq('id', userId)
         .maybeSingle()
-      
+
       if (res.error) {
-        // Fallback in case is_deactivated column is not migrated yet
+        // Fallback if is_deactivated column not migrated yet
         const fallbackRes = await supabase
           .from('profiles')
           .select('first_name, profile_completed, platform_role')
@@ -99,7 +129,7 @@ function App() {
         } else {
           setIsDeactivated(false)
         }
-        
+
         if (data.platform_role === 'admin') {
           setIsAdmin(true)
           setHasProfile(true)
@@ -109,7 +139,7 @@ function App() {
           setHasProfile(completed)
         }
       } else {
-        // No profile row found — check auth user_metadata as fallback
+        // No profile row — check auth metadata as fallback
         const { data: { user: authUser } } = await supabase.auth.getUser()
         if (authUser?.user_metadata?.profile_completed === true) {
           setHasProfile(true)
@@ -119,6 +149,10 @@ function App() {
         setIsDeactivated(false)
         setIsAdmin(false)
       }
+
+      // Mark this user as fully loaded — prevents re-fetch on tab switch
+      profileFetchedFor.current = userId
+
     } catch (err) {
       console.error("Profile check error:", err)
       setHasProfile(false)
@@ -199,6 +233,7 @@ function App() {
               await supabase.auth.signOut()
               setUser(null)
               setIsDeactivated(false)
+              profileFetchedFor.current = null
             }}
             className="apple-btn apple-btn-primary"
             style={{ width: '100%', padding: '14px', borderRadius: '14px' }}
@@ -212,71 +247,43 @@ function App() {
 
   return (
     <Router>
+      <SpeedInsights />
       <Routes>
-        {/* Login/Auth Routes - only accessible when NOT logged in */}
-        <Route 
-          path="/" 
+        {/* Login/Auth Routes */}
+        <Route
+          path="/"
           element={
-            user ? (isAdmin ? <Navigate to="/admin/home" replace /> : <Navigate to={hasProfile ? "/home" : "/complete-profile"} replace />) 
-            : <Login user={user} isAdmin={isAdmin} />
-          } 
+            user
+              ? (isAdmin ? <Navigate to="/admin/home" replace /> : <Navigate to={hasProfile ? "/home" : "/complete-profile"} replace />)
+              : <Login user={user} isAdmin={isAdmin} />
+          }
         />
         <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <ForgotPassword />} />
-        <Route path="/reset-password" element={user ? <Navigate to="/" replace /> : <ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Complete Profile - only for logged-in users without complete profile */}
-        <Route 
-          path="/complete-profile" 
+        {/* Complete Profile */}
+        <Route
+          path="/complete-profile"
           element={
-            !user ? <Navigate to="/" replace /> 
-            : isAdmin ? <Navigate to="/admin/home" replace /> 
-            : hasProfile === null ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
-            : hasProfile ? <Navigate to="/home" replace /> 
-            : <CompleteProfile user={user} onComplete={handleProfileCompleted} />
-          } 
+            !user ? <Navigate to="/" replace />
+              : isAdmin ? <Navigate to="/admin/home" replace />
+                : hasProfile === null ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
+                  : hasProfile ? <Navigate to="/home" replace />
+                    : <CompleteProfile user={user} onComplete={handleProfileCompleted} />
+          }
         />
 
         {/* Regular User Routes */}
         <Route element={<Layout user={user} />}>
-          <Route 
-            path="/home" 
-            element={
-              hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />
-            } 
-          />
-          <Route 
-            path="/team" 
-            element={
-              hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />
-            } 
-          />
-          <Route 
-            path="/revenue" 
-            element={
-              hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />
-            } 
-          />
-          <Route 
-            path="/dis" 
-            element={
-              hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />
-            } 
-          />
+          <Route path="/home" element={hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
-        {/* Admin Routes - Bypasses standard Layout and uses AdminLayout exclusively */}
-        <Route 
-          path="/admin" 
-          element={
-            isAdmin ? <AdminLayout user={user} /> : <Navigate to="/" replace />
-          }
-        >
+        {/* Admin Routes */}
+        <Route path="/admin" element={isAdmin ? <AdminLayout user={user} /> : <Navigate to="/" replace />}>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<AdminHome />} />
           <Route path="teams" element={<AdminTeams />} />
@@ -289,7 +296,7 @@ function App() {
         </Route>
 
         <Route path="*" element={
-          loading || (user && hasProfile === null) 
+          loading || (user && hasProfile === null)
             ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
             : <Navigate to={user ? (isAdmin ? "/admin/home" : (hasProfile ? "/home" : "/complete-profile")) : "/"} replace />
         } />
