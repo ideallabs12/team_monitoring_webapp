@@ -6,7 +6,6 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [teams, setTeams] = useState([])
-  const [memberships, setMemberships] = useState([])
   const [revenues, setRevenues] = useState([])
   const [disReports, setDisReports] = useState([])
 
@@ -21,26 +20,22 @@ export default function AdminUsers() {
 
   // Team Assignment Form inside Modal
   const [newTeamId, setNewTeamId] = useState('')
-  const [newTeamRole, setNewTeamRole] = useState('member')
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const [profilesRes, teamsRes, membershipsRes, revRes, disRes] = await Promise.all([
+      const [profilesRes, teamsRes, revRes, disRes] = await Promise.all([
         supabase.from('profiles').select('*').order('first_name', { ascending: true }),
         supabase.from('teams').select('*').order('name', { ascending: true }),
-        supabase.from('team_members').select('*'),
         supabase.from('monthly_revenues').select('*'),
         supabase.from('dis_reports').select('*')
       ])
 
       if (profilesRes.error) throw profilesRes.error
       if (teamsRes.error) throw teamsRes.error
-      if (membershipsRes.error) throw membershipsRes.error
 
       setUsers(profilesRes.data || [])
       setTeams(teamsRes.data || [])
-      setMemberships(membershipsRes.data || [])
       setRevenues(revRes.data || [])
       setDisReports(disRes.data || [])
     } catch (err) {
@@ -63,26 +58,21 @@ export default function AdminUsers() {
       const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase()
       const email = (user.email || '').toLowerCase()
       
-      const userMems = memberships.filter(m => m.user_id === user.id)
-      const userTeamNames = userMems.map(m => {
-        const t = teams.find(team => team.id === m.team_id)
-        return t ? t.name.toLowerCase() : ''
-      })
+      const userTeam = user.team_id ? teams.find(t => t.id === user.team_id)?.name.toLowerCase() : ''
 
       const query = searchQuery.toLowerCase()
       return (
         fullName.includes(query) ||
         email.includes(query) ||
-        userTeamNames.some(teamName => teamName.includes(query))
+        userTeam.includes(query)
       )
     })
-  }, [nonAdminUsers, teams, memberships, searchQuery])
+  }, [nonAdminUsers, teams, searchQuery])
 
   // Open Modal Handler
   const handleOpenModal = (user) => {
     setSelectedUser(user)
-    setNewTeamId('')
-    setNewTeamRole('member')
+    setNewTeamId(user.team_id || '')
     setModalError('')
     setModalSuccess('')
   }
@@ -113,6 +103,33 @@ export default function AdminUsers() {
     } catch (err) {
       console.error(err)
       setModalError(err.message || 'Failed to update platform role.')
+    } finally {
+      setModalSaving(false)
+    }
+  }
+
+  // Toggle Access Flags
+  const handleToggleAccess = async (userId, field, currentStatus) => {
+    setModalSaving(true)
+    setModalError('')
+    setModalSuccess('')
+    const nextStatus = !currentStatus
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [field]: nextStatus })
+        .eq('id', userId)
+
+      if (error) throw error
+
+      setModalSuccess(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : 'DIS Reporting'} to ${nextStatus ? 'ON' : 'OFF'}`)
+      
+      // Update local state
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: nextStatus } : u))
+      setSelectedUser(prev => prev ? { ...prev, [field]: nextStatus } : null)
+    } catch (err) {
+      console.error(err)
+      setModalError(err.message || 'Failed to update access status.')
     } finally {
       setModalSaving(false)
     }
@@ -165,65 +182,55 @@ export default function AdminUsers() {
     }
   }
 
-  // Add User to a Team
-  const handleAddToTeam = async (e) => {
+  // Update User's Team Assignment
+  const handleUpdateTeam = async (e) => {
     e.preventDefault()
-    if (!selectedUser || !newTeamId) return
+    if (!selectedUser) return
 
     setModalSaving(true)
     setModalError('')
     setModalSuccess('')
 
     try {
-      // Limit check (max 2 teams per user)
-      const userMems = memberships.filter(m => m.user_id === selectedUser.id)
-      if (userMems.length >= 2) {
-        throw new Error('Limit exceeded: A user cannot belong to more than 2 teams.')
-      }
-
       const { error } = await supabase
-        .from('team_members')
-        .insert({
-          user_id: selectedUser.id,
-          team_id: newTeamId,
-          team_role: newTeamRole
-        })
+        .from('profiles')
+        .update({ team_id: newTeamId || null })
+        .eq('id', selectedUser.id)
 
       if (error) throw error
 
-      setModalSuccess('Added to team successfully!')
-      setNewTeamId('')
+      setModalSuccess('Team assignment updated successfully!')
       
-      // Reload memberships
-      const { data: newMems } = await supabase.from('team_members').select('*')
-      setMemberships(newMems || [])
+      // Update local state
+      setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, team_id: newTeamId || null } : u))
+      setSelectedUser(prev => prev ? { ...prev, team_id: newTeamId || null } : null)
     } catch (err) {
       console.error(err)
-      setModalError(err.message || 'Failed to add user to team.')
+      setModalError(err.message || 'Failed to update team assignment.')
     } finally {
       setModalSaving(false)
     }
   }
 
-  // Remove User from a Team
-  const handleRemoveFromTeam = async (userId, teamId) => {
+  // Remove User from Team
+  const handleRemoveFromTeam = async () => {
     setModalSaving(true)
     setModalError('')
     setModalSuccess('')
     try {
       const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('user_id', userId)
-        .eq('team_id', teamId)
+        .from('profiles')
+        .update({ team_id: null })
+        .eq('id', selectedUser.id)
 
       if (error) throw error
 
-      setModalSuccess('Removed from team successfully!')
+      setModalSuccess('User removed from team successfully!')
+      setNewTeamId('')
       
-      // Reload memberships
-      const { data: newMems } = await supabase.from('team_members').select('*')
-      setMemberships(newMems || [])
+      // Update local state
+      setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, team_id: null } : u))
+      setSelectedUser(prev => prev ? { ...prev, team_id: null } : null)
     } catch (err) {
       console.error(err)
       setModalError(err.message || 'Failed to remove user from team.')
@@ -262,22 +269,21 @@ export default function AdminUsers() {
       })
     }
 
-    // 3. Team memberships Log
-    const userMems = memberships.filter(m => m.user_id === selectedUser.id)
-    for (const m of userMems) {
-      const team = teams.find(t => t.id === m.team_id)
+    // 3. Team assignment Log
+    if (selectedUser.team_id) {
+      const team = teams.find(t => t.id === selectedUser.team_id)
       activities.push({
-        id: `team-${m.id}`,
+        id: `team-assigned`,
         type: 'team',
-        date: new Date(m.joined_at || selectedUser.created_at),
-        description: `Assigned to team "${team ? team.name : 'Unknown'}" as "${m.team_role}"`,
+        date: new Date(selectedUser.created_at),
+        description: `Assigned to team "${team ? team.name : 'Unknown'}"`,
         icon: '👥'
       })
     }
 
     // Sort by date descending
     return activities.sort((a, b) => b.date - a.date)
-  }, [selectedUser, revenues, disReports, memberships, teams])
+  }, [selectedUser, revenues, disReports, teams])
 
   if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading registered users...</div>
 
@@ -339,7 +345,6 @@ export default function AdminUsers() {
               </thead>
               <tbody>
                 {filteredUsers.map(user => {
-                  const userMems = memberships.filter(m => m.user_id === user.id)
                   const isDeactivated = !!user.is_deactivated
 
                   return (
@@ -365,28 +370,20 @@ export default function AdminUsers() {
                         </span>
                       </td>
                       <td style={{ padding: '14px 12px' }}>
-                        {userMems.length > 0 ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            {userMems.map(m => {
-                              const t = teams.find(team => team.id === m.team_id)
-                              return (
-                                <span key={m.id} style={{
-                                  padding: '2px 8px',
-                                  borderRadius: '12px',
-                                  fontSize: '0.72rem',
-                                  background: m.team_role === 'lead' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(74, 222, 128, 0.12)',
-                                  border: m.team_role === 'lead' ? '1px solid rgba(234, 179, 8, 0.25)' : '1px solid rgba(74, 222, 128, 0.25)',
-                                  color: m.team_role === 'lead' ? '#eab308' : '#4ade80',
-                                  fontWeight: '500',
-                                  textTransform: 'capitalize'
-                                }}>
-                                  {t?.name || 'Unknown'} ({m.team_role})
-                                </span>
-                              )
-                            })}
-                          </div>
+                        {user.team_id ? (
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.72rem',
+                            background: 'rgba(74, 222, 128, 0.12)',
+                            border: '1px solid rgba(74, 222, 128, 0.25)',
+                            color: '#4ade80',
+                            fontWeight: '500'
+                          }}>
+                            {teams.find(t => t.id === user.team_id)?.name || 'Unknown'}
+                          </span>
                         ) : (
-                          <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No Assigned Teams</span>
+                          <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No Team</span>
                         )}
                       </td>
                       <td style={{ padding: '14px 12px' }}>
@@ -429,13 +426,9 @@ export default function AdminUsers() {
 
       {/* USER CONTROL PANEL MODAL */}
       {selectedUser && (() => {
-        const userMems = memberships.filter(m => m.user_id === selectedUser.id)
-        const isMaxedOut = userMems.length >= 2
         const isDeactivated = !!selectedUser.is_deactivated
-
-        // Teams this user is not in
-        const userJoinedTeamIds = userMems.map(m => m.team_id)
-        const availableTeams = teams.filter(t => !userJoinedTeamIds.includes(t.id))
+        const currentTeam = selectedUser.team_id ? teams.find(t => t.id === selectedUser.team_id) : null
+        const availableTeams = teams.filter(t => t.id !== selectedUser.team_id)
 
         return (
           <div style={{
@@ -558,6 +551,71 @@ export default function AdminUsers() {
                     </div>
                   </div>
 
+                  {/* Access Toggles */}
+                  <div>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Shield size={14} style={{ color: '#4ade80' }} /> Feature Access
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: '500' }}>Revenue Logging</span>
+                        <button
+                          onClick={() => handleToggleAccess(selectedUser.id, 'has_revenue_logging', selectedUser.has_revenue_logging)}
+                          disabled={modalSaving}
+                          style={{
+                            width: '44px',
+                            height: '24px',
+                            borderRadius: '12px',
+                            background: selectedUser.has_revenue_logging ? '#4ade80' : '#475569',
+                            border: 'none',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background 0.3s'
+                          }}
+                        >
+                          <div style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            background: '#fff',
+                            position: 'absolute',
+                            top: '3px',
+                            left: selectedUser.has_revenue_logging ? '23px' : '3px',
+                            transition: 'left 0.3s'
+                          }} />
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: '500' }}>DIS Reporting</span>
+                        <button
+                          onClick={() => handleToggleAccess(selectedUser.id, 'has_dis_reporting', selectedUser.has_dis_reporting)}
+                          disabled={modalSaving}
+                          style={{
+                            width: '44px',
+                            height: '24px',
+                            borderRadius: '12px',
+                            background: selectedUser.has_dis_reporting ? '#4ade80' : '#475569',
+                            border: 'none',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background 0.3s'
+                          }}
+                        >
+                          <div style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            background: '#fff',
+                            position: 'absolute',
+                            top: '3px',
+                            left: selectedUser.has_dis_reporting ? '23px' : '3px',
+                            transition: 'left 0.3s'
+                          }} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Account Deactivation */}
                   <div>
                     <h4 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -615,101 +673,70 @@ export default function AdminUsers() {
                 {/* Right side: Team Assignments & Activity Monitor */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   
-                  {/* Team Memberships */}
+                  {/* Team Assignments */}
                   <div>
                     <h4 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Team Assignments ({userMems.length} / 2)
+                      Team Assignment
                     </h4>
-                    {userMems.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                        {userMems.map(m => {
-                          const t = teams.find(team => team.id === m.team_id)
-                          return (
-                            <div key={m.id} style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              padding: '8px 12px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.04)',
-                              borderRadius: '8px'
-                            }}>
-                              <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '500' }}>
-                                {t?.name || 'Unknown Team'} ({m.team_role})
-                              </span>
-                              <button
-                                disabled={modalSaving}
-                                onClick={() => handleRemoveFromTeam(selectedUser.id, m.team_id)}
-                                style={{
-                                  border: 'none',
-                                  background: 'transparent',
-                                  color: '#ef4444',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem',
-                                  fontWeight: '600'
-                                }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          )
-                        })}
+                    {currentTeam ? (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px',
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid rgba(255,255,255,0.04)',
+                        borderRadius: '8px',
+                        marginBottom: '14px'
+                      }}>
+                        <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>
+                          {currentTeam.name}
+                        </span>
+                        <button
+                          disabled={modalSaving}
+                          onClick={handleRemoveFromTeam}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: '600'
+                          }}
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
                       </div>
                     ) : (
-                      <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: '0 0 14px 0', fontSize: '0.85rem' }}>No assigned teams.</p>
+                      <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: '0 0 14px 0', fontSize: '0.85rem' }}>No team assigned.</p>
                     )}
 
-                    {/* Add to Team mini-form */}
-                    {!isMaxedOut ? (
-                      availableTeams.length > 0 ? (
-                        <form onSubmit={handleAddToTeam} style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Team</label>
-                              <select
-                                value={newTeamId}
-                                onChange={(e) => setNewTeamId(e.target.value)}
-                                required
-                                className="form-control"
-                                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                              >
-                                <option value="" disabled>-- Select Team --</option>
-                                {availableTeams.map(t => (
-                                  <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Role</label>
-                              <select
-                                value={newTeamRole}
-                                onChange={(e) => setNewTeamRole(e.target.value)}
-                                required
-                                className="form-control"
-                                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                              >
-                                <option value="member">Member</option>
-                                <option value="lead">Team Lead</option>
-                              </select>
-                            </div>
-                          </div>
-                          <button
-                            type="submit"
-                            disabled={modalSaving || !newTeamId}
-                            className="btn"
-                            style={{ background: '#4ade80', color: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', width: '100%', padding: '6px 10px', borderRadius: '6px' }}
-                          >
-                            <Plus size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Assign to Team
-                          </button>
-                        </form>
-                      ) : (
-                        <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.82rem' }}>User is already assigned to all active teams.</p>
-                      )
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', color: '#fbbf24', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', padding: '6px 10px', borderRadius: '6px', display: 'block' }}>
-                        ⚠️ Maximum limit of 2 team memberships reached.
-                      </span>
-                    )}
+                    {/* Update/Assign Team Form */}
+                    <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Select Team</label>
+                        <select
+                          value={newTeamId}
+                          onChange={(e) => setNewTeamId(e.target.value)}
+                          required
+                          className="form-control"
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        >
+                          <option value="" disabled>-- Select a Team --</option>
+                          {teams.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={modalSaving || !newTeamId}
+                        className="btn"
+                        style={{ background: '#4ade80', color: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', width: '100%', padding: '6px 10px', borderRadius: '6px' }}
+                      >
+                        {currentTeam ? 'Change Team' : 'Assign Team'}
+                      </button>
+                    </form>
                   </div>
 
                   {/* Activity Log */}

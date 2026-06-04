@@ -13,7 +13,6 @@ export default function AdminHome() {
   const [loading, setLoading] = useState(true)
   const [teams, setTeams] = useState([])
   const [profiles, setProfiles] = useState([])
-  const [memberships, setMemberships] = useState([])
   const [revenues, setRevenues] = useState([])
   const [targets, setTargets] = useState([])
 
@@ -27,15 +26,13 @@ export default function AdminHome() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [teamsRes, profilesRes, memRes, revRes] = await Promise.all([
+        const [teamsRes, profilesRes, revRes] = await Promise.all([
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('profiles').select('*'),
-          supabase.from('team_members').select('*'),
           supabase.from('monthly_revenues').select('*')
         ])
         if (teamsRes.data) setTeams(teamsRes.data)
         if (profilesRes.data) setProfiles(profilesRes.data)
-        if (memRes.data) setMemberships(memRes.data)
         if (revRes.data) setRevenues(revRes.data)
 
         const { data: targetData, error: targetErr } = await supabase.from('monthly_targets').select('*')
@@ -57,13 +54,10 @@ export default function AdminHome() {
 
   const teamMembers = useMemo(() => {
     if (!selectedTeamId) return []
-    const memberIds = memberships
-      .filter(m => m.team_id === selectedTeamId)
-      .map(m => m.user_id)
     return profiles
-      .filter(p => p.platform_role !== 'admin' && memberIds.includes(p.id))
+      .filter(p => p.team_id === selectedTeamId && p.platform_role !== 'admin')
       .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
-  }, [selectedTeamId, memberships, profiles])
+  }, [selectedTeamId, profiles])
 
   const memberTargets = useMemo(() => {
     return teamMembers.map(member => {

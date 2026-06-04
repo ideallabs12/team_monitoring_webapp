@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient'
 
 export default function UserDis() {
   const [loading, setLoading] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [userTeams, setUserTeams] = useState([])
@@ -81,7 +82,14 @@ export default function UserDis() {
             .select('*')
             .eq('id', user.id)
             .maybeSingle()
-          if (prof) setProfile(prof)
+          if (prof) {
+            setProfile(prof)
+            if (prof.has_dis_reporting === false) {
+              setAccessDenied(true)
+              setLoading(false)
+              return
+            }
+          }
         }
       } catch (err) {
         console.error("Error fetching user data:", err)
@@ -96,25 +104,26 @@ export default function UserDis() {
   useEffect(() => {
     if (!currentUser) return
     async function fetchTeams() {
-      const { data } = await supabase
-        .from('team_members')
-        .select(`
-          team_id,
-          team_role,
-          teams (
-            id,
-            name
-          )
-        `)
-        .eq('user_id', currentUser.id)
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('team_id, platform_role')
+        .eq('id', currentUser.id)
+        .single()
       
-      if (data) {
-        const formatted = data.map(tm => ({
-          id: tm.team_id,
-          name: tm.teams?.name || 'Unnamed Team',
-          role: tm.team_role
-        }))
-        setUserTeams(formatted)
+      if (profileData?.team_id) {
+        const { data: teamData } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('id', profileData.team_id)
+          .single()
+        
+        if (teamData) {
+          setUserTeams([{
+            id: teamData.id,
+            name: teamData.name,
+            role: profileData.platform_role === 'teamlead' ? 'lead' : 'member'
+          }])
+        }
       }
     }
     fetchTeams()
@@ -179,18 +188,15 @@ export default function UserDis() {
       const metrics = {}
       for (const team of ledTeams) {
         try {
-          const { data: mems } = await supabase
-            .from('team_members')
-            .select(`
-              user_id,
-              profiles ( platform_role )
-            `)
+          const { data: teamMembers } = await supabase
+            .from('profiles')
+            .select('id, platform_role')
             .eq('team_id', team.id)
 
-          const nonAdminMems = mems
-            ? mems.filter(m => m.profiles && m.profiles.platform_role !== 'admin')
+          const nonAdminMems = teamMembers
+            ? teamMembers.filter(m => m.platform_role !== 'admin')
             : []
-          const memberIds = nonAdminMems.map(m => m.user_id)
+          const memberIds = nonAdminMems.map(m => m.id)
 
           let submittedCount = 0
           if (memberIds.length > 0) {
@@ -280,26 +286,16 @@ export default function UserDis() {
     
     try {
       // 1. Fetch team members (excluding admins)
-      const { data: mems } = await supabase
-        .from('team_members')
-        .select(`
-          user_id,
-          team_role,
-          profiles (
-            id,
-            first_name,
-            last_name,
-            email,
-            platform_role
-          )
-        `)
+      const { data: teamProfiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, platform_role')
         .eq('team_id', selectedLedTeamId)
       
-      const nonAdminMems = mems
-        ? mems.filter(m => m.profiles && m.profiles.platform_role !== 'admin')
+      const nonAdminMems = teamProfiles
+        ? teamProfiles.filter(p => p.platform_role !== 'admin')
         : []
 
-      const memberUserIds = nonAdminMems.map(m => m.user_id)
+      const memberUserIds = nonAdminMems.map(m => m.id)
 
       // 2. Fetch reports based on filter
       let reps = []
@@ -344,7 +340,7 @@ export default function UserDis() {
         submittedIds = new Set(todayReps?.map(r => r.user_id) || [])
       }
       
-      const missing = nonAdminMems.filter(m => !submittedIds.has(m.user_id))
+      const missing = nonAdminMems.filter(m => !submittedIds.has(m.id))
 
       // 3. Fetch monthly revenues for this team to calculate team-specific stats
       let revs = []
@@ -415,6 +411,18 @@ export default function UserDis() {
   }
 
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading DIS Module...</div>
+
+  if (accessDenied) {
+    return (
+      <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '24px' }}>🔒</div>
+        <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>Access Prohibited</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', maxWidth: '500px', margin: '0 auto' }}>
+          You do not have permission to access the DIS Reporting page. Please contact your administrator.
+        </p>
+      </div>
+    )
+  }
 
   if (userTeams.length === 0) {
     return (

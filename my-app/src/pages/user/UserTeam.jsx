@@ -10,64 +10,67 @@ export default function UserTeam({ user }) {
       if (!user) return
 
       try {
-        // 1. Find which teams this user belongs to
-        const { data: myMemberships } = await supabase
-          .from('team_members')
-          .select('team_id, teams(name)')
-          .eq('user_id', user.id)
+        // 1. Find the user's team
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('team_id')
+          .eq('id', user.id)
+          .single()
 
-        if (!myMemberships || myMemberships.length === 0) {
+        if (!userProfile?.team_id) {
           setTeamsData([])
           setLoading(false)
           return
         }
 
-        const teamIds = myMemberships.map(m => m.team_id)
+        // 2. Get the team details
+        const { data: team } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('id', userProfile.team_id)
+          .single()
 
-        // 2. Fetch ALL members for those teams
+        if (!team) {
+          setTeamsData([])
+          setLoading(false)
+          return
+        }
+
+        // 3. Fetch ALL members in this team
         const { data: allMembers } = await supabase
-          .from('team_members')
-          .select('team_id, team_role, user_id, profiles(first_name, last_name, email)')
-          .in('team_id', teamIds)
+          .from('profiles')
+          .select('id, first_name, last_name, email, platform_role')
+          .eq('team_id', userProfile.team_id)
 
-        // 3. Fetch ALL revenue for those teams
+        // 4. Fetch revenue for all members in this team
         const { data: allRevenues } = await supabase
           .from('monthly_revenues')
-          .select('team_id, user_id, amount')
-          .in('team_id', teamIds)
+          .select('user_id, amount')
+          .eq('team_id', userProfile.team_id)
 
-        // 4. Organize data by team
-        const organizedTeams = myMemberships.map(membership => {
-          const tId = membership.team_id
-          const teamName = membership.teams.name
+        // 5. Organize data for the single team
+        const members = (allMembers || []).map(member => {
+          const memberRevenues = (allRevenues || []).filter(r => r.user_id === member.id)
+          const totalRev = memberRevenues.reduce((sum, r) => sum + Number(r.amount), 0)
           
-          const members = (allMembers || []).filter(m => m.team_id === tId).map(member => {
-            // Sum up revenue for this specific member in this specific team
-            const memberRevenues = (allRevenues || []).filter(r => r.team_id === tId && r.user_id === member.user_id)
-            const totalRev = memberRevenues.reduce((sum, r) => sum + Number(r.amount), 0)
-            
-            return {
-              ...member,
-              total_revenue: totalRev
-            }
-          })
-
-          // Sort members by revenue (highest first)
-          members.sort((a, b) => b.total_revenue - a.total_revenue)
-
-          const teamTotalRevenue = (allRevenues || [])
-            .filter(r => r.team_id === tId)
-            .reduce((sum, r) => sum + Number(r.amount), 0)
-
           return {
-            id: tId,
-            name: teamName,
-            total_revenue: teamTotalRevenue,
-            members: members
+            ...member,
+            total_revenue: totalRev
           }
         })
 
-        setTeamsData(organizedTeams)
+        // Sort members by revenue (highest first)
+        members.sort((a, b) => b.total_revenue - a.total_revenue)
+
+        const teamTotalRevenue = (allRevenues || [])
+          .reduce((sum, r) => sum + Number(r.amount), 0)
+
+        setTeamsData([{
+          id: team.id,
+          name: team.name,
+          total_revenue: teamTotalRevenue,
+          members: members
+        }])
       } catch (error) {
         console.error("Error fetching team data:", error)
       } finally {
@@ -130,13 +133,13 @@ export default function UserTeam({ user }) {
               {/* Members List */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {team.members.map((member, idx) => (
-                  <div key={member.user_id} style={{ 
+                  <div key={member.id} style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'space-between',
                     padding: '20px clamp(16px, 4vw, 32px)',
                     borderBottom: idx < team.members.length - 1 ? '1px solid var(--apple-border)' : 'none',
-                    background: member.user_id === user.id ? 'rgba(0, 113, 227, 0.04)' : 'transparent',
+                    background: member.id === user.id ? 'rgba(0, 113, 227, 0.04)' : 'transparent',
                     flexWrap: 'wrap',
                     gap: '16px'
                   }}>
@@ -145,7 +148,7 @@ export default function UserTeam({ user }) {
                         width: '44px', 
                         height: '44px', 
                         borderRadius: '50%', 
-                        background: member.user_id === user.id 
+                        background: member.id === user.id 
                           ? 'linear-gradient(135deg, #0071e3, #3b82f6)' 
                           : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.15))',
                         display: 'flex',
@@ -154,23 +157,23 @@ export default function UserTeam({ user }) {
                         fontWeight: '700',
                         color: '#ffffff',
                         fontSize: '1rem',
-                        boxShadow: member.user_id === user.id ? '0 0 12px rgba(0, 113, 227, 0.3)' : 'none',
+                        boxShadow: member.id === user.id ? '0 0 12px rgba(0, 113, 227, 0.3)' : 'none',
                         border: '1px solid rgba(255, 255, 255, 0.1)'
                       }}>
-                        {member.profiles?.first_name?.charAt(0) || '?'}
+                        {member.first_name?.charAt(0) || '?'}
                       </div>
                       <div>
                         <div style={{ fontWeight: '600', fontSize: '1.05rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {member.profiles?.first_name} {member.profiles?.last_name}
-                          {member.user_id === user.id && (
+                          {member.first_name} {member.last_name}
+                          {member.id === user.id && (
                             <span className="apple-badge apple-badge-blue" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>You</span>
                           )}
                         </div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
-                          <span>{member.profiles?.email}</span>
+                          <span>{member.email}</span>
                           <span style={{ color: 'var(--apple-border-strong)' }}>•</span>
-                          <span className={member.team_role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'} style={{ padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}>
-                            {member.team_role}
+                          <span className={member.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'} style={{ padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}>
+                            {member.platform_role === 'teamlead' ? 'lead' : 'member'}
                           </span>
                         </div>
                       </div>

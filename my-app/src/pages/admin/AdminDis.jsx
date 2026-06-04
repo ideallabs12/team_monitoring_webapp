@@ -5,7 +5,6 @@ export default function AdminDis() {
   const [loading, setLoading] = useState(true)
   const [teams, setTeams] = useState([])
   const [profiles, setProfiles] = useState([])
-  const [memberships, setMemberships] = useState([])
   const [revenues, setRevenues] = useState([])
   const [reports, setReports] = useState([])
 
@@ -18,16 +17,14 @@ export default function AdminDis() {
 
   const loadData = async () => {
     try {
-      const [teamsRes, profilesRes, membershipsRes, revenuesRes] = await Promise.all([
+      const [teamsRes, profilesRes, revenuesRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
-        supabase.from('team_members').select('*'),
         supabase.from('monthly_revenues').select('*'),
       ])
 
       const teamsData = teamsRes.data || []
       const profilesData = profilesRes.data || []
-      const membershipsData = membershipsRes.data || []
       const revenuesData = revenuesRes.data || []
 
       // Filter out admins
@@ -61,7 +58,7 @@ export default function AdminDis() {
 
       setTeams(teamsData)
       setProfiles(nonAdminProfiles)
-      setMemberships(membershipsData)
+      // memberships data no longer needed - using profiles.team_id instead
       setRevenues(revenuesData)
       setReports(reportsData || [])
       setSubmittedToday(submittedUserIds)
@@ -103,8 +100,8 @@ export default function AdminDis() {
     const nonAdminIds = new Set(profiles.map(p => p.id))
 
     return teams.map(team => {
-      const teamMems = memberships.filter(m => m.team_id === team.id && nonAdminIds.has(m.user_id))
-      const teamMemberIds = new Set(teamMems.map(m => m.user_id))
+      const teamMems = profiles.filter(p => p.team_id === team.id && nonAdminIds.has(p.id))
+      const teamMemberIds = new Set(teamMems.map(m => m.id))
 
       const teamReps = reports.filter(r => {
         const isCurrentMember = teamMemberIds.has(r.user_id)
@@ -139,10 +136,9 @@ export default function AdminDis() {
       const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
 
       // Missing users: active members who haven't submitted, with team info
-      const missing = teamMems.filter(m => !submittedToday.has(m.user_id)).map(m => {
-        const prof = profiles.find(p => p.id === m.user_id)
+      const missing = teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
         return {
-          name: prof ? `${prof.first_name} ${prof.last_name}` : 'Unknown',
+          name: `${m.first_name} ${m.last_name}`,
           teamName: team.name
         }
       })
@@ -157,7 +153,7 @@ export default function AdminDis() {
         totalExpected: teamTotalExpected
       }
     })
-  }, [teams, profiles, memberships, reports, submittedToday, revenues])
+  }, [teams, profiles, reports, submittedToday, revenues])
 
   // Derived data for current view
   const isAllTeams = selectedTeamId === 'all'

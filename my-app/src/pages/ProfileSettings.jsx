@@ -21,7 +21,6 @@ export default function ProfileSettings({ user }) {
 
   // Extra features state
   const [teams, setTeams] = useState([])
-  const [memberships, setMemberships] = useState([])
   const [revenues, setRevenues] = useState([])
 
   useEffect(() => {
@@ -31,10 +30,9 @@ export default function ProfileSettings({ user }) {
       setEmail(user.email || '')
       
       try {
-        const [profileRes, teamsRes, membershipsRes, revenuesRes] = await Promise.all([
+        const [profileRes, teamsRes, revenuesRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
           supabase.from('teams').select('*'),
-          supabase.from('team_members').select('*').eq('user_id', user.id),
           supabase.from('monthly_revenues').select('*').eq('user_id', user.id)
         ])
 
@@ -44,7 +42,6 @@ export default function ProfileSettings({ user }) {
           setPhone(profileRes.data.phone || '')
         }
         if (teamsRes.data) setTeams(teamsRes.data)
-        if (membershipsRes.data) setMemberships(membershipsRes.data)
         if (revenuesRes.data) setRevenues(revenuesRes.data)
       } catch (err) {
         console.error("Error loading profile settings", err)

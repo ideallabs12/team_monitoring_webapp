@@ -6,6 +6,16 @@ export default function Navbar({ user }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
+  const [profile, setProfile] = useState(null)
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting').eq('id', user.id).single()
+        .then(({ data }) => {
+          if (data) setProfile(data)
+        })
+    }
+  }, [user])
 
   // Prevent scroll when mobile menu is open
   useEffect(() => {
@@ -33,11 +43,18 @@ export default function Navbar({ user }) {
 
   const navLinks = [
     { to: '/home', label: 'Home' },
-    { to: '/team', label: 'Team' },
-    { to: '/revenue', label: 'Revenue' },
-    { to: '/dis', label: 'DIS' },
-    { to: '/profile', label: 'Profile' }
+    { to: '/team', label: 'Team' }
   ]
+
+  if (profile?.has_revenue_logging !== false) {
+    navLinks.push({ to: '/revenue', label: 'Revenue' })
+  }
+  
+  if (profile?.has_dis_reporting !== false) {
+    navLinks.push({ to: '/dis', label: 'DIS' })
+  }
+
+  navLinks.push({ to: '/profile', label: 'Profile' })
 
   return (
     <nav className="apple-glass-nav" style={{ padding: '0 clamp(16px, 5%, 48px)' }}>

@@ -22,21 +22,30 @@ export default function UserHome({ user, isAdminView }) {
       if (!user) return
 
       try {
-        const [profileRes, teamsRes, revRes, reportsRes] = await Promise.all([
+        const [profileRes, revRes, reportsRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
-          supabase.from('team_members').select('team_role, teams(id, name)').eq('user_id', user.id),
           supabase.from('monthly_revenues').select('*').eq('user_id', user.id),
           supabase.from('dis_reports').select('*').eq('user_id', user.id).order('report_date', { ascending: false }).limit(1)
         ])
         
-        if (profileRes.data) setProfile(profileRes.data)
-        if (teamsRes.data) {
-          const formatted = teamsRes.data.map(tm => ({
-            id: tm.teams?.id,
-            name: tm.teams?.name || 'Unnamed Team',
-            role: tm.team_role
-          }))
-          setUserTeams(formatted)
+        if (profileRes.data) {
+          setProfile(profileRes.data)
+          // Get user's single team if assigned
+          if (profileRes.data.team_id) {
+            const { data: teamData } = await supabase
+              .from('teams')
+              .select('*')
+              .eq('id', profileRes.data.team_id)
+              .single()
+            
+            if (teamData) {
+              setUserTeams([{
+                id: teamData.id,
+                name: teamData.name,
+                role: profileRes.data.platform_role === 'teamlead' ? 'lead' : 'member'
+              }])
+            }
+          }
         }
         if (revRes.data) setUserRevenues(revRes.data)
         if (reportsRes.data && reportsRes.data.length > 0) setLatestReport(reportsRes.data[0])

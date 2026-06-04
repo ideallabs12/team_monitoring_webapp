@@ -15,7 +15,6 @@ export default function AdminRevenue() {
   const [teams, setTeams] = useState([])
   const [profiles, setProfiles] = useState([])
   const [revenues, setRevenues] = useState([])
-  const [memberships, setMemberships] = useState([])
   const [targets, setTargets] = useState([])
 
   // Period filter now lives inside the "Expected vs Actual" section
@@ -26,17 +25,15 @@ export default function AdminRevenue() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [teamsRes, profilesRes, revRes, memRes] = await Promise.all([
+        const [teamsRes, profilesRes, revRes] = await Promise.all([
           supabase.from('teams').select('*'),
           supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*'),
-          supabase.from('team_members').select('*')
+          supabase.from('monthly_revenues').select('*')
         ])
 
         if (teamsRes.data) setTeams(teamsRes.data)
         if (profilesRes.data) setProfiles(profilesRes.data)
         if (revRes.data) setRevenues(revRes.data)
-        if (memRes.data) setMemberships(memRes.data)
 
         const { data: targetData, error: targetError } = await supabase
           .from('monthly_targets')
@@ -135,11 +132,8 @@ export default function AdminRevenue() {
 
   const teamMembers = useMemo(() => {
     if (!selectedTeamId) return []
-    const memberIds = memberships
-      .filter(m => m.team_id === selectedTeamId)
-      .map(m => m.user_id)
-    return nonAdminProfiles.filter(p => memberIds.includes(p.id))
-  }, [selectedTeamId, memberships, nonAdminProfiles])
+    return nonAdminProfiles.filter(p => p.team_id === selectedTeamId)
+  }, [selectedTeamId, nonAdminProfiles])
 
   const memberStats = useMemo(() => {
     return teamMembers.map(member => {

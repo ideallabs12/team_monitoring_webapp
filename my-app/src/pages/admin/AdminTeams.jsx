@@ -14,7 +14,6 @@ import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText }
 export default function AdminTeams() {
   const [loading, setLoading] = useState(true)
   const [teams, setTeams] = useState([])
-  const [memberships, setMemberships] = useState([])
   const [profiles, setProfiles] = useState([])
   const [revenues, setRevenues] = useState([])
   
@@ -34,15 +33,13 @@ export default function AdminTeams() {
 
   useEffect(() => {
     async function loadData() {
-      const [teamsRes, membershipsRes, profilesRes, revRes] = await Promise.all([
+      const [teamsRes, profilesRes, revRes] = await Promise.all([
         supabase.from('teams').select('*').order('created_at', { ascending: true }),
-        supabase.from('team_members').select('*'),
         supabase.from('profiles').select('*'),
         supabase.from('monthly_revenues').select('*')
       ])
 
       if (teamsRes.data) setTeams(teamsRes.data)
-      if (membershipsRes.data) setMemberships(membershipsRes.data)
       if (profilesRes.data) setProfiles(profilesRes.data)
       if (revRes.data) setRevenues(revRes.data)
         
@@ -80,19 +77,12 @@ export default function AdminTeams() {
   // Build list of months available for picker (last 24 months)
   const monthOptions = useMemo(() => getLastNMonths(24), [])
 
-  // Find teams this viewing member belongs to
-  const memberTeams = useMemo(() => {
-    if (!viewingProfileUser) return []
-    return memberships
-      .filter(m => m.user_id === viewingProfileUser.id)
-      .map(m => {
-        const t = teams.find(team => team.id === m.team_id)
-        return {
-          name: t ? t.name : 'Unknown Team',
-          role: m.team_role
-        }
-      })
-  }, [viewingProfileUser, memberships, teams])
+  // Find the team this user belongs to
+  const memberTeam = useMemo(() => {
+    if (!viewingProfileUser || !viewingProfileUser.team_id) return null
+    const team = teams.find(t => t.id === viewingProfileUser.team_id)
+    return team ? { name: team.name, id: team.id } : null
+  }, [viewingProfileUser, teams])
 
   // Current Month String
   const currentMonthStr = useMemo(() => {
@@ -180,21 +170,18 @@ export default function AdminTeams() {
                 <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '500' }}>
                   Team Assignments
                 </div>
-                {memberTeams.length > 0 ? (
+                {memberTeam ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {memberTeams.map((t, idx) => (
-                      <span
-                        key={idx}
-                        className={t.role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
-                        style={{ fontSize: '0.72rem', padding: '2px 8px' }}
-                      >
-                        {t.name} ({t.role})
-                      </span>
-                    ))}
+                    <span
+                      className={viewingProfileUser.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
+                      style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                    >
+                      {memberTeam.name} ({viewingProfileUser.platform_role === 'teamlead' ? 'lead' : 'member'})
+                    </span>
                   </div>
                 ) : (
                   <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
-                    No teams assigned
+                    No team assigned
                   </span>
                 )}
               </div>
@@ -259,19 +246,9 @@ export default function AdminTeams() {
   // VIEW 2: TEAM MEMBERS DETAILS VIEW
   // ==========================================
   if (activeTeam) {
-    const teamMemberships = memberships.filter(m => m.team_id === activeTeam.id)
-    const teamProfiles = teamMemberships
-      .map(m => {
-        const profile = profiles.find(p => p.id === m.user_id)
-        return {
-          profile,
-          role: m.team_role,
-          joinedAt: m.joined_at,
-          membershipId: m.id
-        }
-      })
-      .filter(m => m.profile && m.profile.platform_role !== 'admin')
-      .sort((a, b) => (a.role === 'lead' ? -1 : 1))
+    const teamProfiles = profiles
+      .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin')
+      .sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
 
     return (
       <div style={{ animation: 'fadeIn 0.25s var(--apple-ease)' }}>
@@ -361,8 +338,7 @@ export default function AdminTeams() {
               </div>
 
               {/* Rows */}
-              {teamProfiles.map(item => {
-                const { profile, role, membershipId } = item
+              {teamProfiles.map(profile => {
                 
                 // Get member revenue for the selected team & selected month
                 const monthRevenue = revenues
@@ -371,7 +347,7 @@ export default function AdminTeams() {
 
                 return (
                   <div
-                    key={membershipId}
+                    key={profile.id}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
@@ -388,8 +364,8 @@ export default function AdminTeams() {
                     </div>
                     
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <span className={role === 'lead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'} style={{ padding: '2px 8px', fontSize: '0.68rem', textTransform: 'capitalize' }}>
-                        {role}
+                      <span className={profile.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'} style={{ padding: '2px 8px', fontSize: '0.68rem', textTransform: 'capitalize' }}>
+                        {profile.platform_role === 'teamlead' ? 'Lead' : 'Member'}
                       </span>
                     </div>
 
@@ -440,11 +416,9 @@ export default function AdminTeams() {
         {teams.length > 0 ? (
           teams.map(team => {
             // Count total members (excluding platform admins)
-            const teamMemberCount = memberships.filter(m => {
-              if (m.team_id !== team.id) return false
-              const profile = profiles.find(p => p.id === m.user_id)
-              return profile && profile.platform_role !== 'admin'
-            }).length
+            const teamMemberCount = profiles.filter(p => 
+              p.team_id === team.id && p.platform_role !== 'admin'
+            ).length
 
             // Sum this month's revenue
             const teamThisMonthRevenues = revenues.filter(
