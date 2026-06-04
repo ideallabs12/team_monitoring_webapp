@@ -9,13 +9,22 @@ import {
   getEffectiveTargetAmount
 } from '../../utils/revenueUtils'
 
+let globalHomeCache = {
+  userId: null,
+  profile: null,
+  userTeams: [],
+  userRevenues: [],
+  userTargets: [],
+  latestReport: null
+}
+
 export default function UserHome({ user, isAdminView }) {
-  const [profile, setProfile] = useState(null)
-  const [userTeams, setUserTeams] = useState([])
-  const [userRevenues, setUserRevenues] = useState([])
-  const [userTargets, setUserTargets] = useState([])
-  const [latestReport, setLatestReport] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState(globalHomeCache.profile)
+  const [userTeams, setUserTeams] = useState(globalHomeCache.userTeams)
+  const [userRevenues, setUserRevenues] = useState(globalHomeCache.userRevenues)
+  const [userTargets, setUserTargets] = useState(globalHomeCache.userTargets)
+  const [latestReport, setLatestReport] = useState(globalHomeCache.latestReport)
+  const [loading, setLoading] = useState(globalHomeCache.userId !== user?.id)
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -30,6 +39,8 @@ export default function UserHome({ user, isAdminView }) {
         
         if (profileRes.data) {
           setProfile(profileRes.data)
+          globalHomeCache.profile = profileRes.data
+          
           // Get user's single team if assigned
           if (profileRes.data.team_id) {
             const { data: teamData } = await supabase
@@ -39,23 +50,37 @@ export default function UserHome({ user, isAdminView }) {
               .single()
             
             if (teamData) {
-              setUserTeams([{
+              const uTeams = [{
                 id: teamData.id,
                 name: teamData.name,
                 role: profileRes.data.platform_role === 'teamlead' ? 'lead' : 'member'
-              }])
+              }]
+              setUserTeams(uTeams)
+              globalHomeCache.userTeams = uTeams
             }
           }
         }
-        if (revRes.data) setUserRevenues(revRes.data)
-        if (reportsRes.data && reportsRes.data.length > 0) setLatestReport(reportsRes.data[0])
+        if (revRes.data) {
+          setUserRevenues(revRes.data)
+          globalHomeCache.userRevenues = revRes.data
+        }
+        if (reportsRes.data && reportsRes.data.length > 0) {
+          setLatestReport(reportsRes.data[0])
+          globalHomeCache.latestReport = reportsRes.data[0]
+        }
 
         // Keep page working even if monthly_targets table is not migrated yet.
         const { data: targetsData, error: targetsError } = await supabase
           .from('monthly_targets')
           .select('*')
           .eq('user_id', user.id)
-        if (!targetsError && targetsData) setUserTargets(targetsData)
+        if (!targetsError && targetsData) {
+          setUserTargets(targetsData)
+          globalHomeCache.userTargets = targetsData
+        }
+        
+        globalHomeCache.userId = user.id
+        
       } catch (error) {
         console.error("Error fetching dashboard data:", error)
       } finally {

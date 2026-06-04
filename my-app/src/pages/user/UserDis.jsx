@@ -1,12 +1,19 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 
+let globalDisCache = {
+  userId: null,
+  profile: null,
+  userTeams: []
+}
+
 export default function UserDis() {
-  const [loading, setLoading] = useState(true)
-  const [accessDenied, setAccessDenied] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [userTeams, setUserTeams] = useState([])
+  const [loading, setLoading] = useState(globalDisCache.userId ? false : true)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [profile, setProfile] = useState(globalDisCache.profile)
+  const [userTeams, setUserTeams] = useState(globalDisCache.userTeams || [])
+
 
   // Form states
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0])
@@ -77,6 +84,17 @@ export default function UserDis() {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setCurrentUser(user)
+          
+          // Use cached profile if we have it to avoid flash
+          if (globalDisCache.userId === user.id && globalDisCache.profile) {
+            setProfile(globalDisCache.profile)
+            if (globalDisCache.profile.has_dis_reporting === false) {
+              setAccessDenied(true)
+              setLoading(false)
+              return
+            }
+          }
+
           const { data: prof } = await supabase
             .from('profiles')
             .select('*')
@@ -84,6 +102,9 @@ export default function UserDis() {
             .maybeSingle()
           if (prof) {
             setProfile(prof)
+            globalDisCache.userId = user.id
+            globalDisCache.profile = prof
+
             if (prof.has_dis_reporting === false) {
               setAccessDenied(true)
               setLoading(false)
@@ -118,11 +139,13 @@ export default function UserDis() {
           .single()
         
         if (teamData) {
-          setUserTeams([{
+          const loadedTeams = [{
             id: teamData.id,
             name: teamData.name,
             role: profileData.platform_role === 'teamlead' ? 'lead' : 'member'
-          }])
+          }]
+          setUserTeams(loadedTeams)
+          globalDisCache.userTeams = loadedTeams
         }
       }
     }

@@ -26,9 +26,6 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 
-// Events that should NOT trigger a full re-check
-const SKIP_EVENTS = ['TOKEN_REFRESHED', 'MFA_CHALLENGE_VERIFIED']
-
 function App() {
   const [user, setUser] = useState(null)
   const [hasProfile, setHasProfile] = useState(null)
@@ -51,15 +48,15 @@ function App() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Skip events that don't need a full profile re-check
-      if (SKIP_EVENTS.includes(event)) return
-
-      // If same user is already loaded, skip re-check
+      // If we already have this exact user loaded, ignore any event except SIGNED_OUT
+      // This prevents the page from reloading/resetting state when switching tabs
       if (
-        event === 'SIGNED_IN' &&
         session?.user?.id &&
-        profileFetchedFor.current === session.user.id
-      ) return
+        profileFetchedFor.current === session.user.id &&
+        event !== 'SIGNED_OUT'
+      ) {
+        return
+      }
 
       handleSession(session, event)
     })
@@ -71,14 +68,16 @@ function App() {
     try {
       const currentUser = session?.user ?? null
 
-      // User signed out
       if (!currentUser) {
-        setUser(null)
-        setHasProfile(false)
-        setIsAdmin(false)
-        setIsDeactivated(false)
-        profileFetchedFor.current = null
-        setLoading(false)
+        // Only reset state if it's explicitly a sign out or initial empty session
+        if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+          setUser(null)
+          setHasProfile(false)
+          setIsAdmin(false)
+          setIsDeactivated(false)
+          profileFetchedFor.current = null
+          setLoading(false)
+        }
         return
       }
 

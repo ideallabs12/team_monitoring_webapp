@@ -10,12 +10,14 @@ import {
   TIME_PERIOD_OPTIONS
 } from '../../utils/revenueUtils'
 
+let adminRevCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
+
 export default function AdminRevenue() {
-  const [loading, setLoading] = useState(true)
-  const [teams, setTeams] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [revenues, setRevenues] = useState([])
-  const [targets, setTargets] = useState([])
+  const [loading, setLoading] = useState(!adminRevCache.loaded)
+  const [teams, setTeams] = useState(adminRevCache.teams)
+  const [profiles, setProfiles] = useState(adminRevCache.profiles)
+  const [revenues, setRevenues] = useState(adminRevCache.revenues)
+  const [targets, setTargets] = useState(adminRevCache.targets)
 
   // Period filter now lives inside the "Expected vs Actual" section
   const [periodFilter, setPeriodFilter] = useState(1)
@@ -31,14 +33,15 @@ export default function AdminRevenue() {
           supabase.from('monthly_revenues').select('*')
         ])
 
-        if (teamsRes.data) setTeams(teamsRes.data)
-        if (profilesRes.data) setProfiles(profilesRes.data)
-        if (revRes.data) setRevenues(revRes.data)
+        const t = teamsRes.data || []; const p = profilesRes.data || []; const r = revRes.data || []
+        setTeams(t); setProfiles(p); setRevenues(r)
 
         const { data: targetData, error: targetError } = await supabase
           .from('monthly_targets')
           .select('*')
-        if (!targetError && targetData) setTargets(targetData)
+        const tgt = (!targetError && targetData) ? targetData : []
+        setTargets(tgt)
+        adminRevCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tgt }
       } catch (err) {
         console.error('Error loading admin revenue data:', err)
       } finally {

@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 
+let globalTeamCache = {
+  userId: null,
+  teamsData: []
+}
+
 export default function UserTeam({ user }) {
-  const [teamsData, setTeamsData] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [teamsData, setTeamsData] = useState(globalTeamCache.teamsData)
+  const [loading, setLoading] = useState(globalTeamCache.userId !== user?.id)
 
   useEffect(() => {
     async function fetchTeamData() {
@@ -65,12 +70,17 @@ export default function UserTeam({ user }) {
         const teamTotalRevenue = (allRevenues || [])
           .reduce((sum, r) => sum + Number(r.amount), 0)
 
-        setTeamsData([{
+        const tData = [{
           id: team.id,
           name: team.name,
           total_revenue: teamTotalRevenue,
           members: members
-        }])
+        }]
+        
+        setTeamsData(tData)
+        globalTeamCache.teamsData = tData
+        globalTeamCache.userId = user.id
+        
       } catch (error) {
         console.error("Error fetching team data:", error)
       } finally {

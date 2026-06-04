@@ -2,12 +2,14 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2 } from 'lucide-react'
 
+let adminUsersCache = { loaded: false, users: [], teams: [], revenues: [], disReports: [] }
+
 export default function AdminUsers() {
-  const [loading, setLoading] = useState(true)
-  const [users, setUsers] = useState([])
-  const [teams, setTeams] = useState([])
-  const [revenues, setRevenues] = useState([])
-  const [disReports, setDisReports] = useState([])
+  const [loading, setLoading] = useState(!adminUsersCache.loaded)
+  const [users, setUsers] = useState(adminUsersCache.users)
+  const [teams, setTeams] = useState(adminUsersCache.teams)
+  const [revenues, setRevenues] = useState(adminUsersCache.revenues)
+  const [disReports, setDisReports] = useState(adminUsersCache.disReports)
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -22,7 +24,6 @@ export default function AdminUsers() {
   const [newTeamId, setNewTeamId] = useState('')
 
   const loadData = async () => {
-    setLoading(true)
     try {
       const [profilesRes, teamsRes, revRes, disRes] = await Promise.all([
         supabase.from('profiles').select('*').order('first_name', { ascending: true }),
@@ -34,10 +35,17 @@ export default function AdminUsers() {
       if (profilesRes.error) throw profilesRes.error
       if (teamsRes.error) throw teamsRes.error
 
-      setUsers(profilesRes.data || [])
-      setTeams(teamsRes.data || [])
-      setRevenues(revRes.data || [])
-      setDisReports(disRes.data || [])
+      const u = profilesRes.data || []
+      const t = teamsRes.data || []
+      const r = revRes.data || []
+      const d = disRes.data || []
+
+      setUsers(u)
+      setTeams(t)
+      setRevenues(r)
+      setDisReports(d)
+
+      adminUsersCache = { loaded: true, users: u, teams: t, revenues: r, disReports: d }
     } catch (err) {
       console.error('Error loading admin users data:', err)
     } finally {

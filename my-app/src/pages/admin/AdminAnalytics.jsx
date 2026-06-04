@@ -35,12 +35,14 @@ const TIME_FILTER_OPTIONS = [
   { label: 'All Time', value: 0 }
 ]
 
+let adminAnalyticsCache = { loaded: false, teams: [], profiles: [], revenues: [], disReports: [] }
+
 export default function AdminAnalytics() {
-  const [loading, setLoading] = useState(true)
-  const [teams, setTeams] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [revenues, setRevenues] = useState([])
-  const [disReports, setDisReports] = useState([])
+  const [loading, setLoading] = useState(!adminAnalyticsCache.loaded)
+  const [teams, setTeams] = useState(adminAnalyticsCache.teams)
+  const [profiles, setProfiles] = useState(adminAnalyticsCache.profiles)
+  const [revenues, setRevenues] = useState(adminAnalyticsCache.revenues)
+  const [disReports, setDisReports] = useState(adminAnalyticsCache.disReports)
 
   // Global Time Filter (default to Last 6 Months)
   const [periodFilter, setPeriodFilter] = useState(6)
@@ -73,7 +75,6 @@ export default function AdminAnalytics() {
 
   // Load All Required Data on Mount
   const loadAllData = async () => {
-    setLoading(true)
     try {
       const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
@@ -86,6 +87,14 @@ export default function AdminAnalytics() {
       if (profilesRes.data) setProfiles(profilesRes.data)
       if (revRes.data) setRevenues(revRes.data)
       if (disRes.data) setDisReports(disRes.data)
+
+      adminAnalyticsCache = {
+        loaded: true,
+        teams: teamsRes.data || [],
+        profiles: profilesRes.data || [],
+        revenues: revRes.data || [],
+        disReports: disRes.data || []
+      }
     } catch (err) {
       console.error("Error loading analytics data:", err)
     } finally {

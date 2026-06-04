@@ -1,26 +1,21 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import {
-  getLastNMonths,
-  toRevenueMonthString,
-  formatRevenueMonth,
-  formatRevenueMonthShort,
-  normalizeMonth,
-  filterRevenuesByPeriod,
-  sumRevenues,
-  TIME_PERIOD_OPTIONS,
-  getAvailableYears,
-  MONTH_NAMES,
-  isFutureMonth,
-  calculateAverageRevenueData
-} from '../../utils/revenueUtils'
+import { getLastNMonths, toRevenueMonthString, formatRevenueMonth, formatRevenueMonthShort, normalizeMonth, filterRevenuesByPeriod, sumRevenues, TIME_PERIOD_OPTIONS, getAvailableYears, MONTH_NAMES, isFutureMonth, calculateAverageRevenueData } from '../../utils/revenueUtils'
 import AverageRevenueChart from '../../components/charts/AverageRevenueChart'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
+import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, Check, ChevronDown, ChevronsUpDown } from 'lucide-react'
+
+let revenueCache = {
+  userId: null,
+  revenues: [],
+  teams: [],
+  allTeams: []
+}
 
 export default function UserRevenue({ user, isAdminView }) {
-  const [revenues, setRevenues] = useState([])
-  const [teams, setTeams] = useState([]) // user's team
-  const [loading, setLoading] = useState(true)
+  const [revenues, setRevenues] = useState(revenueCache.userId === user?.id ? revenueCache.revenues : [])
+  const [teams, setTeams] = useState(revenueCache.userId === user?.id ? revenueCache.teams : [])
+  const [loading, setLoading] = useState(revenueCache.userId !== user?.id)
 
   // Form state
   const [selectedTeam, setSelectedTeam] = useState('')
@@ -57,9 +52,10 @@ export default function UserRevenue({ user, isAdminView }) {
   const [historyMonth, setHistoryMonth] = useState(new Date().getMonth()) // 0-indexed
   const [isAllTime, setIsAllTime] = useState(false)
   
-  const [allTeams, setAllTeams] = useState([])
+  const [allTeams, setAllTeams] = useState(revenueCache.userId === user?.id ? revenueCache.allTeams : [])
 
   useEffect(() => {
+
     if (user) loadData()
   }, [user])
 
@@ -79,20 +75,34 @@ export default function UserRevenue({ user, isAdminView }) {
         setLoading(false)
         return
       }
+      const assignedTeams = []
       if (profileRes.data?.team_id) {
         const userTeam = allTeamsRes.data?.find(t => t.id === profileRes.data.team_id)
         if (userTeam) {
-          setTeams([userTeam])
-          setSelectedTeam(userTeam.id)
+          assignedTeams.push(userTeam)
         }
-      } else {
-        setTeams([])
-        setSelectedTeam('')
       }
 
-      setRevenues(revDataRes.data || [])
-    } catch (err) {
-      console.error('Error loading revenue data:', err)
+      const revData = revDataRes.data || []
+
+      setRevenues(revData)
+      setTeams(assignedTeams)
+      setAllTeams(allTeamsRes.data || [])
+
+      // Update cache for silent fetching
+      revenueCache = {
+        userId: user.id,
+        revenues: revData,
+        teams: assignedTeams,
+        allTeams: allTeamsRes.data || []
+      }
+
+      if (assignedTeams.length > 0) {
+        setSelectedTeam(assignedTeams[0].id)
+      }
+
+    } catch (error) {
+      console.error('Error loading revenue data:', error)
     } finally {
       setLoading(false)
     }
@@ -334,16 +344,33 @@ export default function UserRevenue({ user, isAdminView }) {
           marginBottom: '32px',
           background: editingRecord ? 'rgba(0, 113, 227, 0.04) !important' : 'var(--apple-card) !important',
           borderColor: editingRecord ? 'rgba(0, 113, 227, 0.3) !important' : 'var(--apple-border) !important',
+          padding: '24px',
+          position: 'relative'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h3 className="apple-title-small" style={{ margin: 0, color: editingRecord ? 'var(--apple-accent)' : '#fff' }}>
-              {editingRecord ? '✏️ Edit Revenue Contribution' : '➕ Log New Revenue'}
-            </h3>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ 
+              width: '48px', height: '48px', 
+              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+              borderRadius: '12px', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 8px 16px rgba(79, 70, 229, 0.25)'
+            }}>
+              <DollarSign color="#fff" size={24} />
+            </div>
+            <div>
+              <h3 className="apple-title-small" style={{ margin: 0, color: editingRecord ? 'var(--apple-accent-blue)' : '#fff' }}>
+                {editingRecord ? 'Edit Revenue Contribution' : 'Log New Revenue'}
+              </h3>
+              <p style={{ margin: '4px 0 0 0', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
+                {editingRecord ? 'Modify your previously logged contribution.' : 'Track and record your monthly revenue contributions.'}
+              </p>
+            </div>
             {editingRecord && (
               <button
                 onClick={handleCancelEdit}
                 className="apple-btn apple-btn-secondary"
-                style={{ padding: '6px 14px !important', fontSize: '0.8rem', borderRadius: '14px !important' }}
+                style={{ marginLeft: 'auto', padding: '8px 16px !important', fontSize: '0.85rem', borderRadius: '8px !important' }}
               >
                 Cancel Edit
               </button>
@@ -357,106 +384,134 @@ export default function UserRevenue({ user, isAdminView }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-
+              
+              {/* Row 1: Team, Year, Month */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {/* Team Picker */}
                 <div>
-                  <label className="apple-form-label">Team</label>
-                  <select
-                    value={selectedTeam}
-                    onChange={e => setSelectedTeam(e.target.value)}
-                    className="apple-form-control"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {teams.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
+                  <div style={{ position: 'relative' }}>
+                    <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={selectedTeam}
+                      onChange={e => setSelectedTeam(e.target.value)}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                    >
+                      {teams.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
                 </div>
 
                 {/* Year Picker */}
                 <div>
-                  <label className="apple-form-label">Year</label>
-                  <select
-                    value={selectedYear}
-                    onChange={e => setSelectedYear(Number(e.target.value))}
-                    className="apple-form-control"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {getAvailableYears().map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Year</label>
+                  <div style={{ position: 'relative' }}>
+                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={selectedYear}
+                      onChange={e => setSelectedYear(Number(e.target.value))}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                    >
+                      {getAvailableYears().map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
                 </div>
 
                 {/* Month Picker */}
                 <div>
-                  <label className="apple-form-label">Month</label>
-                  <select
-                    value={selectedMonth}
-                    onChange={e => setSelectedMonth(Number(e.target.value))}
-                    className="apple-form-control"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {MONTH_NAMES.map((name, idx) => (
-                      <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)}>
-                        {name}{isFutureMonth(selectedYear, idx) ? ' (future)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Month</label>
+                  <div style={{ position: 'relative' }}>
+                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={selectedMonth}
+                      onChange={e => setSelectedMonth(Number(e.target.value))}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                    >
+                      {MONTH_NAMES.map((name, idx) => (
+                        <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)}>
+                          {name}{isFutureMonth(selectedYear, idx) ? ' (future)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
                 </div>
+              </div>
 
-                {/* Week Picker (Small Beautiful Cards) */}
-                <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label className="apple-form-label">Week</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
-                    {getWeekRanges(selectedYear, selectedMonth).map((w) => (
+              {/* Select Week */}
+              <div style={{ marginBottom: '24px' }}>
+                <label className="apple-form-label" style={{ marginBottom: '12px' }}>Select Week</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {getWeekRanges(selectedYear, selectedMonth).map((w) => {
+                    const isActive = selectedWeek === w.value;
+                    return (
                       <div
                         key={w.value}
                         onClick={() => setSelectedWeek(w.value)}
                         style={{
-                          padding: '12px 10px',
+                          position: 'relative',
+                          padding: '16px',
                           borderRadius: '12px',
-                          border: selectedWeek === w.value ? '2px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
-                          background: selectedWeek === w.value ? 'rgba(0, 113, 227, 0.12)' : 'rgba(255,255,255,0.02)',
+                          background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'rgba(255,255,255,0.02)',
+                          border: isActive ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
                           cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s ease',
-                          boxShadow: selectedWeek === w.value ? '0 0 12px rgba(0, 113, 227, 0.3)' : 'none'
+                          display: 'flex', alignItems: 'center', gap: '16px',
+                          transition: 'all 0.2s',
+                          boxShadow: isActive ? '0 0 12px rgba(0, 113, 227, 0.2)' : 'none'
                         }}
                       >
-                        <span style={{ fontSize: '0.95rem', fontWeight: '700', color: selectedWeek === w.value ? '#ffffff' : 'var(--apple-text-secondary)' }}>
-                          {w.label}
-                        </span>
-                        <span style={{ fontSize: '0.7rem', color: selectedWeek === w.value ? '#93c5fd' : 'var(--apple-text-secondary)', marginTop: '4px', textAlign: 'center' }}>
-                          {w.range}
-                        </span>
+                        <div style={{ 
+                           width: '40px', height: '40px', 
+                           borderRadius: '50%', 
+                           background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
+                           display: 'flex', alignItems: 'center', justifyContent: 'center',
+                           border: isActive ? 'none' : '1px solid var(--apple-border)'
+                        }}>
+                          <Calendar size={18} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
+                        </div>
+                        <div>
+                          <div style={{ color: isActive ? '#fff' : 'var(--apple-text-primary)', fontWeight: '600', fontSize: '1rem' }}>{w.label}</div>
+                          <div style={{ color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>{w.range}</div>
+                        </div>
+                        {isActive && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0, 113, 227, 0.2)', borderRadius: '50%', padding: '2px' }}><Check size={14} color="var(--apple-accent-blue)" /></div>}
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
+              </div>
 
+              {/* Row 3: Client Name, Source, Amount */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {/* Client Name */}
                 <div>
-                  <label className="apple-form-label">Client Name</label>
-                  <input
-                    type="text"
-                    value={clientName}
-                    onChange={e => setClientName(e.target.value)}
-                    placeholder="Enter client name"
-                    disabled={noClientInfo}
-                    className="apple-form-control"
-                    style={{ opacity: noClientInfo ? 0.5 : 1 }}
-                  />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <input
+                      type="text"
+                      value={clientName}
+                      onChange={e => setClientName(e.target.value)}
+                      placeholder="Enter client name"
+                      disabled={noClientInfo}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '16px', opacity: noClientInfo ? 0.5 : 1 }}
+                    />
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={noClientInfo}
                       onChange={e => setNoClientInfo(e.target.checked)}
-                      style={{ accentColor: 'var(--apple-accent)' }}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
                     />
                     No Client Info
                   </label>
@@ -464,50 +519,65 @@ export default function UserRevenue({ user, isAdminView }) {
 
                 {/* Source Dropdown */}
                 <div>
-                  <label className="apple-form-label">Source</label>
-                  <select
-                    value={source}
-                    onChange={e => setSource(e.target.value)}
-                    className="apple-form-control"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <option value="Instagram">Instagram</option>
-                    <option value="Referral">Referral</option>
-                    <option value="Cold Call">Cold Call</option>
-                    <option value="Website">Website</option>
-                    <option value="Other">Other</option>
-                    <option value="Unknown">Unknown</option>
-                  </select>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Source</label>
+                  <div style={{ position: 'relative' }}>
+                    <LinkIcon size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={source}
+                      onChange={e => setSource(e.target.value)}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                    >
+                      <option value="Instagram">Instagram</option>
+                      <option value="Referral">Referral</option>
+                      <option value="Cold Call">Cold Call</option>
+                      <option value="Website">Website</option>
+                      <option value="Other">Other</option>
+                      <option value="Unknown">Unknown</option>
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <label className="apple-form-label">Amount ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    required
-                    className="apple-form-control"
-                  />
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Amount (USD)</label>
+                  <div style={{ position: 'relative', display: 'flex', height: '46px' }}>
+                    <div style={{ width: '40px', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRight: 'none', borderRadius: '8px 0 0 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <DollarSign size={16} color="var(--apple-text-secondary)" />
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                      className="form-control"
+                      style={{ flex: 1, minWidth: 0, paddingLeft: '12px', paddingRight: '36px', borderRadius: '0 8px 8px 0' }}
+                    />
+                    <ChevronsUpDown size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
                 </div>
               </div>
 
               {/* Message Banner */}
               {message.text && (
                 <div style={{
-                  padding: '12px 16px', 
-                  marginBottom: '20px', 
-                  borderRadius: '10px',
-                  background: message.type === 'error' ? 'rgba(255, 69, 58, 0.1)' : 'rgba(48, 213, 200, 0.1)',
-                  border: `1px solid ${message.type === 'error' ? 'var(--apple-accent-red)' : 'rgba(48, 213, 200, 0.3)'}`,
+                  padding: '16px', 
+                  marginBottom: '24px', 
+                  borderRadius: '12px',
+                  background: message.type === 'error' ? 'rgba(255, 69, 58, 0.08)' : 'rgba(48, 213, 200, 0.08)',
+                  border: `1px solid ${message.type === 'error' ? 'rgba(255, 69, 58, 0.25)' : 'rgba(48, 213, 200, 0.25)'}`,
                   color: message.type === 'error' ? 'var(--apple-accent-red)' : 'var(--apple-accent-green)',
-                  fontSize: '0.9rem',
-                  fontWeight: '500'
+                  fontSize: '0.95rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
                 }}>
+                  <Info size={18} />
                   {message.text}
                 </div>
               )}
@@ -521,7 +591,8 @@ export default function UserRevenue({ user, isAdminView }) {
                 // EDIT MODE
                 if (editingRecord) {
                   return (
-                    <button type="submit" className="apple-btn apple-btn-primary" disabled={saving} style={{ width: '100%' }}>
+                    <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                      <PlusCircle size={20} />
                       {saving ? 'Saving...' : 'Update Contribution'}
                     </button>
                   )
@@ -534,40 +605,41 @@ export default function UserRevenue({ user, isAdminView }) {
                   return (
                     <div>
                       <div style={{
-                        padding: '12px 16px', 
-                        marginBottom: '16px', 
-                        borderRadius: '10px',
+                        padding: '16px', 
+                        marginBottom: '20px', 
+                        borderRadius: '12px',
                         background: 'rgba(0, 113, 227, 0.08)', 
                         border: '1px solid rgba(0, 113, 227, 0.25)',
-                        color: '#93c5fd', 
-                        fontSize: '0.85rem'
+                        display: 'flex', alignItems: 'flex-start', gap: '16px'
                       }}>
-                        📋 <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> already has a recorded contribution of <strong>${existingAmt.toFixed(2)}</strong>.
+                        <div style={{ background: 'var(--apple-accent-blue)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                          <Info size={14} color="#fff" />
+                        </div>
+                        <div style={{ color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> already has a recorded contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${existingAmt.toFixed(2)}</strong>.<br/>
+                          Choose how you want to handle the new amount:
+                        </div>
                       </div>
-                      <div className="apple-two-col-grid">
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <button
                           type="button"
-                          className="apple-btn"
                           disabled={saving}
                           onClick={() => handleSubmit(null, 'add')}
-                          style={{
-                            background: 'linear-gradient(135deg, #28cd41, #30d5c8)',
-                            color: '#ffffff'
-                          }}
+                          className="apple-btn"
+                          style={{ height: '52px', background: 'linear-gradient(135deg, #28cd41, #30d5c8)', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem' }}
                         >
-                          {saving ? 'Saving...' : `Add to Week → $${newTotal.toFixed(2)}`}
+                          <PlusCircle size={18} />
+                          {saving ? 'Saving...' : `Add → $${newTotal.toFixed(2)}`}
                         </button>
                         <button
                           type="button"
-                          className="apple-btn"
                           disabled={saving}
                           onClick={() => handleSubmit(null, 'replace')}
-                          style={{
-                            background: 'linear-gradient(135deg, #ff9f0a, #ff453a)',
-                            color: '#ffffff'
-                          }}
+                          className="apple-btn"
+                          style={{ height: '52px', background: 'linear-gradient(135deg, #ff9f0a, #ff453a)', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem' }}
                         >
-                          {saving ? 'Saving...' : `Overwrite Total → $${numAmount.toFixed(2)}`}
+                          <Check size={18} />
+                          {saving ? 'Saving...' : `Overwrite → $${numAmount.toFixed(2)}`}
                         </button>
                       </div>
                     </div>
@@ -579,18 +651,24 @@ export default function UserRevenue({ user, isAdminView }) {
                   return (
                     <div>
                       <div style={{
-                        padding: '12px 16px', 
-                        marginBottom: '16px', 
-                        borderRadius: '10px',
+                        padding: '16px', 
+                        marginBottom: '20px', 
+                        borderRadius: '12px',
                         background: 'rgba(0, 113, 227, 0.08)', 
                         border: '1px solid rgba(0, 113, 227, 0.25)',
-                        color: '#93c5fd', 
-                        fontSize: '0.85rem'
+                        display: 'flex', alignItems: 'flex-start', gap: '16px'
                       }}>
-                        📋 <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> has an existing contribution of <strong>${Number(existing.amount).toFixed(2)}</strong>. Enter an amount above to modify.
+                        <div style={{ background: 'var(--apple-accent-blue)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                          <Info size={14} color="#fff" />
+                        </div>
+                        <div style={{ color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> has an existing contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${Number(existing.amount).toFixed(2)}</strong>.<br/>
+                          Enter an amount above to modify.
+                        </div>
                       </div>
-                      <button type="submit" className="apple-btn apple-btn-primary" disabled style={{ width: '100%', opacity: 0.4 }}>
-                        Enter numeric amount
+                      <button type="submit" disabled className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '1rem', opacity: 0.5 }}>
+                        <PlusCircle size={20} />
+                        Enter Numeric Amount
                       </button>
                     </div>
                   )
@@ -598,8 +676,9 @@ export default function UserRevenue({ user, isAdminView }) {
 
                 // NORMAL LOGGING
                 return (
-                  <button type="submit" className="apple-btn apple-btn-primary" disabled={saving} style={{ width: '100%' }}>
-                    {saving ? 'Saving...' : 'Log Contribution'}
+                  <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '1rem' }}>
+                    <PlusCircle size={20} />
+                    {saving ? 'Saving...' : 'Enter Numeric Amount'}
                   </button>
                 )
               })()}

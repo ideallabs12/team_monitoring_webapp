@@ -7,21 +7,31 @@ import {
   sumRevenues
 } from '../utils/revenueUtils'
 
+let globalProfileCache = {
+  userId: null,
+  firstName: '',
+  lastName: '',
+  phone: '',
+  email: '',
+  teams: [],
+  revenues: []
+}
+
 export default function ProfileSettings({ user }) {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(globalProfileCache.userId ? false : true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   // Form State
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState(globalProfileCache.firstName)
+  const [lastName, setLastName] = useState(globalProfileCache.lastName)
+  const [phone, setPhone] = useState(globalProfileCache.phone)
+  const [email, setEmail] = useState(globalProfileCache.email)
   const [password, setPassword] = useState('')
 
   // Extra features state
-  const [teams, setTeams] = useState([])
-  const [revenues, setRevenues] = useState([])
+  const [teams, setTeams] = useState(globalProfileCache.teams)
+  const [revenues, setRevenues] = useState(globalProfileCache.revenues)
 
   useEffect(() => {
     async function loadProfile() {
@@ -37,12 +47,29 @@ export default function ProfileSettings({ user }) {
         ])
 
         if (profileRes.data) {
-          setFirstName(profileRes.data.first_name || '')
-          setLastName(profileRes.data.last_name || '')
-          setPhone(profileRes.data.phone || '')
+          const fn = profileRes.data.first_name || ''
+          const ln = profileRes.data.last_name || ''
+          const ph = profileRes.data.phone || ''
+          setFirstName(fn)
+          setLastName(ln)
+          setPhone(ph)
+          
+          globalProfileCache.firstName = fn
+          globalProfileCache.lastName = ln
+          globalProfileCache.phone = ph
         }
-        if (teamsRes.data) setTeams(teamsRes.data)
-        if (revenuesRes.data) setRevenues(revenuesRes.data)
+        if (teamsRes.data) {
+          setTeams(teamsRes.data)
+          globalProfileCache.teams = teamsRes.data
+        }
+        if (revenuesRes.data) {
+          setRevenues(revenuesRes.data)
+          globalProfileCache.revenues = revenuesRes.data
+        }
+
+        globalProfileCache.userId = user.id
+        globalProfileCache.email = user.email || ''
+
       } catch (err) {
         console.error("Error loading profile settings", err)
       } finally {

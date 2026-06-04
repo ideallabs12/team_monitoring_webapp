@@ -11,11 +11,13 @@ import {
 import UserRevenue from '../user/UserRevenue'
 import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText } from 'lucide-react'
 
+let adminTeamsCache = { loaded: false, teams: [], profiles: [], revenues: [] }
+
 export default function AdminTeams() {
-  const [loading, setLoading] = useState(true)
-  const [teams, setTeams] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [revenues, setRevenues] = useState([])
+  const [loading, setLoading] = useState(!adminTeamsCache.loaded)
+  const [teams, setTeams] = useState(adminTeamsCache.teams)
+  const [profiles, setProfiles] = useState(adminTeamsCache.profiles)
+  const [revenues, setRevenues] = useState(adminTeamsCache.revenues)
   
   // Navigation & Detail States
   const [activeTeam, setActiveTeam] = useState(null) // selected team object for detail view
@@ -39,9 +41,15 @@ export default function AdminTeams() {
         supabase.from('monthly_revenues').select('*')
       ])
 
-      if (teamsRes.data) setTeams(teamsRes.data)
-      if (profilesRes.data) setProfiles(profilesRes.data)
-      if (revRes.data) setRevenues(revRes.data)
+      const t = teamsRes.data || []
+      const p = profilesRes.data || []
+      const r = revRes.data || []
+
+      setTeams(t)
+      setProfiles(p)
+      setRevenues(r)
+      
+      adminTeamsCache = { loaded: true, teams: t, profiles: p, revenues: r }
         
       setLoading(false)
     }

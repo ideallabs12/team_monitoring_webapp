@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
+let adminSettingsCache = { loaded: false, users: [], teams: [] }
+
 export default function AdminSettings() {
-  const [loading, setLoading] = useState(true)
-  const [users, setUsers] = useState([])
-  const [teams, setTeams] = useState([])
+  const [loading, setLoading] = useState(!adminSettingsCache.loaded)
+  const [users, setUsers] = useState(adminSettingsCache.users)
+  const [teams, setTeams] = useState(adminSettingsCache.teams)
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -17,7 +19,6 @@ export default function AdminSettings() {
   const [modalMessage, setModalMessage] = useState('')
 
   const loadData = async () => {
-    setLoading(true)
     try {
       const [profilesRes, teamsRes] = await Promise.all([
         supabase.from('profiles').select('*').order('first_name', { ascending: true }),
@@ -29,9 +30,12 @@ export default function AdminSettings() {
 
       // We only manage team memberships for non-admin users
       const nonAdminUsers = (profilesRes.data || []).filter(p => p.platform_role !== 'admin')
+      const t = teamsRes.data || []
       
       setUsers(nonAdminUsers)
-      setTeams(teamsRes.data || [])
+      setTeams(t)
+      
+      adminSettingsCache = { loaded: true, users: nonAdminUsers, teams: t }
     } catch (err) {
       console.error('Error loading settings data:', err)
     } finally {

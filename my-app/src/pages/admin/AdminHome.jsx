@@ -9,12 +9,14 @@ import {
   sumRevenues
 } from '../../utils/revenueUtils'
 
+let adminHomeCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
+
 export default function AdminHome() {
-  const [loading, setLoading] = useState(true)
-  const [teams, setTeams] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [revenues, setRevenues] = useState([])
-  const [targets, setTargets] = useState([])
+  const [loading, setLoading] = useState(!adminHomeCache.loaded)
+  const [teams, setTeams] = useState(adminHomeCache.teams)
+  const [profiles, setProfiles] = useState(adminHomeCache.profiles)
+  const [revenues, setRevenues] = useState(adminHomeCache.revenues)
+  const [targets, setTargets] = useState(adminHomeCache.targets)
 
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [selectedMonth, setSelectedMonth] = useState(getTargetAssignmentMonths(0, 0)[0])
@@ -31,12 +33,13 @@ export default function AdminHome() {
           supabase.from('profiles').select('*'),
           supabase.from('monthly_revenues').select('*')
         ])
-        if (teamsRes.data) setTeams(teamsRes.data)
-        if (profilesRes.data) setProfiles(profilesRes.data)
-        if (revRes.data) setRevenues(revRes.data)
+        const t = teamsRes.data || []; const p = profilesRes.data || []; const r = revRes.data || []
+        setTeams(t); setProfiles(p); setRevenues(r)
 
         const { data: targetData, error: targetErr } = await supabase.from('monthly_targets').select('*')
-        if (!targetErr && targetData) setTargets(targetData)
+        const tgt = (!targetErr && targetData) ? targetData : []
+        setTargets(tgt)
+        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tgt }
       } catch (err) {
         console.error('Error loading admin home data:', err)
       } finally {
