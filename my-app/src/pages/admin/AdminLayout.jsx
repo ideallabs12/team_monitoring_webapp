@@ -27,7 +27,21 @@ const NAV_ITEMS = [
   { path: '/admin/settings',  label: 'Settings',    icon: Settings },
 ]
 
-export default function AdminLayout({ user }) {
+function RestrictedAccessView() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '60vh' }}>
+      <div className="card" style={{ maxWidth: '480px', textAlign: 'center', padding: '40px', background: 'var(--card-bg)' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🚫</div>
+        <h2 style={{ marginBottom: '12px', color: '#fff' }}>Access Restricted</h2>
+        <p style={{ color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+          Your account is currently deactivated or pending approval. Please contact your system administrator to request access to the platform.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function AdminLayout({ user, isDeactivated }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
@@ -141,7 +155,7 @@ export default function AdminLayout({ user }) {
         </div>
 
         <main className="admin-content">
-          <Outlet />
+          {isDeactivated ? <RestrictedAccessView /> : <Outlet />}
         </main>
       </div>
     </div>

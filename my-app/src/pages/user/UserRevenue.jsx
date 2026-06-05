@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { getLastNMonths, toRevenueMonthString, formatRevenueMonth, formatRevenueMonthShort, normalizeMonth, filterRevenuesByPeriod, sumRevenues, TIME_PERIOD_OPTIONS, getAvailableYears, MONTH_NAMES, isFutureMonth, calculateAverageRevenueData } from '../../utils/revenueUtils'
+import { getLastNMonths, toRevenueMonthString, formatRevenueMonth, formatRevenueMonthShort, normalizeMonth, filterRevenuesByPeriod, sumRevenues, TIME_PERIOD_OPTIONS, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
 import AverageRevenueChart from '../../components/charts/AverageRevenueChart'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, Check, ChevronDown, ChevronsUpDown } from 'lucide-react'
@@ -117,16 +117,6 @@ export default function UserRevenue({ user, isAdminView }) {
   const allTimeTotal = useMemo(() => sumRevenues(revenues), [revenues])
   const last12Total = useMemo(() => sumRevenues(filterRevenuesByPeriod(revenues, 12)), [revenues])
 
-  // Build a lookup: 'YYYY-MM-01__teamId__week' → revenue record (for quick edit detection)
-  const revenueMap = useMemo(() => {
-    const map = {}
-    for (const r of revenues) {
-      const key = `${normalizeMonth(r.revenue_month)}__${r.team_id}__${r.week_number || 'null'}`
-      map[key] = r
-    }
-    return map
-  }, [revenues])
-
   const uniqueTeamIds = useMemo(() => {
     // User belongs to only one team, so just use that one (or all revenue team IDs if user has no assigned team)
     if (teams.length > 0) {
@@ -190,18 +180,12 @@ export default function UserRevenue({ user, isAdminView }) {
     return Object.entries(sources).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
   }, [selectedMonthRevenues, isAllTime])
 
-  // Helper: find existing record for current form selection
-  function getExistingRecord() {
-    if (!selectedTeam) return null
-    const key = `${toRevenueMonthString(selectedYear, selectedMonth)}__${selectedTeam}__${selectedWeek}`
-    return revenueMap[key] || null
-  }
+
 
   // =====================
   // FORM HANDLERS
   // =====================
-  // mode: 'add' = add amount to existing, 'replace' = overwrite with new amount
-  async function handleSubmit(e, mode = 'replace') {
+  async function handleSubmit(e) {
     if (e) e.preventDefault()
     setMessage({ type: '', text: '' })
 
@@ -228,15 +212,10 @@ export default function UserRevenue({ user, isAdminView }) {
 
     setSaving(true)
     const revenueMonth = toRevenueMonthString(selectedYear, selectedMonth)
-    const existing = getExistingRecord()
-
-    // Calculate final amount
-    const finalAmount = (mode === 'add' && existing)
-      ? Number(existing.amount) + numAmount
-      : numAmount
 
     try {
       if (editingRecord) {
+        // Edit mode: update existing row by id
         const { error } = await supabase
           .from('monthly_revenues')
           .update({
@@ -245,38 +224,31 @@ export default function UserRevenue({ user, isAdminView }) {
             week_number: selectedWeek,
             client_name: finalClientName,
             source: source,
-            amount: finalAmount
+            amount: numAmount
           })
           .eq('id', editingRecord.id)
         if (error) throw error
       } else {
+        // New entry: always insert a new row
         const { error } = await supabase
           .from('monthly_revenues')
-          .upsert(
-            {
-              user_id: user.id,
-              team_id: selectedTeam,
-              revenue_month: revenueMonth,
-              week_number: selectedWeek,
-              client_name: finalClientName,
-              source: source,
-              amount: finalAmount,
-              entered_by: user.id
-            },
-            { onConflict: 'user_id,team_id,revenue_month,week_number' }
-          )
+          .insert({
+            user_id: user.id,
+            team_id: selectedTeam,
+            revenue_month: revenueMonth,
+            week_number: selectedWeek,
+            client_name: finalClientName,
+            source: source,
+            amount: numAmount,
+            entered_by: user.id
+          })
         if (error) throw error
       }
 
       const monthLabel = `${MONTH_NAMES[selectedMonth]} ${selectedYear}`
-      let successText
-      if (editingRecord) {
-        successText = `Revenue updated to $${finalAmount.toFixed(2)} for ${monthLabel}!`
-      } else if (mode === 'add' && existing) {
-        successText = `Added $${numAmount.toFixed(2)} to ${monthLabel}. New total: $${finalAmount.toFixed(2)}`
-      } else {
-        successText = `Revenue of $${finalAmount.toFixed(2)} saved for ${monthLabel}!`
-      }
+      const successText = editingRecord
+        ? `Revenue updated to $${numAmount.toFixed(2)} for ${monthLabel}!`
+        : `Revenue of $${numAmount.toFixed(2)} logged for ${monthLabel} (Week ${selectedWeek})!`
 
       setMessage({ type: 'success', text: successText })
       setAmount('')
@@ -321,7 +293,6 @@ export default function UserRevenue({ user, isAdminView }) {
 
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading revenue data...</div>
 
-  const averageData = calculateAverageRevenueData(revenues)
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -387,22 +358,17 @@ export default function UserRevenue({ user, isAdminView }) {
 
               {/* Row 1: Team, Year, Month */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                {/* Team Picker */}
+                {/* Team (read-only) */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
                   <div style={{ position: 'relative' }}>
                     <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
-                    <select
-                      value={selectedTeam}
-                      onChange={e => setSelectedTeam(e.target.value)}
+                    <div
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                      style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
                     >
-                      {teams.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                      {teams[0]?.name || 'No Team'}
+                    </div>
                   </div>
                 </div>
 
@@ -415,7 +381,7 @@ export default function UserRevenue({ user, isAdminView }) {
                       value={selectedYear}
                       onChange={e => setSelectedYear(Number(e.target.value))}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
                     >
                       {getAvailableYears().map(y => (
                         <option key={y} value={y}>{y}</option>
@@ -434,7 +400,7 @@ export default function UserRevenue({ user, isAdminView }) {
                       value={selectedMonth}
                       onChange={e => setSelectedMonth(Number(e.target.value))}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
                     >
                       {MONTH_NAMES.map((name, idx) => (
                         <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)}>
@@ -526,7 +492,7 @@ export default function UserRevenue({ user, isAdminView }) {
                       value={source}
                       onChange={e => setSource(e.target.value)}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
                     >
                       <option value="Linkedin">Linkedin</option>
                       <option value="Instagram">Instagram</option>
@@ -582,106 +548,18 @@ export default function UserRevenue({ user, isAdminView }) {
                 </div>
               )}
 
-              {/* Smart submit picker */}
-              {(() => {
-                const existing = getExistingRecord()
-                const numAmount = parseFloat(amount)
-                const hasValidAmount = !isNaN(numAmount) && numAmount > 0
-
-                // EDIT MODE
-                if (editingRecord) {
-                  return (
-                    <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                      <PlusCircle size={20} />
-                      {saving ? 'Saving...' : 'Update Contribution'}
-                    </button>
-                  )
-                }
-
-                // EXISTING RECORD CONFLICT
-                if (existing && hasValidAmount) {
-                  const existingAmt = Number(existing.amount)
-                  const newTotal = existingAmt + numAmount
-                  return (
-                    <div>
-                      <div style={{
-                        padding: '16px',
-                        marginBottom: '20px',
-                        borderRadius: '12px',
-                        background: 'rgba(0, 113, 227, 0.08)',
-                        border: '1px solid rgba(0, 113, 227, 0.25)',
-                        display: 'flex', alignItems: 'flex-start', gap: '16px'
-                      }}>
-                        <div style={{ background: 'var(--apple-accent-blue)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                          <Info size={14} color="#fff" />
-                        </div>
-                        <div style={{ color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> already has a recorded contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${existingAmt.toFixed(2)}</strong>.<br />
-                          Choose how you want to handle the new amount:
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={() => handleSubmit(null, 'add')}
-                          className="apple-btn"
-                          style={{ height: '52px', background: 'linear-gradient(135deg, #28cd41, #30d5c8)', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem' }}
-                        >
-                          <PlusCircle size={18} />
-                          {saving ? 'Saving...' : `Add → $${newTotal.toFixed(2)}`}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={() => handleSubmit(null, 'replace')}
-                          className="apple-btn"
-                          style={{ height: '52px', background: 'linear-gradient(135deg, #ff9f0a, #ff453a)', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem' }}
-                        >
-                          <Check size={18} />
-                          {saving ? 'Saving...' : `Overwrite → $${numAmount.toFixed(2)}`}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                }
-
-                // RECORD EXISTS but empty amount
-                if (existing && !hasValidAmount) {
-                  return (
-                    <div>
-                      <div style={{
-                        padding: '16px',
-                        marginBottom: '20px',
-                        borderRadius: '12px',
-                        background: 'rgba(0, 113, 227, 0.08)',
-                        border: '1px solid rgba(0, 113, 227, 0.25)',
-                        display: 'flex', alignItems: 'flex-start', gap: '16px'
-                      }}>
-                        <div style={{ background: 'var(--apple-accent-blue)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                          <Info size={14} color="#fff" />
-                        </div>
-                        <div style={{ color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> has an existing contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${Number(existing.amount).toFixed(2)}</strong>.<br />
-                          Enter an amount above to modify.
-                        </div>
-                      </div>
-                      <button type="submit" disabled className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '1rem', opacity: 0.5 }}>
-                        <PlusCircle size={20} />
-                        Enter Numeric Amount
-                      </button>
-                    </div>
-                  )
-                }
-
-                // NORMAL LOGGING
-                return (
-                  <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '1rem' }}>
-                    <PlusCircle size={20} />
-                    {saving ? 'Saving...' : 'Enter Numeric Amount'}
-                  </button>
-                )
-              })()}
+              {/* Submit Button */}
+              {editingRecord ? (
+                <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <PlusCircle size={20} />
+                  {saving ? 'Saving...' : 'Update Contribution'}
+                </button>
+              ) : (
+                <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <PlusCircle size={20} />
+                  {saving ? 'Saving...' : 'Log Contribution'}
+                </button>
+              )}
             </form>
           )}
         </div>
@@ -716,7 +594,7 @@ export default function UserRevenue({ user, isAdminView }) {
       </div>
 
       <div style={{ marginBottom: '32px' }}>
-        <AverageRevenueChart data={averageData} title={isAdminView ? "Average Performance Trend" : "My Average Performance Trend"} />
+        <AverageRevenueChart revenues={revenues} title={isAdminView ? "Average Performance Trend" : "My Average Performance Trend"} />
       </div>
 
       {/* ===== MY TEAMS BREAKDOWN ===== */}
@@ -774,7 +652,7 @@ export default function UserRevenue({ user, isAdminView }) {
                             textAlign: 'center'
                           }}>
                             <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                              {formatRevenueMonthShort(monthStr).split(" '")[0]}
+                              {MONTH_NAMES[new Date(monthStr).getMonth()].substring(0, 3)}
                             </div>
                             <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? '#ffffff' : 'rgba(255,255,255,0.1)' }}>
                               ${amt > 0 ? amt.toFixed(0) : 0}
@@ -850,7 +728,7 @@ export default function UserRevenue({ user, isAdminView }) {
                             textAlign: 'center'
                           }}>
                             <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                              {formatRevenueMonthShort(monthStr).split(" '")[0]}
+                              {MONTH_NAMES[new Date(monthStr).getMonth()].substring(0, 3)}
                             </div>
                             <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(255,255,255,0.1)' }}>
                               ${amt > 0 ? amt.toFixed(0) : 0}
@@ -966,6 +844,76 @@ export default function UserRevenue({ user, isAdminView }) {
 
         {selectedMonthRevenues.length > 0 ? (
           <>
+            {/* WEEKLY & SOURCE ANALYTICS */}
+            {!isAllTime && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+
+                {/* Weekly Analytics */}
+                <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
+                  <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Weekly Breakdown</h3>
+                  {weeklyData.length > 0 ? (
+                    <div style={{ height: 250, width: '100%' }}>
+                      <ResponsiveContainer>
+                        <BarChart data={weeklyData}>
+                          <XAxis dataKey="name" stroke="var(--apple-text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                          <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: '#1c1c1e', border: '1px solid var(--apple-border)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
+                          <Bar dataKey="amount" fill="var(--apple-accent-blue)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                      Weekly data not available for this period. Weekly tracking started from {selectedHistoryMonth ? formatRevenueMonth(selectedHistoryMonth) : ''}.
+                    </div>
+                  )}
+                </div>
+
+                {/* Source Breakdown */}
+                <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
+                  <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Source Breakdown</h3>
+                  {sourceData.length > 0 ? (
+                    <div style={{ height: 250, width: '100%' }}>
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie
+                            data={sourceData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+                              const radius = innerRadius + (outerRadius - innerRadius) * 2.2;
+                              const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                              const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                              return (
+                                <text x={x} y={y} fill="var(--apple-text-secondary)" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={13} fontWeight={600}>
+                                  {`${name} ${(percent * 100).toFixed(0)}%`}
+                                </text>
+                              );
+                            }}
+                            labelLine={{ stroke: 'var(--apple-border)', strokeWidth: 1 }}
+                          >
+                            {sourceData.map((entry, index) => {
+                              const colors = ['#30d5c8', '#0071e3', '#ff9f0a', '#ff453a', '#bf5af2', '#64748b']
+                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                            })}
+                          </Pie>
+                          <RechartsTooltip contentStyle={{ background: '#1c1c1e', border: '1px solid var(--apple-border)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                      Source data not available for this period.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
             {/* Desktop Table View */}
             <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -1068,65 +1016,6 @@ export default function UserRevenue({ user, isAdminView }) {
               ))}
             </div>
 
-            {/* WEEKLY & SOURCE ANALYTICS */}
-            {!isAllTime && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '32px' }}>
-
-                {/* Weekly Analytics */}
-                <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
-                  <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Weekly Breakdown</h3>
-                  {weeklyData.length > 0 ? (
-                    <div style={{ height: 250, width: '100%' }}>
-                      <ResponsiveContainer>
-                        <BarChart data={weeklyData}>
-                          <XAxis dataKey="name" stroke="var(--apple-text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
-                          <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: '#1c1c1e', border: '1px solid var(--apple-border)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
-                          <Bar dataKey="amount" fill="var(--apple-accent-blue)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                      Weekly data not available for this period. Weekly tracking started from {selectedHistoryMonth ? formatRevenueMonth(selectedHistoryMonth) : ''}.
-                    </div>
-                  )}
-                </div>
-
-                {/* Source Breakdown */}
-                <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
-                  <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Source Breakdown</h3>
-                  {sourceData.length > 0 ? (
-                    <div style={{ height: 250, width: '100%' }}>
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={sourceData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {sourceData.map((entry, index) => {
-                              const colors = ['#30d5c8', '#0071e3', '#ff9f0a', '#ff453a', '#bf5af2', '#64748b']
-                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                            })}
-                          </Pie>
-                          <RechartsTooltip contentStyle={{ background: '#1c1c1e', border: '1px solid var(--apple-border)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
-                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--apple-text-secondary)' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                      Source data not available for this period.
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            )}
           </>
         ) : (
           <div style={{

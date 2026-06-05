@@ -165,6 +165,7 @@ function App() {
   const handleProfileCompleted = () => {
     setHasProfile(true)
     setIsAdmin(false)
+    setIsDeactivated(true)
   }
 
   if (loading || (user && hasProfile === null)) {
@@ -175,74 +176,6 @@ function App() {
     )
   }
 
-  if (user && isDeactivated) {
-    return (
-      <div className="apple-theme-wrapper" style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: '#000',
-        color: '#fff',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-        padding: '20px',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          background: '#161617',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '24px',
-          padding: '40px',
-          maxWidth: '480px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          animation: 'fadeIn 0.5s ease-out'
-        }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '50%',
-            background: 'rgba(255, 69, 58, 0.1)',
-            border: '1px solid rgba(255, 69, 58, 0.25)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 24px',
-            fontSize: '2rem'
-          }}>
-            🚫
-          </div>
-          <h1 style={{
-            fontSize: '1.8rem',
-            fontWeight: '700',
-            marginBottom: '12px',
-            letterSpacing: '-0.02em',
-            color: '#fff'
-          }}>Access Blocked</h1>
-          <p style={{
-            color: '#86868b',
-            lineHeight: '1.5',
-            fontSize: '0.95rem',
-            marginBottom: '32px'
-          }}>
-            Your access to this portal has been deactivated by an administrator. You do not have permission to view this content or perform other actions.
-          </p>
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              setUser(null)
-              setIsDeactivated(false)
-              profileFetchedFor.current = null
-            }}
-            className="apple-btn apple-btn-primary"
-            style={{ width: '100%', padding: '14px', borderRadius: '14px' }}
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <Router>
@@ -273,7 +206,7 @@ function App() {
         />
 
         {/* Regular User Routes */}
-        <Route element={<Layout user={user} />}>
+        <Route element={<Layout user={user} isDeactivated={isDeactivated} />}>
           <Route path="/home" element={hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
@@ -282,7 +215,7 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={isAdmin ? <AdminLayout user={user} /> : <Navigate to="/" replace />}>
+        <Route path="/admin" element={isAdmin ? <AdminLayout user={user} isDeactivated={isDeactivated} /> : <Navigate to="/" replace />}>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<AdminHome />} />
           <Route path="teams" element={<AdminTeams />} />

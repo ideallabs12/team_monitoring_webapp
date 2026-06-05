@@ -61,7 +61,8 @@ export default function CompleteProfile({ user, onComplete }) {
           platform_role: 'employee',
           has_revenue_logging: true,
           has_dis_reporting: true,
-          profile_completed: true
+          profile_completed: true,
+          is_deactivated: true
         })
 
       if (profileError) {

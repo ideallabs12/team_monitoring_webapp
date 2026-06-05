@@ -56,6 +56,8 @@ export default function AdminAnalytics() {
   // Granular analytics month filter
   const [analyticsYear, setAnalyticsYear] = useState(new Date().getFullYear())
   const [analyticsMonth, setAnalyticsMonth] = useState(new Date().getMonth())
+  const [analyticsTeamId, setAnalyticsTeamId] = useState('all')
+  const [analyticsIsAllTime, setAnalyticsIsAllTime] = useState(false)
 
   // Current Date String for calculations
   const currentDateStr = useMemo(() => {
@@ -237,13 +239,20 @@ export default function AdminAnalytics() {
     return `${analyticsYear}-${m}-01`
   }, [analyticsYear, analyticsMonth])
   
-  const analyticsMonthRevenues = useMemo(() => {
-    return nonAdminRevenues.filter(r => normalizeMonth(r.revenue_month) === analyticsMonthStr)
-  }, [nonAdminRevenues, analyticsMonthStr])
+  const analyticsFilteredRevenues = useMemo(() => {
+    let revs = nonAdminRevenues;
+    if (analyticsTeamId !== 'all') {
+      revs = revs.filter(r => r.team_id === analyticsTeamId);
+    }
+    if (!analyticsIsAllTime) {
+      revs = revs.filter(r => normalizeMonth(r.revenue_month) === analyticsMonthStr);
+    }
+    return revs;
+  }, [nonAdminRevenues, analyticsTeamId, analyticsIsAllTime, analyticsMonthStr])
 
   // Calculate Weekly Breakdown
   const weeklyData = useMemo(() => {
-    const hasWeekly = analyticsMonthRevenues.some(r => r.week_number !== null)
+    const hasWeekly = analyticsFilteredRevenues.some(r => r.week_number !== null)
     if (!hasWeekly) return []
 
     const weeks = [
@@ -253,19 +262,19 @@ export default function AdminAnalytics() {
       { name: 'Week 4', amount: 0 }
     ]
 
-    analyticsMonthRevenues.forEach(r => {
+    analyticsFilteredRevenues.forEach(r => {
       if (r.week_number >= 1 && r.week_number <= 4) {
         weeks[r.week_number - 1].amount += Number(r.amount)
       }
     })
     return weeks
-  }, [analyticsMonthRevenues])
+  }, [analyticsFilteredRevenues])
 
   // Calculate Source Breakdown
   const sourceData = useMemo(() => {
     const sources = {}
     let hasSourceData = false
-    analyticsMonthRevenues.forEach(r => {
+    analyticsFilteredRevenues.forEach(r => {
       if (r.source) {
         hasSourceData = true
         const s = r.source === 'UNKNOWN' ? 'Unknown' : r.source
@@ -275,7 +284,7 @@ export default function AdminAnalytics() {
 
     if (!hasSourceData) return []
     return Object.entries(sources).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value)
-  }, [analyticsMonthRevenues])
+  }, [analyticsFilteredRevenues])
 
   // ===== DATA COMPUTATIONS =====
 
@@ -732,10 +741,30 @@ export default function AdminAnalytics() {
               Weekly breakdown and source distribution across all active teams.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#ffffff',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              background: 'rgba(255,255,255,0.04)',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+            }}>
+              <input
+                type="checkbox"
+                checked={analyticsIsAllTime}
+                onChange={e => setAnalyticsIsAllTime(e.target.checked)}
+                style={{ cursor: 'pointer', accentColor: '#3b82f6' }}
+              />
+              All Time
+            </label>
             <select
-              value={analyticsMonth}
-              onChange={e => setAnalyticsMonth(Number(e.target.value))}
+              value={analyticsTeamId}
+              onChange={e => setAnalyticsTeamId(e.target.value)}
               style={{
                 padding: '6px 12px',
                 fontSize: '0.85rem',
@@ -743,6 +772,26 @@ export default function AdminAnalytics() {
                 background: 'rgba(15,23,42,0.8)',
                 color: '#fff',
                 border: '1px solid var(--border-color)'
+              }}
+            >
+              <option value="all">All Teams</option>
+              {teams.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <select
+              value={analyticsMonth}
+              onChange={e => setAnalyticsMonth(Number(e.target.value))}
+              disabled={analyticsIsAllTime}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.85rem',
+                borderRadius: '8px',
+                background: 'rgba(15,23,42,0.8)',
+                color: '#fff',
+                border: '1px solid var(--border-color)',
+                opacity: analyticsIsAllTime ? 0.5 : 1,
+                cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer'
               }}
             >
               {MONTH_NAMES.map((name, idx) => (
@@ -752,13 +801,16 @@ export default function AdminAnalytics() {
             <select
               value={analyticsYear}
               onChange={e => setAnalyticsYear(Number(e.target.value))}
+              disabled={analyticsIsAllTime}
               style={{
                 padding: '6px 12px',
                 fontSize: '0.85rem',
                 borderRadius: '8px',
                 background: 'rgba(15,23,42,0.8)',
                 color: '#fff',
-                border: '1px solid var(--border-color)'
+                border: '1px solid var(--border-color)',
+                opacity: analyticsIsAllTime ? 0.5 : 1,
+                cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer'
               }}
             >
               {getAvailableYears().map(y => (
@@ -768,26 +820,28 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: analyticsIsAllTime ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
           {/* Weekly Analytics */}
-          <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
-            <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#fff' }}>Weekly Breakdown</h4>
-            {weeklyData.length > 0 ? (
-              <div style={{ height: 250, width: '100%' }}>
-                <ResponsiveContainer>
-                  <BarChart data={weeklyData}>
-                    <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
-                    <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: '#1e293b', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
-                    <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                Weekly data not available for this period.
-              </div>
-            )}
-          </div>
+          {!analyticsIsAllTime && (
+            <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#fff' }}>Weekly Breakdown</h4>
+              {weeklyData.length > 0 ? (
+                <div style={{ height: 250, width: '100%' }}>
+                  <ResponsiveContainer>
+                    <BarChart data={weeklyData}>
+                      <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: '#1e293b', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
+                      <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                  Weekly data not available for this period.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Source Breakdown */}
           <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>

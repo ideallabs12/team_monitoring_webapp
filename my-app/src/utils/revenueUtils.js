@@ -225,17 +225,14 @@ export function calculateAverageRevenueData(revenues) {
   ]
   
   return periods.map(p => {
-    const filtered = filterRevenuesByPeriod(revenues, p.value)
+    const filtered = p.value > 0 
+      ? filterRevenuesByCompletedPeriod(revenues, p.value) 
+      : revenues
     const sum = sumRevenues(filtered)
     
-    let average = 0
-    if (p.value > 0) {
-      average = sum / p.value
-    } else {
-      // All Time: divide by unique active months
-      const uniqueMonths = new Set(revenues.map(r => normalizeMonth(r.revenue_month))).size
-      average = uniqueMonths > 0 ? sum / uniqueMonths : 0
-    }
+    // Divide by actual unique months that have revenue data
+    const uniqueMonths = new Set(filtered.map(r => normalizeMonth(r.revenue_month))).size
+    const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
     
     return {
       period: p.label,
