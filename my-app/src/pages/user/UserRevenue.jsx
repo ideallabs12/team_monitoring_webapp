@@ -36,7 +36,7 @@ export default function UserRevenue({ user, isAdminView }) {
     const d = new Date(year, monthIndex, 1)
     const monthName = d.toLocaleString('default', { month: 'short' })
     const lastDay = new Date(year, monthIndex + 1, 0).getDate()
-    
+
     return [
       { label: 'Week 1', range: `${monthName} 1 – ${monthName} 7`, value: 1 },
       { label: 'Week 2', range: `${monthName} 8 – ${monthName} 14`, value: 2 },
@@ -47,11 +47,11 @@ export default function UserRevenue({ user, isAdminView }) {
 
   // Filter state
   const [periodFilter, setPeriodFilter] = useState(12) // default: last 12 months
-  
+
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear())
   const [historyMonth, setHistoryMonth] = useState(new Date().getMonth()) // 0-indexed
   const [isAllTime, setIsAllTime] = useState(false)
-  
+
   const [allTeams, setAllTeams] = useState(revenueCache.userId === user?.id ? revenueCache.allTeams : [])
 
   useEffect(() => {
@@ -187,7 +187,7 @@ export default function UserRevenue({ user, isAdminView }) {
     })
 
     if (!hasSourceData) return []
-    return Object.entries(sources).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value)
+    return Object.entries(sources).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
   }, [selectedMonthRevenues, isAllTime])
 
   // Helper: find existing record for current form selection
@@ -349,10 +349,10 @@ export default function UserRevenue({ user, isAdminView }) {
         }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-            <div style={{ 
-              width: '48px', height: '48px', 
+            <div style={{
+              width: '48px', height: '48px',
               background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-              borderRadius: '12px', 
+              borderRadius: '12px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 8px 16px rgba(79, 70, 229, 0.25)'
             }}>
@@ -384,7 +384,7 @@ export default function UserRevenue({ user, isAdminView }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              
+
               {/* Row 1: Team, Year, Month */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {/* Team Picker */}
@@ -469,12 +469,12 @@ export default function UserRevenue({ user, isAdminView }) {
                           boxShadow: isActive ? '0 0 12px rgba(0, 113, 227, 0.2)' : 'none'
                         }}
                       >
-                        <div style={{ 
-                           width: '40px', height: '40px', 
-                           borderRadius: '50%', 
-                           background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
-                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                           border: isActive ? 'none' : '1px solid var(--apple-border)'
+                        <div style={{
+                          width: '40px', height: '40px',
+                          borderRadius: '50%',
+                          background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: isActive ? 'none' : '1px solid var(--apple-border)'
                         }}>
                           <Calendar size={18} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
                         </div>
@@ -528,9 +528,9 @@ export default function UserRevenue({ user, isAdminView }) {
                       className="form-control"
                       style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer' }}
                     >
+                      <option value="Linkedin">Linkedin</option>
                       <option value="Instagram">Instagram</option>
-                      <option value="Referral">Referral</option>
-                      <option value="Cold Call">Cold Call</option>
+                      <option value="Facebook">Facebook</option>
                       <option value="Website">Website</option>
                       <option value="Other">Other</option>
                       <option value="Unknown">Unknown</option>
@@ -565,8 +565,8 @@ export default function UserRevenue({ user, isAdminView }) {
               {/* Message Banner */}
               {message.text && (
                 <div style={{
-                  padding: '16px', 
-                  marginBottom: '24px', 
+                  padding: '16px',
+                  marginBottom: '24px',
                   borderRadius: '12px',
                   background: message.type === 'error' ? 'rgba(255, 69, 58, 0.08)' : 'rgba(48, 213, 200, 0.08)',
                   border: `1px solid ${message.type === 'error' ? 'rgba(255, 69, 58, 0.25)' : 'rgba(48, 213, 200, 0.25)'}`,
@@ -605,10 +605,10 @@ export default function UserRevenue({ user, isAdminView }) {
                   return (
                     <div>
                       <div style={{
-                        padding: '16px', 
-                        marginBottom: '20px', 
+                        padding: '16px',
+                        marginBottom: '20px',
                         borderRadius: '12px',
-                        background: 'rgba(0, 113, 227, 0.08)', 
+                        background: 'rgba(0, 113, 227, 0.08)',
                         border: '1px solid rgba(0, 113, 227, 0.25)',
                         display: 'flex', alignItems: 'flex-start', gap: '16px'
                       }}>
@@ -616,7 +616,7 @@ export default function UserRevenue({ user, isAdminView }) {
                           <Info size={14} color="#fff" />
                         </div>
                         <div style={{ color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> already has a recorded contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${existingAmt.toFixed(2)}</strong>.<br/>
+                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> already has a recorded contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${existingAmt.toFixed(2)}</strong>.<br />
                           Choose how you want to handle the new amount:
                         </div>
                       </div>
@@ -651,10 +651,10 @@ export default function UserRevenue({ user, isAdminView }) {
                   return (
                     <div>
                       <div style={{
-                        padding: '16px', 
-                        marginBottom: '20px', 
+                        padding: '16px',
+                        marginBottom: '20px',
                         borderRadius: '12px',
-                        background: 'rgba(0, 113, 227, 0.08)', 
+                        background: 'rgba(0, 113, 227, 0.08)',
                         border: '1px solid rgba(0, 113, 227, 0.25)',
                         display: 'flex', alignItems: 'flex-start', gap: '16px'
                       }}>
@@ -662,7 +662,7 @@ export default function UserRevenue({ user, isAdminView }) {
                           <Info size={14} color="#fff" />
                         </div>
                         <div style={{ color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> has an existing contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${Number(existing.amount).toFixed(2)}</strong>.<br/>
+                          <strong>{MONTH_NAMES[selectedMonth]} {selectedYear} (Week {selectedWeek})</strong> has an existing contribution of <strong style={{ color: 'var(--apple-accent-blue)' }}>${Number(existing.amount).toFixed(2)}</strong>.<br />
                           Enter an amount above to modify.
                         </div>
                       </div>
@@ -722,10 +722,10 @@ export default function UserRevenue({ user, isAdminView }) {
       {/* ===== MY TEAMS BREAKDOWN ===== */}
       <div className="apple-card" style={{ marginBottom: '32px' }}>
         <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>My Teams Breakdown</h3>
-        
+
         {uniqueTeamIds.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
+
             {/* Combined Section (Multi-team users) */}
             {uniqueTeamIds.length > 1 && (() => {
               const combinedAllTime = sumRevenues(revenues)
@@ -758,7 +758,7 @@ export default function UserRevenue({ user, isAdminView }) {
                   <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>
                     Monthly Breakdown (Combined)
                   </div>
-                  
+
                   {/* Swipeable responsive month strip */}
                   <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
                     <div style={{ display: 'flex', gap: '8px', minWidth: '450px' }}>
@@ -817,14 +817,14 @@ export default function UserRevenue({ user, isAdminView }) {
                       <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.95rem', textTransform: 'capitalize' }}>
                         {uniqueTeamIds.length > 1 ? `${teamObj.name} Performance` : teamObj.name}
                       </span>
-                      <span 
+                      <span
                         className={
-                          teamRole === 'lead' 
-                            ? 'apple-badge apple-badge-orange' 
-                            : teamRole === 'former member' 
-                              ? 'apple-badge apple-badge-red' 
+                          teamRole === 'lead'
+                            ? 'apple-badge apple-badge-orange'
+                            : teamRole === 'former member'
+                              ? 'apple-badge apple-badge-red'
                               : 'apple-badge apple-badge-green'
-                        } 
+                        }
                         style={{ marginLeft: '8px', padding: '1px 6px', fontSize: '0.65rem', textTransform: 'capitalize' }}
                       >
                         {teamRole}
@@ -881,16 +881,16 @@ export default function UserRevenue({ user, isAdminView }) {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              color: '#ffffff', 
-              fontSize: '0.88rem', 
-              cursor: 'pointer', 
-              background: 'rgba(255,255,255,0.04)', 
-              padding: '8px 14px', 
-              borderRadius: '12px', 
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#ffffff',
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              background: 'rgba(255,255,255,0.04)',
+              padding: '8px 14px',
+              borderRadius: '12px',
               border: '1px solid var(--apple-border)',
               fontWeight: '500'
             }}>
@@ -1039,8 +1039,8 @@ export default function UserRevenue({ user, isAdminView }) {
                         {record.teams?.name || 'Unknown Team'}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
-                        {record.week_number ? `Week ${record.week_number}` : 'Legacy'} | 
-                        {(!record.client_name ? '—' : record.client_name === 'NONAME' ? ' No Client' : ` ${record.client_name}`)} | 
+                        {record.week_number ? `Week ${record.week_number}` : 'Legacy'} |
+                        {(!record.client_name ? '—' : record.client_name === 'NONAME' ? ' No Client' : ` ${record.client_name}`)} |
                         {(!record.source ? '—' : record.source === 'UNKNOWN' ? ' Unknown' : ` ${record.source}`)}
                       </div>
                     </div>
@@ -1053,10 +1053,10 @@ export default function UserRevenue({ user, isAdminView }) {
                     <button
                       onClick={() => handleEdit(record)}
                       className="apple-btn apple-btn-secondary"
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px !important', 
-                        fontSize: '0.85rem', 
+                      style={{
+                        width: '100%',
+                        padding: '10px !important',
+                        fontSize: '0.85rem',
                         marginTop: '6px',
                         borderRadius: '10px !important'
                       }}
@@ -1071,7 +1071,7 @@ export default function UserRevenue({ user, isAdminView }) {
             {/* WEEKLY & SOURCE ANALYTICS */}
             {!isAllTime && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '32px' }}>
-                
+
                 {/* Weekly Analytics */}
                 <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
                   <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Weekly Breakdown</h3>
