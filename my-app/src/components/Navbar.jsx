@@ -10,7 +10,7 @@ export default function Navbar({ user }) {
 
   useEffect(() => {
     if (user) {
-      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting').eq('id', user.id).single()
+      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting, platform_role').eq('id', user.id).single()
         .then(({ data }) => {
           if (data) setProfile(data)
         })
@@ -52,6 +52,10 @@ export default function Navbar({ user }) {
   
   if (profile?.has_dis_reporting !== false) {
     navLinks.push({ to: '/dis', label: 'DIS' })
+  }
+
+  if (profile?.platform_role === 'teamlead') {
+    navLinks.push({ to: '/team-analytics', label: 'Team Analytics' })
   }
 
   navLinks.push({ to: '/profile', label: 'Profile' })

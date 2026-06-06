@@ -55,33 +55,39 @@ export default function AdminHome() {
     }
   }, [selectedTeamId, teams])
 
-  const teamMembers = useMemo(() => {
+  const activeTeamMembers = useMemo(() => {
     if (!selectedTeamId) return []
     return profiles
-      .filter(p => p.team_id === selectedTeamId && p.platform_role !== 'admin')
-      .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+      .filter(p => p.team_id === selectedTeamId && p.platform_role !== 'admin' && !p.is_deactivated)
   }, [selectedTeamId, profiles])
 
   const memberTargets = useMemo(() => {
-    return teamMembers.map(member => {
-      const target = getEffectiveTarget(targets, member.id, selectedTeamId, selectedMonth)
-      const currentTarget = target ? Number(target.target_amount || 0) : 0
-      const reached = sumRevenues(revenues.filter(r =>
-        r.user_id === member.id &&
-        r.team_id === selectedTeamId &&
-        normalizeMonth(r.revenue_month) === selectedMonth
-      ))
-      const achievement = currentTarget > 0 ? (reached / currentTarget) * 100 : 0
+    if (!selectedTeamId) return []
+    return profiles
+      .filter(p => p.platform_role !== 'admin')
+      .map(member => {
+        const target = getEffectiveTarget(targets, member.id, selectedTeamId, selectedMonth)
+        const currentTarget = target ? Number(target.target_amount || 0) : 0
+        const reached = sumRevenues(revenues.filter(r =>
+          r.user_id === member.id &&
+          r.team_id === selectedTeamId &&
+          normalizeMonth(r.revenue_month) === selectedMonth
+        ))
+        const achievement = currentTarget > 0 ? (reached / currentTarget) * 100 : 0
+        const isActiveInTeam = activeTeamMembers.some(a => a.id === member.id)
 
-      return {
-        ...member,
-        currentTarget,
-        targetSourceMonth: target ? normalizeMonth(target.target_month) : '',
-        reached,
-        achievement
-      }
-    })
-  }, [teamMembers, targets, revenues, selectedTeamId, selectedMonth])
+        return {
+          ...member,
+          currentTarget,
+          targetSourceMonth: target ? normalizeMonth(target.target_month) : '',
+          reached,
+          achievement,
+          isActiveInTeam
+        }
+      })
+      .filter(m => m.isActiveInTeam || m.currentTarget > 0 || m.reached > 0)
+      .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+  }, [profiles, targets, revenues, selectedTeamId, selectedMonth, activeTeamMembers])
 
   const summary = useMemo(() => {
     const expected = memberTargets.reduce((sum, member) => sum + member.currentTarget, 0)
@@ -239,111 +245,139 @@ export default function AdminHome() {
           </div>
         </div>
 
-        {/* Members table */}
-        {memberTargets.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>No non-admin members found for this team.</p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                  <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Current Target</th>
-                  <th style={{ textAlign: 'left', padding: '10px 8px' }}>Applies From</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Edit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {memberTargets.map(member => {
-                  const isEditing = editingUserId === member.id
-                  const isSaving = savingUserId === member.id
+        {/* Members tables */}
+        {(() => {
+          const activeTargets = memberTargets.filter(m => m.isActiveInTeam)
+          const historicalTargets = memberTargets.filter(m => !m.isActiveInTeam)
 
-                  return (
-                    <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '12px 8px' }}>
-                        <div style={{ color: '#fff', fontWeight: '700' }}>{member.first_name} {member.last_name}</div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{member.email}</div>
-                      </td>
-                      <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
-                            className="form-control"
-                            value={editAmount}
-                            onChange={(e) => {
-                              // Only allow numeric input with optional decimal
-                              const val = e.target.value
-                              if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
-                            }}
-                            placeholder="0.00"
-                            style={{ width: '140px', marginLeft: 'auto', textAlign: 'right' }}
-                            autoFocus
-                          />
-                        ) : (
-                          <span style={{ color: '#60a5fa', fontWeight: '800' }}>${member.currentTarget.toFixed(2)}</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
-                        {member.targetSourceMonth ? formatRevenueMonth(member.targetSourceMonth) : 'Not assigned'}
-                      </td>
-                      <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
-                        ${member.reached.toFixed(2)}
-                      </td>
-                      <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
-                        {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                      </td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                          {isEditing ? (
-                            <>
-                              <button
-                                type="button"
-                                className="btn"
-                                onClick={() => handleSaveTarget(member.id)}
-                                disabled={isSaving}
-                                title="Save target"
-                                aria-label="Save target"
-                                style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                <Check size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={cancelEditing}
-                                disabled={isSaving}
-                                title="Cancel edit"
-                                aria-label="Cancel edit"
-                                style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                <X size={16} />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => startEditing(member)}
-                              title="Edit target"
-                              aria-label={`Edit target for ${member.first_name} ${member.last_name}`}
-                              style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+          if (activeTargets.length === 0 && historicalTargets.length === 0) {
+            return <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>No historical or active non-admin members found for this team in this period.</p>
+          }
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {activeTargets.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#fff' }}>Active Members</h4>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Current Target</th>
+                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Applies From</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Edit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeTargets.map(member => {
+                        const isEditing = editingUserId === member.id
+                        const isSaving = savingUserId === member.id
+
+                        return (
+                          <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '12px 8px' }}>
+                              <div style={{ color: '#fff', fontWeight: '700' }}>{member.first_name} {member.last_name}</div>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{member.email}</div>
+                            </td>
+                            <td style={{ padding: '12px 8px', textAlign: 'right' }}>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  pattern="[0-9]*\.?[0-9]*"
+                                  className="form-control"
+                                  value={editAmount}
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
+                                  }}
+                                  placeholder="0.00"
+                                  style={{ width: '140px', marginLeft: 'auto', textAlign: 'right' }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span style={{ color: '#60a5fa', fontWeight: '800' }}>${member.currentTarget.toFixed(2)}</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
+                              {member.targetSourceMonth ? formatRevenueMonth(member.targetSourceMonth) : 'Not assigned'}
+                            </td>
+                            <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
+                              ${member.reached.toFixed(2)}
+                            </td>
+                            <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
+                              {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
+                            </td>
+                            <td style={{ padding: '12px 8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                {isEditing ? (
+                                  <>
+                                    <button type="button" className="btn" onClick={() => handleSaveTarget(member.id)} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <Check size={16} />
+                                    </button>
+                                    <button type="button" className="btn btn-secondary" onClick={cancelEditing} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <X size={16} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button type="button" className="btn btn-secondary" onClick={() => startEditing(member)} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Edit2 size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {historicalTargets.length > 0 && (
+                <div style={{ overflowX: 'auto', opacity: 0.85, padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Historical Members</h4>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Target</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historicalTargets.map(member => (
+                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '12px 8px' }}>
+                            <div style={{ color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {member.first_name} {member.last_name}
+                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff' }}>
+                                {member.is_deactivated ? 'Former' : 'Transferred'}
+                              </span>
+                            </div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '2px' }}>{member.email}</div>
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            ${member.currentTarget.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            ${member.reached.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {message.text && (
           <div style={{

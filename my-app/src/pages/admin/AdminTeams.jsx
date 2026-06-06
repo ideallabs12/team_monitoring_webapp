@@ -254,9 +254,15 @@ export default function AdminTeams() {
   // VIEW 2: TEAM MEMBERS DETAILS VIEW
   // ==========================================
   if (activeTeam) {
-    const teamProfiles = profiles
-      .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin')
+    const activeProfiles = profiles
+      .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin' && !p.is_deactivated)
       .sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
+
+    const activeProfileIds = new Set(activeProfiles.map(p => p.id))
+
+    // Historical profiles: non-admins who are NOT currently active in this team
+    const historicalProfilesUnfiltered = profiles
+      .filter(p => p.platform_role !== 'admin' && !activeProfileIds.has(p.id))
 
     return (
       <div style={{ animation: 'fadeIn 0.25s var(--apple-ease)' }}>
@@ -313,17 +319,17 @@ export default function AdminTeams() {
         </div>
 
         {/* Member list details */}
-        <div className="apple-card" style={{ padding: '24px !important' }}>
+        <div className="apple-card" style={{ padding: '24px !important', marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>
-              Roster Members ({teamProfiles.length})
+              Active Members ({activeProfiles.length})
             </h4>
             <span style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)' }}>
               Audit month: <strong style={{ color: 'var(--apple-accent-green)' }}>{formatRevenueMonth(selectedRevenueMonth)}</strong>
             </span>
           </div>
 
-          {teamProfiles.length > 0 ? (
+          {activeProfiles.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               
               {/* Table Header Row */}
@@ -346,9 +352,7 @@ export default function AdminTeams() {
               </div>
 
               {/* Rows */}
-              {teamProfiles.map(profile => {
-                
-                // Get member revenue for the selected team & selected month
+              {activeProfiles.map(profile => {
                 const monthRevenue = revenues
                   .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0)
@@ -393,14 +397,96 @@ export default function AdminTeams() {
                   </div>
                 )
               })}
-
             </div>
           ) : (
             <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>
-              No roster members in this team.
+              No active members in this team.
             </p>
           )}
         </div>
+
+        {/* Historical Members List (Only shown if they have revenue in this month) */}
+        {(() => {
+          // Calculate revenue for historical members and only keep those with > 0
+          const historicalWithRevenue = historicalProfilesUnfiltered.map(profile => {
+            const monthRevenue = revenues
+              .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
+              .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+            return { ...profile, monthRevenue }
+          }).filter(p => p.monthRevenue > 0)
+
+          if (historicalWithRevenue.length === 0) return null
+
+          return (
+            <div className="apple-card" style={{ padding: '24px !important', background: 'rgba(255, 255, 255, 0.02) !important', borderStyle: 'dashed' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>
+                  Historical Members ({historicalWithRevenue.length})
+                </h4>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', opacity: 0.85 }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
+                  gap: '12px',
+                  padding: '0 0 12px 0',
+                  fontSize: '0.78rem',
+                  color: 'var(--apple-text-secondary)',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  borderBottom: '1px solid var(--apple-border)'
+                }}>
+                  <div>Member Details</div>
+                  <div style={{ textAlign: 'center' }}>Status</div>
+                  <div style={{ textAlign: 'right' }}>Revenue</div>
+                  <div style={{ textAlign: 'center' }}>Action</div>
+                </div>
+
+                {historicalWithRevenue.map(profile => (
+                  <div
+                    key={profile.id}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
+                      gap: '12px',
+                      alignItems: 'center',
+                      padding: '14px 0',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      fontSize: '0.92rem'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: '600', color: 'var(--apple-text-secondary)' }}>{profile.first_name} {profile.last_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{profile.email}</div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <span className="apple-badge" style={{ padding: '2px 8px', fontSize: '0.68rem', background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                        {profile.is_deactivated ? 'Former' : 'Transferred'}
+                      </span>
+                    </div>
+
+                    <div style={{ textAlign: 'right', fontWeight: '700', color: 'var(--apple-text-secondary)' }}>
+                      ${profile.monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <button
+                        onClick={() => setViewingProfileUser(profile)}
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '6px 12px !important', fontSize: '0.78rem', borderRadius: '10px !important', opacity: 0.7 }}
+                      >
+                        Profile
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
     )
   }
@@ -423,9 +509,9 @@ export default function AdminTeams() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', width: '100%' }}>
         {teams.length > 0 ? (
           teams.map(team => {
-            // Count total members (excluding platform admins)
+            // Count total members (excluding platform admins and deactivated)
             const teamMemberCount = profiles.filter(p => 
-              p.team_id === team.id && p.platform_role !== 'admin'
+              p.team_id === team.id && p.platform_role !== 'admin' && !p.is_deactivated
             ).length
 
             // Sum this month's revenue

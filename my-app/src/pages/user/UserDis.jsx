@@ -737,46 +737,8 @@ export default function UserDis() {
 
       {/* ===== TAB CONTENT: TEAM LEAD VIEW ===== */}
       {activeTab === 'team' && isTeamLead && (
-        <div className="apple-pane-layout">
-          
-          {/* LEFT SIDEBAR: Teams List */}
-          <div className="apple-left-pane">
-            <div className="apple-kicker" style={{ paddingLeft: '4px', marginBottom: '12px' }}>
-              My Teams Ledger
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {ledTeams.map(team => {
-                const isSelected = selectedLedTeamId === team.id
-                const stats = teamMetrics[team.id] || { total: 0, submitted: 0 }
-                return (
-                  <button
-                    key={team.id}
-                    onClick={() => setSelectedLedTeamId(team.id)}
-                    className="apple-card"
-                    style={{
-                      padding: '16px 20px !important',
-                      background: isSelected ? 'rgba(0, 113, 227, 0.08) !important' : 'var(--apple-card) !important',
-                      borderColor: isSelected ? 'var(--apple-accent-blue) !important' : 'var(--apple-border) !important',
-                      textAlign: 'left',
-                      width: '100%',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px'
-                    }}
-                  >
-                    <span style={{ fontWeight: '700', fontSize: '1rem', textTransform: 'capitalize', color: '#ffffff' }}>{team.name}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>
-                      {stats.submitted} / {stats.total} submitted today
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* RIGHT SIDEBAR CONTENT: Selected Team Details */}
-          <div className="apple-right-pane">
+        <div style={{ width: '100%', animation: 'fadeIn 0.3s var(--apple-ease)' }}>
+          <div style={{ width: '100%' }}>
             {selectedLedTeamId ? (() => {
               const currentTeam = ledTeams.find(t => t.id === selectedLedTeamId)
               
@@ -972,7 +934,6 @@ export default function UserDis() {
               </div>
             )}
           </div>
-
         </div>
       )}
 

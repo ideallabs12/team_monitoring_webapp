@@ -133,13 +133,13 @@ export default function AdminRevenue() {
     return new Set(getLastNMonths(periodFilter))
   }, [periodFilter, revenues, targets])
 
-  const teamMembers = useMemo(() => {
+  const activeTeamMembers = useMemo(() => {
     if (!selectedTeamId) return []
-    return nonAdminProfiles.filter(p => p.team_id === selectedTeamId)
+    return nonAdminProfiles.filter(p => p.team_id === selectedTeamId && !p.is_deactivated)
   }, [selectedTeamId, nonAdminProfiles])
 
   const memberStats = useMemo(() => {
-    return teamMembers.map(member => {
+    return nonAdminProfiles.map(member => {
       const expected = Array.from(monthSet).reduce((sum, month) => {
         return sum + getEffectiveTargetAmount(targets, member.id, selectedTeamId, month)
       }, 0)
@@ -158,10 +158,12 @@ export default function AdminRevenue() {
         expected,
         actual,
         gap: actual - expected,
-        achievement
+        achievement,
+        isActiveInTeam: activeTeamMembers.some(a => a.id === member.id)
       }
-    }).sort((a, b) => b.actual - a.actual)
-  }, [teamMembers, targets, revenues, selectedTeamId, monthSet])
+    }).filter(m => m.isActiveInTeam || m.expected > 0 || m.actual > 0)
+      .sort((a, b) => b.actual - a.actual)
+  }, [nonAdminProfiles, activeTeamMembers, targets, revenues, selectedTeamId, monthSet])
 
   const summary = useMemo(() => {
     const expected = memberStats.reduce((sum, m) => sum + m.expected, 0)
@@ -210,6 +212,7 @@ export default function AdminRevenue() {
             <div>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
                 {highestMember.first_name} {highestMember.last_name}
+                {highestMember.is_deactivated && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px', fontWeight: 'normal' }}>(Former)</span>}
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#a78bfa', marginTop: '4px' }}>
                 ${highestMember.allTimeTotal.toFixed(2)}
@@ -264,44 +267,97 @@ export default function AdminRevenue() {
           </div>
         </div>
 
-        {memberStats.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No non-admin members found for this team.</p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                  <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Expected</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Actual</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Gap</th>
-                  <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                </tr>
-              </thead>
-              <tbody>
-                {memberStats.map(member => (
-                  <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={{ padding: '12px 8px', color: '#fff', fontWeight: '600' }}>
-                      {member.first_name} {member.last_name}
-                    </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'right', color: '#60a5fa', fontWeight: '700' }}>
-                      ${member.expected.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
-                      ${member.actual.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'right', color: member.gap >= 0 ? '#4ade80' : '#f87171', fontWeight: '700' }}>
-                      {member.gap >= 0 ? '+' : ''}${member.gap.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
-                      {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {(() => {
+          const activeStats = memberStats.filter(m => m.isActiveInTeam)
+          const historicalStats = memberStats.filter(m => !m.isActiveInTeam)
+
+          if (activeStats.length === 0 && historicalStats.length === 0) {
+            return <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No historical or active non-admin members found for this team in this period.</p>
+          }
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {activeStats.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#fff' }}>Active Members</h4>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Expected</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Actual</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Gap</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeStats.map(member => (
+                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '12px 8px', color: '#fff', fontWeight: '600' }}>
+                            {member.first_name} {member.last_name}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: '#60a5fa', fontWeight: '700' }}>
+                            ${member.expected.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
+                            ${member.actual.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: member.gap >= 0 ? '#4ade80' : '#f87171', fontWeight: '700' }}>
+                            {member.gap >= 0 ? '+' : ''}${member.gap.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
+                            {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {historicalStats.length > 0 && (
+                <div style={{ overflowX: 'auto', opacity: 0.85, padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Historical Members</h4>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Expected</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Actual</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Gap</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historicalStats.map(member => (
+                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {member.first_name} {member.last_name}
+                            <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
+                              {member.is_deactivated ? 'Former' : 'Transferred'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            ${member.expected.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            ${member.actual.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            {member.gap >= 0 ? '+' : ''}${member.gap.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                            {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
 
       {/* ===== TEAM AVERAGE REVENUE ===== */}

@@ -3,7 +3,8 @@ import { supabase } from '../../supabaseClient'
 import { getLastNMonths, toRevenueMonthString, formatRevenueMonth, formatRevenueMonthShort, normalizeMonth, filterRevenuesByPeriod, sumRevenues, TIME_PERIOD_OPTIONS, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
 import AverageRevenueChart from '../../components/charts/AverageRevenueChart'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
-import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, Check, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, Check, ChevronDown, ChevronsUpDown, Clock } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 let revenueCache = {
   userId: null,
@@ -337,7 +338,7 @@ export default function UserRevenue({ user, isAdminView }) {
                 {editingRecord ? 'Modify your previously logged contribution.' : 'Track and record your monthly revenue contributions.'}
               </p>
             </div>
-            {editingRecord && (
+            {editingRecord ? (
               <button
                 onClick={handleCancelEdit}
                 className="apple-btn apple-btn-secondary"
@@ -345,6 +346,35 @@ export default function UserRevenue({ user, isAdminView }) {
               >
                 Cancel Edit
               </button>
+            ) : (
+              <Link
+                to="/historical-revenue"
+                className="apple-btn"
+                style={{
+                  marginLeft: 'auto',
+                  padding: '8px 16px',
+                  fontSize: '0.85rem',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'var(--apple-text-secondary)',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.color = '#fff'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                  e.currentTarget.style.color = 'var(--apple-text-secondary)'
+                }}
+              >
+                <Clock size={14} /> Log Past Team Revenue
+              </Link>
             )}
           </div>
 
