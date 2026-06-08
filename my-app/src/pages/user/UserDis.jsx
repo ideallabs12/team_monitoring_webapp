@@ -370,7 +370,7 @@ export default function UserDis() {
                 </span>
               </div>
               <div>
-                <label className="apple-form-label" style={{ marginBottom: '4px' }}>MTD Revenue (All Teams)</label>
+                <label className="apple-form-label" style={{ marginBottom: '4px' }}>MTD Revenue</label>
                 <span style={{ fontWeight: '700', color: 'var(--apple-accent-green)', display: 'block', fontSize: '1.2rem' }}>
                   {loadingMTD ? 'Calculating...' : `$${mtdRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </span>
