@@ -139,8 +139,8 @@ export default function RevenueHistory({ user }) {
   }
 
   async function handleEditSave() {
-    if (!editAmount || isNaN(editAmount)) {
-      alert('Please enter a valid amount')
+    if (editAmount === '' || isNaN(editAmount) || Number(editAmount) < 0) {
+      alert('Please enter a valid amount (0 or greater)')
       return
     }
     try {

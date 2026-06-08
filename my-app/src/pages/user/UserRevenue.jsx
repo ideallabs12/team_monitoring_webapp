@@ -196,8 +196,8 @@ export default function UserRevenue({ user, isAdminView }) {
       return
     }
     const numAmount = parseFloat(amount)
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setMessage({ type: 'error', text: 'Please enter a valid amount greater than 0.' })
+    if (isNaN(numAmount) || numAmount < 0) {
+      setMessage({ type: 'error', text: 'Please enter a valid amount (0 or greater).' })
       return
     }
     if (isFutureMonth(selectedYear, selectedMonth)) {
