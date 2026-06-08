@@ -9,44 +9,78 @@ import {
   getEffectiveTargetAmount
 } from '../../utils/revenueUtils'
 
+let globalHomeCache = {
+  userId: null,
+  profile: null,
+  userTeams: [],
+  userRevenues: [],
+  userTargets: [],
+  latestReport: null
+}
+
 export default function UserHome({ user, isAdminView }) {
-  const [profile, setProfile] = useState(null)
-  const [userTeams, setUserTeams] = useState([])
-  const [userRevenues, setUserRevenues] = useState([])
-  const [userTargets, setUserTargets] = useState([])
-  const [latestReport, setLatestReport] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState(globalHomeCache.profile)
+  const [userTeams, setUserTeams] = useState(globalHomeCache.userTeams)
+  const [userRevenues, setUserRevenues] = useState(globalHomeCache.userRevenues)
+  const [userTargets, setUserTargets] = useState(globalHomeCache.userTargets)
+  const [latestReport, setLatestReport] = useState(globalHomeCache.latestReport)
+  const [loading, setLoading] = useState(globalHomeCache.userId !== user?.id)
 
   useEffect(() => {
     async function fetchDashboardData() {
       if (!user) return
 
       try {
-        const [profileRes, teamsRes, revRes, reportsRes] = await Promise.all([
+        const [profileRes, revRes, reportsRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
-          supabase.from('team_members').select('team_role, teams(id, name)').eq('user_id', user.id),
           supabase.from('monthly_revenues').select('*').eq('user_id', user.id),
           supabase.from('dis_reports').select('*').eq('user_id', user.id).order('report_date', { ascending: false }).limit(1)
         ])
         
-        if (profileRes.data) setProfile(profileRes.data)
-        if (teamsRes.data) {
-          const formatted = teamsRes.data.map(tm => ({
-            id: tm.teams?.id,
-            name: tm.teams?.name || 'Unnamed Team',
-            role: tm.team_role
-          }))
-          setUserTeams(formatted)
+        if (profileRes.data) {
+          setProfile(profileRes.data)
+          globalHomeCache.profile = profileRes.data
+          
+          // Get user's single team if assigned
+          if (profileRes.data.team_id) {
+            const { data: teamData } = await supabase
+              .from('teams')
+              .select('*')
+              .eq('id', profileRes.data.team_id)
+              .single()
+            
+            if (teamData) {
+              const uTeams = [{
+                id: teamData.id,
+                name: teamData.name,
+                role: profileRes.data.platform_role === 'teamlead' ? 'lead' : 'member'
+              }]
+              setUserTeams(uTeams)
+              globalHomeCache.userTeams = uTeams
+            }
+          }
         }
-        if (revRes.data) setUserRevenues(revRes.data)
-        if (reportsRes.data && reportsRes.data.length > 0) setLatestReport(reportsRes.data[0])
+        if (revRes.data) {
+          setUserRevenues(revRes.data)
+          globalHomeCache.userRevenues = revRes.data
+        }
+        if (reportsRes.data && reportsRes.data.length > 0) {
+          setLatestReport(reportsRes.data[0])
+          globalHomeCache.latestReport = reportsRes.data[0]
+        }
 
         // Keep page working even if monthly_targets table is not migrated yet.
         const { data: targetsData, error: targetsError } = await supabase
           .from('monthly_targets')
           .select('*')
           .eq('user_id', user.id)
-        if (!targetsError && targetsData) setUserTargets(targetsData)
+        if (!targetsError && targetsData) {
+          setUserTargets(targetsData)
+          globalHomeCache.userTargets = targetsData
+        }
+        
+        globalHomeCache.userId = user.id
+        
       } catch (error) {
         console.error("Error fetching dashboard data:", error)
       } finally {
@@ -126,13 +160,15 @@ export default function UserHome({ user, isAdminView }) {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Full Name</div>
+                <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff', textTransform: 'capitalize' }}>
+                  {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : (user?.user_metadata?.full_name || 'Member')}
+                </div>
+              </div>
+
+              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Email Address</div>
                 <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff' }}>{profile?.email || user?.email}</div>
-              </div>
-              
-              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Phone Number</div>
-                <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff' }}>{profile?.phone || 'Not provided'}</div>
               </div>
 
               <div>

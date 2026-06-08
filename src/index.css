@@ -607,6 +607,11 @@ a:hover {
   cursor: not-allowed;
 }
 
+.form-control option {
+  background-color: #0f172a;
+  color: #fff;
+}
+
 /* Chrome/Safari calendar picker icon styling */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
@@ -1080,7 +1085,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--apple-blur-bg);
+  background: rgba(10, 10, 12, 0.85);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--apple-border);
@@ -1289,6 +1294,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   border-color: var(--apple-border-strong) !important;
 }
 
+.apple-form-control option {
+  background-color: #161617;
+  color: #f5f5f7;
+}
+
+.admin-profile-grid-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .admin-profile-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
 /* Tab Pill Selectors */
 .apple-pill-tabs {
   display: flex;
@@ -1489,5 +1513,68 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* =====================================================
+   APPLE-INPUT — Historical Revenue Form Controls
+   ===================================================== */
+
+.apple-input {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--apple-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--apple-text-primary);
+  font-size: 0.95rem;
+  font-family: var(--apple-font), inherit;
+  outline: none;
+  transition: border-color 0.25s var(--apple-ease),
+              background-color 0.25s var(--apple-ease),
+              box-shadow 0.25s var(--apple-ease);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Dark-styled dropdown arrow for <select> */
+select.apple-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.apple-input:focus {
+  border-color: var(--apple-accent-blue);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+}
+
+.apple-input:hover:not(:disabled) {
+  border-color: var(--apple-border-strong);
+}
+
+.apple-input::placeholder {
+  color: var(--apple-text-secondary);
+  opacity: 0.7;
+}
+
+.apple-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Force dark option elements — overrides OS white background */
+.apple-input option {
+  background-color: #1c1c1e;
+  color: #f5f5f7;
+}
+
+.apple-input option:hover,
+.apple-input option:checked {
+  background-color: #0071e3;
+  color: #ffffff;
 }
 

@@ -1,16 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 
-export default function AdminDis() {
-  const [loading, setLoading] = useState(true)
-  const [teams, setTeams] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [memberships, setMemberships] = useState([])
-  const [revenues, setRevenues] = useState([])
-  const [reports, setReports] = useState([])
+let adminDisCache = { loaded: false, teams: [], profiles: [], revenues: [], reports: [], submittedToday: new Set() }
 
-  // Submitted User IDs for the selectedDate
-  const [submittedToday, setSubmittedToday] = useState(new Set())
+export default function AdminDis() {
+  const [loading, setLoading] = useState(!adminDisCache.loaded)
+  const [teams, setTeams] = useState(adminDisCache.teams)
+  const [profiles, setProfiles] = useState(adminDisCache.profiles)
+  const [revenues, setRevenues] = useState(adminDisCache.revenues)
+  const [reports, setReports] = useState(adminDisCache.reports)
+  const [submittedToday, setSubmittedToday] = useState(adminDisCache.submittedToday)
 
   // Filter States
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -18,22 +17,6 @@ export default function AdminDis() {
 
   const loadData = async () => {
     try {
-      const [teamsRes, profilesRes, membershipsRes, revenuesRes] = await Promise.all([
-        supabase.from('teams').select('*').order('name', { ascending: true }),
-        supabase.from('profiles').select('*'),
-        supabase.from('team_members').select('*'),
-        supabase.from('monthly_revenues').select('*'),
-      ])
-
-      const teamsData = teamsRes.data || []
-      const profilesData = profilesRes.data || []
-      const membershipsData = membershipsRes.data || []
-      const revenuesData = revenuesRes.data || []
-
-      // Filter out admins
-      const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin')
-
-      // DIS reports are intentionally single-day only to avoid double-counting leads.
       const query = supabase
         .from('dis_reports')
         .select(`
@@ -48,23 +31,47 @@ export default function AdminDis() {
           )
         `)
         .eq('report_date', selectedDate)
+        .order('report_date', { ascending: false })
 
-      const { data: reportsData } = await query.order('report_date', { ascending: false })
-
-      // Calculate missing reports specifically for the selectedDate
-      const { data: selectedDateReports } = await supabase
+      const missingReportsQuery = supabase
         .from('dis_reports')
         .select('user_id')
         .eq('report_date', selectedDate)
 
-      const submittedUserIds = new Set(selectedDateReports?.map(r => r.user_id) || [])
+      const [teamsRes, profilesRes, revenuesRes, reportsRes, selectedDateReportsRes] = await Promise.all([
+        supabase.from('teams').select('*').order('name', { ascending: true }),
+        supabase.from('profiles').select('*'),
+        supabase.from('monthly_revenues').select('*'),
+        query,
+        missingReportsQuery
+      ])
+
+      const teamsData = teamsRes.data || []
+      const profilesData = profilesRes.data || []
+      const revenuesData = revenuesRes.data || []
+      const reportsData = reportsRes.data || []
+      const selectedDateReports = selectedDateReportsRes.data || []
+
+      // Filter out admins
+      const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin')
+
+      const submittedUserIds = new Set(selectedDateReports.map(r => r.user_id))
 
       setTeams(teamsData)
       setProfiles(nonAdminProfiles)
-      setMemberships(membershipsData)
+      // memberships data no longer needed - using profiles.team_id instead
       setRevenues(revenuesData)
-      setReports(reportsData || [])
+      setReports(reportsData)
       setSubmittedToday(submittedUserIds)
+
+      adminDisCache = {
+        loaded: true,
+        teams: teamsData,
+        profiles: nonAdminProfiles,
+        revenues: revenuesData,
+        reports: reportsData || [],
+        submittedToday: submittedUserIds
+      }
     } catch (err) {
       console.error("Error loading admin DIS data:", err)
     } finally {
@@ -73,7 +80,6 @@ export default function AdminDis() {
   }
 
   useEffect(() => {
-    setLoading(true)
     loadData()
   }, [selectedDate])
 
@@ -103,8 +109,8 @@ export default function AdminDis() {
     const nonAdminIds = new Set(profiles.map(p => p.id))
 
     return teams.map(team => {
-      const teamMems = memberships.filter(m => m.team_id === team.id && nonAdminIds.has(m.user_id))
-      const teamMemberIds = new Set(teamMems.map(m => m.user_id))
+      const teamMems = profiles.filter(p => p.team_id === team.id && nonAdminIds.has(p.id))
+      const teamMemberIds = new Set(teamMems.map(m => m.id))
 
       const teamReps = reports.filter(r => {
         const isCurrentMember = teamMemberIds.has(r.user_id)
@@ -139,10 +145,9 @@ export default function AdminDis() {
       const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
 
       // Missing users: active members who haven't submitted, with team info
-      const missing = teamMems.filter(m => !submittedToday.has(m.user_id)).map(m => {
-        const prof = profiles.find(p => p.id === m.user_id)
+      const missing = teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
         return {
-          name: prof ? `${prof.first_name} ${prof.last_name}` : 'Unknown',
+          name: `${m.first_name} ${m.last_name}`,
           teamName: team.name
         }
       })
@@ -157,7 +162,7 @@ export default function AdminDis() {
         totalExpected: teamTotalExpected
       }
     })
-  }, [teams, profiles, memberships, reports, submittedToday, revenues])
+  }, [teams, profiles, reports, submittedToday, revenues])
 
   // Derived data for current view
   const isAllTeams = selectedTeamId === 'all'

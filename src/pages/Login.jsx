@@ -60,12 +60,12 @@ export default function Login({ user, isAdmin }) {
     <div className="auth-container login-auth-container">
       <section className="auth-identity" aria-label="Company application overview">
         <div className="auth-brand-mark">
-          <Building2 size={30} />
+          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '40px', height: '40px' }} />
         </div>
 
         <div>
           <p className="auth-kicker">Internal Operations Portal</p>
-          <h1>Ideallabs Team Monitoring</h1>
+          <h1>All-Hands Team Monitoring</h1>
           <p className="auth-copy">
             One workspace for admins, team leads, and employees to track revenue, team activity,
             daily reporting, and operational performance.

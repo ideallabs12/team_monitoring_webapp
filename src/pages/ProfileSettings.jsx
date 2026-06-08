@@ -7,22 +7,31 @@ import {
   sumRevenues
 } from '../utils/revenueUtils'
 
+let globalProfileCache = {
+  userId: null,
+  firstName: '',
+  lastName: '',
+  phone: '',
+  email: '',
+  teams: [],
+  revenues: []
+}
+
 export default function ProfileSettings({ user }) {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(globalProfileCache.userId ? false : true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   // Form State
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState(globalProfileCache.firstName)
+  const [lastName, setLastName] = useState(globalProfileCache.lastName)
+  const [phone, setPhone] = useState(globalProfileCache.phone)
+  const [email, setEmail] = useState(globalProfileCache.email)
   const [password, setPassword] = useState('')
 
   // Extra features state
-  const [teams, setTeams] = useState([])
-  const [memberships, setMemberships] = useState([])
-  const [revenues, setRevenues] = useState([])
+  const [teams, setTeams] = useState(globalProfileCache.teams)
+  const [revenues, setRevenues] = useState(globalProfileCache.revenues)
 
   useEffect(() => {
     async function loadProfile() {
@@ -31,21 +40,36 @@ export default function ProfileSettings({ user }) {
       setEmail(user.email || '')
       
       try {
-        const [profileRes, teamsRes, membershipsRes, revenuesRes] = await Promise.all([
+        const [profileRes, teamsRes, revenuesRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
           supabase.from('teams').select('*'),
-          supabase.from('team_members').select('*').eq('user_id', user.id),
           supabase.from('monthly_revenues').select('*').eq('user_id', user.id)
         ])
 
         if (profileRes.data) {
-          setFirstName(profileRes.data.first_name || '')
-          setLastName(profileRes.data.last_name || '')
-          setPhone(profileRes.data.phone || '')
+          const fn = profileRes.data.first_name || ''
+          const ln = profileRes.data.last_name || ''
+          const ph = profileRes.data.phone || ''
+          setFirstName(fn)
+          setLastName(ln)
+          setPhone(ph)
+          
+          globalProfileCache.firstName = fn
+          globalProfileCache.lastName = ln
+          globalProfileCache.phone = ph
         }
-        if (teamsRes.data) setTeams(teamsRes.data)
-        if (membershipsRes.data) setMemberships(membershipsRes.data)
-        if (revenuesRes.data) setRevenues(revenuesRes.data)
+        if (teamsRes.data) {
+          setTeams(teamsRes.data)
+          globalProfileCache.teams = teamsRes.data
+        }
+        if (revenuesRes.data) {
+          setRevenues(revenuesRes.data)
+          globalProfileCache.revenues = revenuesRes.data
+        }
+
+        globalProfileCache.userId = user.id
+        globalProfileCache.email = user.email || ''
+
       } catch (err) {
         console.error("Error loading profile settings", err)
       } finally {
@@ -211,6 +235,25 @@ export default function ProfileSettings({ user }) {
         {/* RIGHT COLUMN: Extra Profile Stats & Achievements */}
         <div className="apple-left-pane" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* Identity Overview */}
+          <div className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Identity Overview</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff' }}>{firstName || lastName ? `${firstName} ${lastName}` : 'Not provided'}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</span>
+                <span style={{ fontSize: '1rem', color: '#fff' }}>{email}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone Number</span>
+                <span style={{ fontSize: '1rem', color: '#fff' }}>{phone || 'Not provided'}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Performance Overview */}
           <div className="apple-card">
             <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>My Achievements</h3>

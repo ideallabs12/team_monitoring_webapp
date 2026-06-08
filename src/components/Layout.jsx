@@ -1,7 +1,21 @@
 import { Outlet, Navigate } from 'react-router-dom'
 import Navbar from './Navbar'
 
-export default function Layout({ user }) {
+function RestrictedAccessView() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '60vh' }}>
+      <div className="apple-card" style={{ maxWidth: '480px', textAlign: 'center', padding: '40px' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🚫</div>
+        <h2 style={{ marginBottom: '12px', color: '#fff' }}>Access Restricted</h2>
+        <p style={{ color: 'var(--apple-text-secondary)', lineHeight: '1.5' }}>
+          Your account is currently deactivated or pending approval. Please contact your system administrator to request access to the platform.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function Layout({ user, isDeactivated }) {
   if (!user) {
     return <Navigate to="/" replace />
   }
@@ -18,7 +32,7 @@ export default function Layout({ user }) {
         boxSizing: 'border-box',
         animation: 'fadeIn 0.3s var(--apple-ease)' 
       }}>
-        <Outlet />
+        {isDeactivated ? <RestrictedAccessView /> : <Outlet />}
       </main>
     </div>
   )

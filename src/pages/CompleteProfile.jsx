@@ -13,10 +13,7 @@ export default function CompleteProfile({ user, onComplete }) {
   
   const [phone, setPhone] = useState('')
   const [teams, setTeams] = useState([])
-  
-  // New logic for asking how many teams
-  const [numTeams, setNumTeams] = useState(1)
-  const [selectedTeams, setSelectedTeams] = useState(['']) // Array of team IDs
+  const [selectedTeamId, setSelectedTeamId] = useState('') // Single team selection
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,24 +31,8 @@ export default function CompleteProfile({ user, onComplete }) {
     fetchTeams()
   }, [])
 
-  const handleNumTeamsChange = (e) => {
-    let val = parseInt(e.target.value) || 0
-    if (val < 0) val = 0
-    if (val > 2) val = 2 // cap at 2
-    setNumTeams(val)
-    
-    setSelectedTeams(prev => {
-      const newArr = [...prev]
-      if (val < newArr.length) return newArr.slice(0, val)
-      while (newArr.length < val) newArr.push('')
-      return newArr
-    })
-  }
-
-  const handleTeamSelect = (index, value) => {
-    const newArr = [...selectedTeams]
-    newArr[index] = value
-    setSelectedTeams(newArr)
+  const handleTeamSelect = (teamId) => {
+    setSelectedTeamId(teamId)
   }
 
   const handleSubmit = async (e) => {
@@ -59,28 +40,15 @@ export default function CompleteProfile({ user, onComplete }) {
     setLoading(true)
     setError('')
 
-    // Validate team selections
-    const validTeams = selectedTeams.filter(t => t !== '')
-    if (numTeams > 0 && validTeams.length !== numTeams) {
-      setError('Please select a team for all dropdowns, or reduce the number of teams.')
-      setLoading(false)
-      return
-    }
-    if (validTeams.length > 2) {
-      setError('You cannot belong to more than 2 teams.')
-      setLoading(false)
-      return
-    }
-
-    const uniqueTeams = [...new Set(validTeams)]
-    if (uniqueTeams.length !== validTeams.length) {
-      setError('Please select different teams, not the same team twice.')
+    // Validate team selection
+    if (teams.length > 0 && !selectedTeamId) {
+      setError('Please select a team.')
       setLoading(false)
       return
     }
 
     try {
-      // 1. Insert/Update Profile
+      // 1. Insert/Update Profile with team_id
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -89,7 +57,12 @@ export default function CompleteProfile({ user, onComplete }) {
           last_name: lastName,
           email: user.email,
           phone: phone,
-          profile_completed: true
+          team_id: selectedTeamId || null,
+          platform_role: 'employee',
+          has_revenue_logging: true,
+          has_dis_reporting: true,
+          profile_completed: true,
+          is_deactivated: true
         })
 
       if (profileError) {
@@ -102,28 +75,6 @@ export default function CompleteProfile({ user, onComplete }) {
         data: { profile_completed: true, first_name: firstName, last_name: lastName }
       })
       if (metaError) console.warn('Metadata update warning:', metaError)
-
-      // 3. Clear old team memberships first (prevents stacking)
-      const { error: deleteError } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('user_id', user.id)
-
-      if (deleteError) console.warn('Team cleanup warning:', deleteError)
-
-      // 4. Insert fresh team memberships
-      if (uniqueTeams.length > 0) {
-        const teamMemberships = uniqueTeams.map(teamId => ({
-          user_id: user.id,
-          team_id: teamId
-        }))
-
-        const { error: teamError } = await supabase
-          .from('team_members')
-          .upsert(teamMemberships, { onConflict: 'user_id,team_id' })
-
-        if (teamError) throw teamError
-      }
 
       onComplete?.()
       navigate('/home', { replace: true })
@@ -200,63 +151,33 @@ export default function CompleteProfile({ user, onComplete }) {
 
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
-              How many teams do you belong to? (Max 2)
+              Select Your Team *
             </label>
-            <input 
-              type="number" 
-              min="0"
-              max={Math.min(2, teams.length)}
-              value={numTeams}
-              onChange={handleNumTeamsChange}
-              required
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)',
-                background: 'rgba(15, 23, 42, 0.5)',
-                color: '#fff',
-                fontSize: '1rem'
-              }}
-            />
+            
+            {teams.length === 0 ? (
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>No teams available yet. An admin needs to create them.</p>
+            ) : (
+              <select 
+                value={selectedTeamId}
+                onChange={(e) => handleTeamSelect(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  color: '#fff',
+                  fontSize: '1rem'
+                }}
+              >
+                <option value="" disabled>Select a Team</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>{team.name}</option>
+                ))}
+              </select>
+            )}
           </div>
-
-          {numTeams > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                Select Your Teams
-              </label>
-              
-              {teams.length === 0 ? (
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>No teams available yet. An admin needs to create them.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selectedTeams.map((selectedId, index) => (
-                    <select 
-                      key={index}
-                      value={selectedId}
-                      onChange={(e) => handleTeamSelect(index, e.target.value)}
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        background: 'rgba(15, 23, 42, 0.5)',
-                        color: '#fff',
-                        fontSize: '1rem'
-                      }}
-                    >
-                      <option value="" disabled>Select Team #{index + 1}</option>
-                      {teams.map(team => (
-                        <option key={team.id} value={team.id}>{team.name}</option>
-                      ))}
-                    </select>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           <button type="submit" className="btn" style={{ width: '100%' }} disabled={loading}>
             {loading ? 'Saving...' : 'Save Profile & Continue'}

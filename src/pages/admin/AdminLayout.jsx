@@ -27,7 +27,21 @@ const NAV_ITEMS = [
   { path: '/admin/settings',  label: 'Settings',    icon: Settings },
 ]
 
-export default function AdminLayout({ user }) {
+function RestrictedAccessView() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '60vh' }}>
+      <div className="card" style={{ maxWidth: '480px', textAlign: 'center', padding: '40px', background: 'var(--card-bg)' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🚫</div>
+        <h2 style={{ marginBottom: '12px', color: '#fff' }}>Access Restricted</h2>
+        <p style={{ color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+          Your account is currently deactivated or pending approval. Please contact your system administrator to request access to the platform.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function AdminLayout({ user, isDeactivated }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
@@ -64,9 +78,9 @@ export default function AdminLayout({ user }) {
       {/* ── Brand ── */}
       <div className="admin-sidebar-brand">
         <div className="admin-sidebar-brand-icon">
-          <BarChart2 size={20} strokeWidth={2.5} />
+          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
         </div>
-        <span className="admin-sidebar-brand-name">IdealLabs</span>
+        <span className="admin-sidebar-brand-name">All-Hands</span>
       </div>
 
       {/* ── Navigation ── */}
@@ -136,12 +150,12 @@ export default function AdminLayout({ user }) {
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
-            IdealLabs Admin
+            All-Hands Admin
           </div>
         </div>
 
         <main className="admin-content">
-          <Outlet />
+          {isDeactivated ? <RestrictedAccessView /> : <Outlet />}
         </main>
       </div>
     </div>

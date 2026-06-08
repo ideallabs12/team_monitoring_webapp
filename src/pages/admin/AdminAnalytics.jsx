@@ -11,7 +11,8 @@ import {
   TrendingDown,
   UserCheck
 } from 'lucide-react'
-import { getLastNMonths, normalizeMonth } from '../../utils/revenueUtils'
+import { getLastNMonths, normalizeMonth, getAvailableYears, MONTH_NAMES, formatRevenueMonth } from '../../utils/revenueUtils'
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 import {
   calculateMonthlyTrend,
   calculateExpectedVsActual,
@@ -34,13 +35,14 @@ const TIME_FILTER_OPTIONS = [
   { label: 'All Time', value: 0 }
 ]
 
+let adminAnalyticsCache = { loaded: false, teams: [], profiles: [], revenues: [], disReports: [] }
+
 export default function AdminAnalytics() {
-  const [loading, setLoading] = useState(true)
-  const [teams, setTeams] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [memberships, setMemberships] = useState([])
-  const [revenues, setRevenues] = useState([])
-  const [disReports, setDisReports] = useState([])
+  const [loading, setLoading] = useState(!adminAnalyticsCache.loaded)
+  const [teams, setTeams] = useState(adminAnalyticsCache.teams)
+  const [profiles, setProfiles] = useState(adminAnalyticsCache.profiles)
+  const [revenues, setRevenues] = useState(adminAnalyticsCache.revenues)
+  const [disReports, setDisReports] = useState(adminAnalyticsCache.disReports)
 
   // Global Time Filter (default to Last 6 Months)
   const [periodFilter, setPeriodFilter] = useState(6)
@@ -51,28 +53,50 @@ export default function AdminAnalytics() {
   const [performerTab, setPerformerTab] = useState('top') // 'top' | 'attention'
   const [seeding, setSeeding] = useState(false)
 
+  // Granular analytics month filter
+  const [analyticsYear, setAnalyticsYear] = useState(new Date().getFullYear())
+  const [analyticsMonth, setAnalyticsMonth] = useState(new Date().getMonth())
+  const [analyticsTeamId, setAnalyticsTeamId] = useState('all')
+  const [analyticsIsAllTime, setAnalyticsIsAllTime] = useState(false)
+
   // Current Date String for calculations
   const currentDateStr = useMemo(() => {
     return new Date().toISOString().split('T')[0]
   }, [])
 
+  // Create memberships array from profiles.team_id for backward compatibility with utility functions
+  const memberships = useMemo(() => {
+    return profiles
+      .filter(p => p.team_id)
+      .map(p => ({
+        user_id: p.id,
+        team_id: p.team_id,
+        team_role: p.platform_role === 'teamlead' ? 'lead' : 'member'
+      }))
+  }, [profiles])
+
   // Load All Required Data on Mount
   const loadAllData = async () => {
-    setLoading(true)
     try {
-      const [teamsRes, profilesRes, memRes, revRes, disRes] = await Promise.all([
+      const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
-        supabase.from('team_members').select('*'),
         supabase.from('monthly_revenues').select('*'),
         supabase.from('dis_reports').select('*').order('report_date', { ascending: false })
       ])
 
       if (teamsRes.data) setTeams(teamsRes.data)
       if (profilesRes.data) setProfiles(profilesRes.data)
-      if (memRes.data) setMemberships(memRes.data)
       if (revRes.data) setRevenues(revRes.data)
       if (disRes.data) setDisReports(disRes.data)
+
+      adminAnalyticsCache = {
+        loaded: true,
+        teams: teamsRes.data || [],
+        profiles: profilesRes.data || [],
+        revenues: revRes.data || [],
+        disReports: disRes.data || []
+      }
     } catch (err) {
       console.error("Error loading analytics data:", err)
     } finally {
@@ -104,15 +128,23 @@ export default function AdminAnalytics() {
 
       // Generate revenues for the last 6 months
       activeMembers.forEach(mem => {
+        const SOURCES = ['Instagram', 'Referral', 'Cold Call', 'Website', 'Other']
         monthsToSeed.forEach((month, idx) => {
-          const base = mem.user_id.charCodeAt(0) * 50 + 4000
-          const amount = Math.round(base + (idx * 500) + Math.random() * 2000)
-          mockRevenues.push({
-            user_id: mem.user_id,
-            team_id: mem.team_id,
-            revenue_month: month,
-            amount
-          })
+          // Generate 1-4 weekly entries per month instead of a single entry
+          const weeksToSeed = Math.floor(Math.random() * 3) + 2 // 2-4 weeks
+          for (let w = 1; w <= weeksToSeed; w++) {
+            const base = mem.user_id.charCodeAt(0) * 12 + 1000
+            const amount = Math.round(base + (idx * 120) + Math.random() * 500)
+            mockRevenues.push({
+              user_id: mem.user_id,
+              team_id: mem.team_id,
+              revenue_month: month,
+              week_number: w,
+              client_name: `Client ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.floor(Math.random() * 100)}`,
+              source: SOURCES[Math.floor(Math.random() * SOURCES.length)],
+              amount
+            })
+          }
         })
 
         // Generate DIS reports for the last 30 calendar days
@@ -200,6 +232,59 @@ export default function AdminAnalytics() {
     const m = String(d.getMonth() + 1).padStart(2, '0')
     return `${d.getFullYear()}-${m}-01`
   }, [])
+
+  // Granular analytics helpers
+  const analyticsMonthStr = useMemo(() => {
+    const m = String(analyticsMonth + 1).padStart(2, '0')
+    return `${analyticsYear}-${m}-01`
+  }, [analyticsYear, analyticsMonth])
+  
+  const analyticsFilteredRevenues = useMemo(() => {
+    let revs = nonAdminRevenues;
+    if (analyticsTeamId !== 'all') {
+      revs = revs.filter(r => r.team_id === analyticsTeamId);
+    }
+    if (!analyticsIsAllTime) {
+      revs = revs.filter(r => normalizeMonth(r.revenue_month) === analyticsMonthStr);
+    }
+    return revs;
+  }, [nonAdminRevenues, analyticsTeamId, analyticsIsAllTime, analyticsMonthStr])
+
+  // Calculate Weekly Breakdown
+  const weeklyData = useMemo(() => {
+    const hasWeekly = analyticsFilteredRevenues.some(r => r.week_number !== null)
+    if (!hasWeekly) return []
+
+    const weeks = [
+      { name: 'Week 1', amount: 0 },
+      { name: 'Week 2', amount: 0 },
+      { name: 'Week 3', amount: 0 },
+      { name: 'Week 4', amount: 0 }
+    ]
+
+    analyticsFilteredRevenues.forEach(r => {
+      if (r.week_number >= 1 && r.week_number <= 4) {
+        weeks[r.week_number - 1].amount += Number(r.amount)
+      }
+    })
+    return weeks
+  }, [analyticsFilteredRevenues])
+
+  // Calculate Source Breakdown
+  const sourceData = useMemo(() => {
+    const sources = {}
+    let hasSourceData = false
+    analyticsFilteredRevenues.forEach(r => {
+      if (r.source) {
+        hasSourceData = true
+        const s = r.source === 'UNKNOWN' ? 'Unknown' : r.source
+        sources[s] = (sources[s] || 0) + Number(r.amount)
+      }
+    })
+
+    if (!hasSourceData) return []
+    return Object.entries(sources).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value)
+  }, [analyticsFilteredRevenues])
 
   // ===== DATA COMPUTATIONS =====
 
@@ -646,7 +731,153 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
+        </div>
+      {/* ── ROW 5: WEEKLY & SOURCE ANALYTICS (Section 7) ── */}
+      <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Granular Analytics</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Weekly breakdown and source distribution across all active teams.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#ffffff',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              background: 'rgba(255,255,255,0.04)',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+            }}>
+              <input
+                type="checkbox"
+                checked={analyticsIsAllTime}
+                onChange={e => setAnalyticsIsAllTime(e.target.checked)}
+                style={{ cursor: 'pointer', accentColor: '#3b82f6' }}
+              />
+              All Time
+            </label>
+            <select
+              value={analyticsTeamId}
+              onChange={e => setAnalyticsTeamId(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.85rem',
+                borderRadius: '8px',
+                background: 'rgba(15,23,42,0.8)',
+                color: '#fff',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              <option value="all">All Teams</option>
+              {teams.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <select
+              value={analyticsMonth}
+              onChange={e => setAnalyticsMonth(Number(e.target.value))}
+              disabled={analyticsIsAllTime}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.85rem',
+                borderRadius: '8px',
+                background: 'rgba(15,23,42,0.8)',
+                color: '#fff',
+                border: '1px solid var(--border-color)',
+                opacity: analyticsIsAllTime ? 0.5 : 1,
+                cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {MONTH_NAMES.map((name, idx) => (
+                <option key={idx} value={idx}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={analyticsYear}
+              onChange={e => setAnalyticsYear(Number(e.target.value))}
+              disabled={analyticsIsAllTime}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.85rem',
+                borderRadius: '8px',
+                background: 'rgba(15,23,42,0.8)',
+                color: '#fff',
+                border: '1px solid var(--border-color)',
+                opacity: analyticsIsAllTime ? 0.5 : 1,
+                cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {getAvailableYears().map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: analyticsIsAllTime ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {/* Weekly Analytics */}
+          {!analyticsIsAllTime && (
+            <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#fff' }}>Weekly Breakdown</h4>
+              {weeklyData.length > 0 ? (
+                <div style={{ height: 250, width: '100%' }}>
+                  <ResponsiveContainer>
+                    <BarChart data={weeklyData}>
+                      <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: '#1e293b', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
+                      <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                  Weekly data not available for this period.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Source Breakdown */}
+          <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#fff' }}>Source Breakdown</h4>
+            {sourceData.length > 0 ? (
+              <div style={{ height: 250, width: '100%' }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={sourceData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {sourceData.map((entry, index) => {
+                        const colors = ['#30d5c8', '#3b82f6', '#fbbf24', '#f87171', '#a855f7', '#64748b']
+                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                      })}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ background: '#1e293b', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }} formatter={(val) => `$${Number(val).toFixed(2)}`} />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                Source data not available for this period.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
 
     </div>
   )
