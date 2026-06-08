@@ -186,6 +186,13 @@ export default function UserRevenue({ user, isAdminView }) {
   // =====================
   // FORM HANDLERS
   // =====================
+  const isPastMonthCheck = useMemo(() => {
+    const now = new Date()
+    const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    const selectedDate = new Date(selectedYear, selectedMonth, 1)
+    return selectedDate < currentMonthDate
+  }, [selectedYear, selectedMonth])
+
   async function handleSubmit(e) {
     if (e) e.preventDefault()
     setMessage({ type: '', text: '' })
@@ -444,46 +451,48 @@ export default function UserRevenue({ user, isAdminView }) {
               </div>
 
               {/* Select Week */}
-              <div style={{ marginBottom: '24px' }}>
-                <label className="apple-form-label" style={{ marginBottom: '12px' }}>Select Week</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                  {getWeekRanges(selectedYear, selectedMonth).map((w) => {
-                    const isActive = selectedWeek === w.value;
-                    return (
-                      <div
-                        key={w.value}
-                        onClick={() => setSelectedWeek(w.value)}
-                        style={{
-                          position: 'relative',
-                          padding: '16px',
-                          borderRadius: '12px',
-                          background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'rgba(255,255,255,0.02)',
-                          border: isActive ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
-                          cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', gap: '16px',
-                          transition: 'all 0.2s',
-                          boxShadow: isActive ? '0 0 12px rgba(0, 113, 227, 0.2)' : 'none'
-                        }}
-                      >
-                        <div style={{
-                          width: '40px', height: '40px',
-                          borderRadius: '50%',
-                          background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          border: isActive ? 'none' : '1px solid var(--apple-border)'
-                        }}>
-                          <Calendar size={18} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
+              {!isPastMonthCheck && (
+                <div style={{ marginBottom: '24px' }}>
+                  <label className="apple-form-label" style={{ marginBottom: '12px' }}>Select Week</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                    {getWeekRanges(selectedYear, selectedMonth).map((w) => {
+                      const isActive = selectedWeek === w.value;
+                      return (
+                        <div
+                          key={w.value}
+                          onClick={() => setSelectedWeek(w.value)}
+                          style={{
+                            position: 'relative',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'rgba(255,255,255,0.02)',
+                            border: isActive ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '16px',
+                            transition: 'all 0.2s',
+                            boxShadow: isActive ? '0 0 12px rgba(0, 113, 227, 0.2)' : 'none'
+                          }}
+                        >
+                          <div style={{
+                            width: '40px', height: '40px',
+                            borderRadius: '50%',
+                            background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: isActive ? 'none' : '1px solid var(--apple-border)'
+                          }}>
+                            <Calendar size={18} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
+                          </div>
+                          <div>
+                            <div style={{ color: isActive ? '#fff' : 'var(--apple-text-primary)', fontWeight: '600', fontSize: '1rem' }}>{w.label}</div>
+                            <div style={{ color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>{w.range}</div>
+                          </div>
+                          {isActive && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0, 113, 227, 0.2)', borderRadius: '50%', padding: '2px' }}><Check size={14} color="var(--apple-accent-blue)" /></div>}
                         </div>
-                        <div>
-                          <div style={{ color: isActive ? '#fff' : 'var(--apple-text-primary)', fontWeight: '600', fontSize: '1rem' }}>{w.label}</div>
-                          <div style={{ color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>{w.range}</div>
-                        </div>
-                        {isActive && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0, 113, 227, 0.2)', borderRadius: '50%', padding: '2px' }}><Check size={14} color="var(--apple-accent-blue)" /></div>}
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Row 3: Client Name, Source, Amount */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>

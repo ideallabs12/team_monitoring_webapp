@@ -113,13 +113,21 @@ export default function AdminRevenue() {
 
   const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
 
-  const topContributors = nonAdminProfiles.map(profile => {
-    const allTimeSum = sumRevenues(nonAdminRevenues.filter(r => r.user_id === profile.id))
-    return { ...profile, allTimeTotal: allTimeSum }
-  }).filter(m => m.allTimeTotal > 0)
-    .sort((a, b) => b.allTimeTotal - a.allTimeTotal)
+  const currentMonthStr = useMemo(() => getLastNMonths(1)[0], [])
 
-  const highestMember = topContributors.length > 0 ? topContributors[0] : null
+  const currentMonthRevenues = useMemo(() => {
+    return nonAdminRevenues.filter(r => normalizeMonth(r.revenue_month) === currentMonthStr)
+  }, [nonAdminRevenues, currentMonthStr])
+
+  const topContributorsThisMonth = useMemo(() => {
+    return nonAdminProfiles.map(profile => {
+      const thisMonthSum = sumRevenues(currentMonthRevenues.filter(r => r.user_id === profile.id))
+      return { ...profile, thisMonthTotal: thisMonthSum }
+    }).filter(m => m.thisMonthTotal > 0)
+      .sort((a, b) => b.thisMonthTotal - a.thisMonthTotal)
+  }, [nonAdminProfiles, currentMonthRevenues])
+
+  const highestMember = topContributorsThisMonth.length > 0 ? topContributorsThisMonth[0] : null
 
   // Period-based month set — for the Expected vs Actual section
   const monthSet = useMemo(() => {
@@ -207,7 +215,7 @@ export default function AdminRevenue() {
         </div>
 
         <div className="card">
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Individual Contributor</h3>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Individual Contributor (This Month)</h3>
           {highestMember ? (
             <div>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
@@ -215,11 +223,11 @@ export default function AdminRevenue() {
                 {highestMember.is_deactivated && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px', fontWeight: 'normal' }}>(Former)</span>}
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#a78bfa', marginTop: '4px' }}>
-                ${highestMember.allTimeTotal.toFixed(2)}
+                ${highestMember.thisMonthTotal.toFixed(2)}
               </div>
             </div>
           ) : (
-            <div style={{ color: 'var(--text-secondary)' }}>No revenue data</div>
+            <div style={{ color: 'var(--text-secondary)' }}>No revenue data for this month</div>
           )}
         </div>
       </div>
