@@ -224,7 +224,7 @@ export default function UserDis() {
 
       const reportDataObj = {
         user_id: currentUser.id,
-        team_id: null,
+        team_id: userTeams.length > 0 ? userTeams[0].id : null,
         report_date: reportDate,
         positive_leads: parseInt(positiveLeads) || 0,
         revenue_generated: latestMtd, // Auto-filled from monthly_revenues
@@ -318,18 +318,18 @@ export default function UserDis() {
               padding: '14px 18px',
               borderRadius: '12px',
               marginBottom: '24px',
-              background: 'rgba(255, 69, 58, 0.08)',
-              border: '1px solid rgba(255, 69, 58, 0.25)',
-              color: 'var(--apple-accent-red)',
+              background: 'rgba(0, 113, 227, 0.08)',
+              border: '1px solid rgba(0, 113, 227, 0.25)',
+              color: 'var(--apple-accent-blue)',
               fontSize: '0.85rem',
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
               gap: '10px'
             }}>
-              <span style={{ fontSize: '1.2rem' }}>🔒</span>
+              <span style={{ fontSize: '1.2rem' }}>📝</span>
               <div>
-                <strong>DIS Report Locked:</strong> You have submitted a report for this date. Submissions cannot be edited once locked. Contact your team lead for changes.
+                <strong>Editing Report:</strong> You have already submitted a report for this date. You can update your numbers below.
               </div>
             </div>
           )}
@@ -405,7 +405,6 @@ export default function UserDis() {
                   onChange={(e) => setPositiveLeads(e.target.value)}
                   required
                   className="apple-form-control"
-                  disabled={isEditMode}
                 />
               </div>
               <div>
@@ -419,18 +418,17 @@ export default function UserDis() {
                   onChange={(e) => setExpectedRevenue(e.target.value)}
                   required
                   className="apple-form-control"
-                  disabled={isEditMode}
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={submitting || isEditMode}
+              disabled={submitting}
               className="apple-btn apple-btn-primary"
               style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '12px' }}
             >
-              {submitting ? 'Submitting...' : isEditMode ? '🔒 Locked (Submitted)' : '🚀 Log DIS Report'}
+              {submitting ? 'Submitting...' : isEditMode ? '🔄 Update DIS Report' : '🚀 Log DIS Report'}
             </button>
           </form>
         </div>
