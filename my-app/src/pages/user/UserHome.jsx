@@ -160,13 +160,15 @@ export default function UserHome({ user, isAdminView }) {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Full Name</div>
+                <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff', textTransform: 'capitalize' }}>
+                  {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : (user?.user_metadata?.full_name || 'Member')}
+                </div>
+              </div>
+
+              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Email Address</div>
                 <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff' }}>{profile?.email || user?.email}</div>
-              </div>
-              
-              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Phone Number</div>
-                <div style={{ fontSize: '1rem', fontWeight: '500', color: '#ffffff' }}>{profile?.phone || 'Not provided'}</div>
               </div>
 
               <div>
