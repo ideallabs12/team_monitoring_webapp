@@ -944,106 +944,16 @@ export default function UserRevenue({ user, isAdminView }) {
               </div>
             )}
 
-            {/* Desktop Table View */}
-            <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)' }}>
-                    {isAllTime && <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Month</th>}
-                    <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Team</th>
-                    <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Week</th>
-                    <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client</th>
-                    <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source</th>
-                    <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Amount</th>
-                    {!isAdminView && <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center', width: '100px' }}>Action</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedMonthRevenues.map((record) => (
-                    <tr key={record.id} style={{
-                      borderBottom: '1px solid var(--apple-border)',
-                      background: editingRecord?.id === record.id ? 'rgba(0,113,227,0.06)' : 'transparent',
-                      transition: 'background-color 0.2s'
-                    }}>
-                      {isAllTime && (
-                        <td style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
-                          {formatRevenueMonth(normalizeMonth(record.revenue_month))}
-                        </td>
-                      )}
-                      <td style={{ padding: '16px 24px', fontWeight: '600', color: '#ffffff' }}>
-                        {record.teams?.name || 'Unknown Team'}
-                      </td>
-                      <td style={{ padding: '16px 24px', color: '#fff' }}>
-                        {record.week_number ? `Week ${record.week_number}` : <span className="apple-badge apple-badge-orange" style={{ padding: '2px 6px', fontSize: '0.65rem' }}>Legacy</span>}
-                      </td>
-                      <td style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)' }}>
-                        {!record.client_name ? '—' : record.client_name === 'NONAME' ? 'No Client' : record.client_name}
-                      </td>
-                      <td style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)' }}>
-                        {!record.source ? '—' : record.source === 'UNKNOWN' ? 'Unknown' : record.source}
-                      </td>
-                      <td style={{ padding: '16px 24px', textAlign: 'right', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
-                        ${Number(record.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      {!isAdminView && (
-                        <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => handleEdit(record)}
-                            className="apple-btn apple-btn-secondary"
-                            style={{ padding: '6px 14px !important', fontSize: '0.8rem', borderRadius: '12px !important' }}
-                          >
-                            ✏️ Edit
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Cards List View */}
-            <div className="apple-mobile-list-card">
-              {selectedMonthRevenues.map((record) => (
-                <div key={record.id} className="apple-mobile-list-item">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      {isAllTime && (
-                        <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                          {formatRevenueMonth(normalizeMonth(record.revenue_month))}
-                        </div>
-                      )}
-                      <div style={{ fontWeight: '700', color: '#ffffff', fontSize: '1rem', textTransform: 'capitalize' }}>
-                        {record.teams?.name || 'Unknown Team'}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
-                        {record.week_number ? `Week ${record.week_number}` : 'Legacy'} |
-                        {(!record.client_name ? '—' : record.client_name === 'NONAME' ? ' No Client' : ` ${record.client_name}`)} |
-                        {(!record.source ? '—' : record.source === 'UNKNOWN' ? ' Unknown' : ` ${record.source}`)}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', fontWeight: '700', color: 'var(--apple-accent-green)', fontSize: '1.1rem' }}>
-                      ${Number(record.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-
-                  {!isAdminView && (
-                    <button
-                      onClick={() => handleEdit(record)}
-                      className="apple-btn apple-btn-secondary"
-                      style={{
-                        width: '100%',
-                        padding: '10px !important',
-                        fontSize: '0.85rem',
-                        marginTop: '6px',
-                        borderRadius: '10px !important'
-                      }}
-                    >
-                      ✏️ Edit Revenue
-                    </button>
-                  )}
-                </div>
-              ))}
+            {/* ===== REVENUE HISTORY LINK ===== */}
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
+              <Link 
+                to="/revenue-history" 
+                className="apple-btn apple-btn-secondary"
+                style={{ padding: '12px 24px', fontSize: '0.95rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Clock size={18} />
+                View Full Revenue Logs & History
+              </Link>
             </div>
 
           </>
