@@ -78,9 +78,9 @@ export default function AdminLayout({ user, isDeactivated }) {
       {/* ── Brand ── */}
       <div className="admin-sidebar-brand">
         <div className="admin-sidebar-brand-icon">
-          <BarChart2 size={20} strokeWidth={2.5} />
+          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
         </div>
-        <span className="admin-sidebar-brand-name">iDEALAB</span>
+        <span className="admin-sidebar-brand-name">All-Hands</span>
       </div>
 
       {/* ── Navigation ── */}
@@ -150,7 +150,7 @@ export default function AdminLayout({ user, isDeactivated }) {
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
-            iDEALAB Admin
+            All-Hands Admin
           </div>
         </div>
 

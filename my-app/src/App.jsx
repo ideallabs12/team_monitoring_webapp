@@ -144,7 +144,19 @@ function App() {
         }
       } else {
         // No profile row — check auth metadata as fallback
-        const { data: { user: authUser } } = await supabase.auth.getUser()
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+        
+        // If there's an auth error (e.g. user deleted in backend but session exists locally), sign them out
+        if (authError || !authUser) {
+          console.warn("User auth invalid (likely deleted). Signing out...")
+          await supabase.auth.signOut()
+          setUser(null)
+          setHasProfile(false)
+          setIsDeactivated(false)
+          setIsAdmin(false)
+          return
+        }
+
         if (authUser?.user_metadata?.profile_completed === true) {
           setHasProfile(true)
         } else {

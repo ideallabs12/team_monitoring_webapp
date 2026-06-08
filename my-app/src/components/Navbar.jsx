@@ -107,9 +107,9 @@ export default function Navbar({ user }) {
           fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px',
           fontSize: '1.25rem', letterSpacing: '-0.02em', color: '#ffffff', textDecoration: 'none'
         }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'linear-gradient(135deg, #0071e3, #30d5c8)', boxShadow: '0 0 12px rgba(0,113,227,0.6)' }} />
+          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '28px', height: '28px' }} />
           <span style={{ background: 'linear-gradient(to right, #ffffff, #86868b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            iDEALAB
+            All-Hands
           </span>
         </Link>
 
