@@ -14,7 +14,7 @@ export default function UserHistoricalRevenue({ user }) {
   const [selectedTeam, setSelectedTeam] = useState('')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
-  const [selectedWeek, setSelectedWeek] = useState(1)
+
   const [amount, setAmount] = useState('')
   const [clientName, setClientName] = useState('')
   const [noClientInfo, setNoClientInfo] = useState(false)
@@ -35,18 +35,7 @@ export default function UserHistoricalRevenue({ user }) {
     fetchTeams()
   }, [])
 
-  const getWeekRanges = (year, monthIndex) => {
-    const d = new Date(year, monthIndex, 1)
-    const monthName = d.toLocaleString('default', { month: 'short' })
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate()
 
-    return [
-      { label: 'Week 1', range: `${monthName} 1 – ${monthName} 7`, value: 1 },
-      { label: 'Week 2', range: `${monthName} 8 – ${monthName} 14`, value: 2 },
-      { label: 'Week 3', range: `${monthName} 15 – ${monthName} 21`, value: 3 },
-      { label: 'Week 4', range: `${monthName} 22 – ${monthName} ${lastDay}`, value: 4 },
-    ]
-  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -84,7 +73,7 @@ export default function UserHistoricalRevenue({ user }) {
           user_id: user.id,
           team_id: selectedTeam,
           revenue_month: revenueMonth,
-          week_number: selectedWeek,
+          week_number: null,
           client_name: finalClientName,
           source: source,
           amount: numAmount,
@@ -182,33 +171,7 @@ export default function UserHistoricalRevenue({ user }) {
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600' }}>Week</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-              {getWeekRanges(selectedYear, selectedMonth).map((w) => (
-                <button
-                  key={w.value}
-                  type="button"
-                  onClick={() => setSelectedWeek(w.value)}
-                  style={{
-                    padding: '10px 4px',
-                    borderRadius: '10px',
-                    border: '1px solid',
-                    borderColor: selectedWeek === w.value ? 'var(--apple-accent-blue)' : 'var(--apple-border)',
-                    background: selectedWeek === w.value ? 'rgba(10, 132, 255, 0.1)' : 'transparent',
-                    color: selectedWeek === w.value ? '#fff' : 'var(--apple-text-secondary)',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ marginBottom: '2px' }}>{w.label}</div>
-                  <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 'normal' }}>{w.range.split(' – ')[0].split(' ')[1]}-{w.range.split(' – ')[1].split(' ')[1]}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>

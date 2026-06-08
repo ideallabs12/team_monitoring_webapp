@@ -6,6 +6,7 @@ const PERIOD_OPTIONS = [
   { label: '2M', value: 2 },
   { label: '3M', value: 3 },
   { label: '6M', value: 6 },
+  { label: '12M', value: 12 },
   { label: 'All', value: 0 },
 ]
 

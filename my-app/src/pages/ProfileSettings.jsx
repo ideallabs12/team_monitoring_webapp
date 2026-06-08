@@ -235,6 +235,25 @@ export default function ProfileSettings({ user }) {
         {/* RIGHT COLUMN: Extra Profile Stats & Achievements */}
         <div className="apple-left-pane" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* Identity Overview */}
+          <div className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Identity Overview</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff' }}>{firstName || lastName ? `${firstName} ${lastName}` : 'Not provided'}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</span>
+                <span style={{ fontSize: '1rem', color: '#fff' }}>{email}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone Number</span>
+                <span style={{ fontSize: '1rem', color: '#fff' }}>{phone || 'Not provided'}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Performance Overview */}
           <div className="apple-card">
             <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>My Achievements</h3>

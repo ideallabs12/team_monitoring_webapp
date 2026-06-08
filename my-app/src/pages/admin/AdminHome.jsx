@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Edit2, X } from 'lucide-react'
+
 import { supabase } from '../../supabaseClient'
 import {
   formatRevenueMonth,
@@ -20,9 +20,6 @@ export default function AdminHome() {
 
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [selectedMonth, setSelectedMonth] = useState(getTargetAssignmentMonths(0, 0)[0])
-  const [editingUserId, setEditingUserId] = useState('')
-  const [editAmount, setEditAmount] = useState('')
-  const [savingUserId, setSavingUserId] = useState('')
   const [message, setMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {
@@ -98,54 +95,7 @@ export default function AdminHome() {
 
   const monthOptions = useMemo(() => getTargetAssignmentMonths(11, 12), [])
 
-  const startEditing = (member) => {
-    setEditingUserId(member.id)
-    setEditAmount(member.currentTarget > 0 ? String(member.currentTarget) : '')
-    setMessage({ type: '', text: '' })
-  }
 
-  const cancelEditing = () => {
-    setEditingUserId('')
-    setEditAmount('')
-  }
-
-  const handleSaveTarget = async (userId) => {
-    setMessage({ type: '', text: '' })
-    const amount = Number(editAmount)
-    if (!selectedTeamId || !userId || !selectedMonth) {
-      setMessage({ type: 'error', text: 'Select team, employee, and month.' })
-      return
-    }
-    if (Number.isNaN(amount) || amount < 0) {
-      setMessage({ type: 'error', text: 'Target amount must be 0 or greater.' })
-      return
-    }
-
-    setSavingUserId(userId)
-    try {
-      const { error } = await supabase
-        .from('monthly_targets')
-        .upsert(
-          {
-            user_id: userId,
-            team_id: selectedTeamId,
-            target_month: selectedMonth,
-            target_amount: amount
-          },
-          { onConflict: 'user_id,team_id,target_month' }
-        )
-      if (error) throw error
-
-      const { data: freshTargets, error: refreshErr } = await supabase.from('monthly_targets').select('*')
-      if (!refreshErr) setTargets(freshTargets || [])
-      cancelEditing()
-      setMessage({ type: 'success', text: `Target updated from ${formatRevenueMonth(selectedMonth)} onward.` })
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to assign target.' })
-    } finally {
-      setSavingUserId('')
-    }
-  }
 
   if (loading) return <div style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</div>
 
@@ -162,9 +112,9 @@ export default function AdminHome() {
         {/* Card header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: '18px' }}>
           <div>
-            <h3 style={{ margin: '0 0 6px 0' }}>Assign Monthly Targets</h3>
+            <h3 style={{ margin: '0 0 6px 0' }}>Team Member Targets</h3>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Edit a member target for the selected month. It continues into upcoming months until another target is saved.
+              View targets and achievement for the selected month. Targets are assigned by Team Leads.
             </p>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
@@ -180,7 +130,6 @@ export default function AdminHome() {
               value={selectedTeamId}
               onChange={(e) => {
                 setSelectedTeamId(e.target.value)
-                cancelEditing()
               }}
               className="form-control"
             >
@@ -195,7 +144,6 @@ export default function AdminHome() {
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value)
-                cancelEditing()
               }}
               className="form-control"
             >
@@ -267,14 +215,10 @@ export default function AdminHome() {
                         <th style={{ textAlign: 'left', padding: '10px 8px' }}>Applies From</th>
                         <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
                         <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Edit</th>
                       </tr>
                     </thead>
                     <tbody>
                       {activeTargets.map(member => {
-                        const isEditing = editingUserId === member.id
-                        const isSaving = savingUserId === member.id
-
                         return (
                           <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             <td style={{ padding: '12px 8px' }}>
@@ -282,24 +226,7 @@ export default function AdminHome() {
                               <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{member.email}</div>
                             </td>
                             <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  inputMode="decimal"
-                                  pattern="[0-9]*\.?[0-9]*"
-                                  className="form-control"
-                                  value={editAmount}
-                                  onChange={(e) => {
-                                    const val = e.target.value
-                                    if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
-                                  }}
-                                  placeholder="0.00"
-                                  style={{ width: '140px', marginLeft: 'auto', textAlign: 'right' }}
-                                  autoFocus
-                                />
-                              ) : (
-                                <span style={{ color: '#60a5fa', fontWeight: '800' }}>${member.currentTarget.toFixed(2)}</span>
-                              )}
+                              <span style={{ color: '#60a5fa', fontWeight: '800' }}>${member.currentTarget.toFixed(2)}</span>
                             </td>
                             <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
                               {member.targetSourceMonth ? formatRevenueMonth(member.targetSourceMonth) : 'Not assigned'}
@@ -309,24 +236,6 @@ export default function AdminHome() {
                             </td>
                             <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
                               {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                            </td>
-                            <td style={{ padding: '12px 8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                {isEditing ? (
-                                  <>
-                                    <button type="button" className="btn" onClick={() => handleSaveTarget(member.id)} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <Check size={16} />
-                                    </button>
-                                    <button type="button" className="btn btn-secondary" onClick={cancelEditing} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <X size={16} />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button type="button" className="btn btn-secondary" onClick={() => startEditing(member)} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Edit2 size={16} />
-                                  </button>
-                                )}
-                              </div>
                             </td>
                           </tr>
                         )
