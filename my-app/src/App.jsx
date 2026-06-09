@@ -11,6 +11,7 @@ import UserTeam from './pages/user/UserTeam'
 import UserRevenue from './pages/user/UserRevenue'
 import UserHistoricalRevenue from './pages/user/UserHistoricalRevenue'
 import RevenueHistory from './pages/user/RevenueHistory'
+import Leaderboard from './pages/user/Leaderboard'
 import UserDis from './pages/user/UserDis'
 import TeamAnalytics from './pages/user/TeamAnalytics'
 import TeamManagement from './pages/user/TeamManagement'
@@ -229,6 +230,7 @@ function App() {
           <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/historical-revenue" element={hasProfile && !isAdmin ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue-history" element={hasProfile && !isAdmin ? <RevenueHistory user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/leaderboard" element={hasProfile && !isAdmin ? <Leaderboard user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />

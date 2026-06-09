@@ -70,8 +70,10 @@ export default function Navbar({ user }) {
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
     { to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' },
-    // { to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' },
   ]
+  if (profile?.platform_role === 'teamlead') {
+    othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
+  }
 
   const teamHubLinks = [
     { to: '/team-analytics', label: 'Team Analytics', desc: 'Charts & insights' },
