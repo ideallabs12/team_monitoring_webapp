@@ -8,14 +8,9 @@ import {
   sumRevenues
 } from '../../utils/revenueUtils'
 
-let globalTeamCache = {
-  userId: null,
-  teamsData: []
-}
-
 export default function UserTeam({ user }) {
-  const [teamsData, setTeamsData] = useState(globalTeamCache.teamsData)
-  const [loading, setLoading] = useState(globalTeamCache.userId !== user?.id)
+  const [teamsData, setTeamsData] = useState([])
+  const [loading, setLoading] = useState(true)
 
   // Target & Revenue specific states
   const monthOptions = useMemo(() => getTargetAssignmentMonths(11, 0), [])
@@ -79,8 +74,6 @@ export default function UserTeam({ user }) {
         }]
         
         setTeamsData(tData)
-        globalTeamCache.teamsData = tData
-        globalTeamCache.userId = user.id
         
       } catch (error) {
         console.error("Error fetching team data:", error)
