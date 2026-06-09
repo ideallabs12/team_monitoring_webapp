@@ -4,14 +4,26 @@ import {
   Check, 
   Edit2, 
   X, 
-  Edit3
+  Edit3,
+  Trash2,
+  Calendar,
+  Link2 as LinkIcon,
+  Info,
+  DollarSign,
+  User,
+  Clock,
+  PlusCircle
 } from 'lucide-react'
 import { 
   formatRevenueMonth,
   getEffectiveTarget,
   getTargetAssignmentMonths,
   normalizeMonth,
-  sumRevenues
+  sumRevenues,
+  toRevenueMonthString,
+  getAvailableYears,
+  MONTH_NAMES,
+  isFutureMonth
 } from '../../utils/revenueUtils'
 
 export default function TeamManagement({ user }) {
@@ -40,6 +52,20 @@ export default function TeamManagement({ user }) {
   const [editExpected, setEditExpected] = useState('')
   const [submittingEdit, setSubmittingEdit] = useState(false)
   const [modalMessage, setModalMessage] = useState({ type: '', text: '' })
+
+  // Revenue Logging States
+  const [showHistory, setShowHistory] = useState(false)
+  const [selectedMemberId, setSelectedMemberId] = useState('')
+  const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
+  const [revenueMonth, setRevenueMonth] = useState(new Date().getMonth())
+  const [selectedWeek, setSelectedWeek] = useState(1)
+  const [clientName, setClientName] = useState('')
+  const [noClientInfo, setNoClientInfo] = useState(false)
+  const [source, setSource] = useState('Instagram')
+  const [revenueAmount, setRevenueAmount] = useState('')
+  const [editingRevenue, setEditingRevenue] = useState(null)
+  const [revenueMessage, setRevenueMessage] = useState({ type: '', text: '' })
+  const [savingRevenue, setSavingRevenue] = useState(false)
 
   // Load profile & verify teamlead role
   useEffect(() => {
@@ -151,6 +177,132 @@ export default function TeamManagement({ user }) {
       console.error("Error refreshing DIS reports:", err)
     }
   }
+
+  const refreshRevenues = async () => {
+    if (!profile?.team_id) return
+    try {
+      const { data: revs } = await supabase
+        .from('monthly_revenues')
+        .select('*')
+        .eq('team_id', profile.team_id)
+      if (revs) setRevenues(revs)
+    } catch (err) {
+      console.error("Error refreshing revenues:", err)
+    }
+  }
+
+  const getWeekRanges = (year, monthIndex) => {
+    const d = new Date(year, monthIndex, 1)
+    const monthName = d.toLocaleString('default', { month: 'short' })
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate()
+    return [
+      { label: 'Week 1', range: `${monthName} 1 – ${monthName} 7`, value: 1 },
+      { label: 'Week 2', range: `${monthName} 8 – ${monthName} 14`, value: 2 },
+      { label: 'Week 3', range: `${monthName} 15 – ${monthName} 21`, value: 3 },
+      { label: 'Week 4', range: `${monthName} 22 – ${monthName} ${lastDay}`, value: 4 },
+    ]
+  }
+
+  const handleRevenueSubmit = async (e) => {
+    e.preventDefault()
+    setRevenueMessage({ type: '', text: '' })
+
+    if (!selectedMemberId) {
+      setRevenueMessage({ type: 'error', text: 'Please select a team member.' })
+      return
+    }
+
+    const numAmount = parseFloat(revenueAmount)
+    if (isNaN(numAmount) || numAmount < 0) {
+      setRevenueMessage({ type: 'error', text: 'Please enter a valid amount.' })
+      return
+    }
+
+    const isPastMonthCheck = !isFutureMonth(revenueYear, revenueMonth)
+    const finalClientName = noClientInfo ? 'No Client Info' : clientName.trim()
+    if (!isPastMonthCheck && !noClientInfo && !finalClientName) {
+      setRevenueMessage({ type: 'error', text: 'Please provide client info.' })
+      return
+    }
+
+    setSavingRevenue(true)
+    try {
+      const targetRevMonth = toRevenueMonthString(revenueYear, revenueMonth)
+      
+      if (editingRevenue) {
+        const { error } = await supabase
+          .from('monthly_revenues')
+          .update({
+            team_id: profile.team_id,
+            revenue_month: targetRevMonth,
+            week_number: selectedWeek,
+            client_name: finalClientName,
+            source: source,
+            amount: numAmount
+          })
+          .eq('id', editingRevenue.id)
+        if (error) throw error
+        setRevenueMessage({ type: 'success', text: `Revenue updated successfully!` })
+      } else {
+        const { error } = await supabase
+          .from('monthly_revenues')
+          .insert({
+            user_id: selectedMemberId,
+            team_id: profile.team_id,
+            revenue_month: targetRevMonth,
+            week_number: selectedWeek,
+            client_name: finalClientName,
+            source: source,
+            amount: numAmount,
+            entered_by: user.id
+          })
+        if (error) throw error
+        setRevenueMessage({ type: 'success', text: `Revenue logged successfully!` })
+      }
+      
+      setRevenueAmount('')
+      setEditingRevenue(null)
+      await refreshRevenues()
+    } catch (err) {
+      setRevenueMessage({ type: 'error', text: err.message || 'Failed to save revenue' })
+    } finally {
+      setSavingRevenue(false)
+    }
+  }
+
+  const handleEditRevenue = (r) => {
+    setEditingRevenue(r)
+    setSelectedMemberId(r.user_id)
+    const [y, m] = r.revenue_month.split('-')
+    setRevenueYear(parseInt(y, 10))
+    setRevenueMonth(parseInt(m, 10) - 1)
+    setSelectedWeek(r.week_number || 1)
+    if (r.client_name === 'No Client Info') {
+      setNoClientInfo(true)
+      setClientName('')
+    } else {
+      setNoClientInfo(false)
+      setClientName(r.client_name || '')
+    }
+    setSource(r.source || 'Instagram')
+    setRevenueAmount(String(r.amount || ''))
+    setShowHistory(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleteRevenue = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this revenue entry?')) return
+    try {
+      const { error } = await supabase.from('monthly_revenues').delete().eq('id', id)
+      if (error) throw error
+      await refreshRevenues()
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const targetRevMonthForHistory = toRevenueMonthString(revenueYear, revenueMonth)
+  const historicalRevenues = revenues.filter(r => r.user_id === selectedMemberId && normalizeMonth(r.revenue_month) === targetRevMonthForHistory)
 
   const activeTeamMembers = useMemo(() => {
     return teamMembers.filter(p => !p.is_deactivated)
@@ -689,6 +841,311 @@ export default function TeamManagement({ user }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* REVENUE LOGGING SECTION */}
+      <div className="apple-card" style={{ marginBottom: '40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(96,165,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={20} color="#60a5fa" />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#fff' }}>Log Team Revenue</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
+                Track and record team members' monthly revenue contributions.
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => {
+              setShowHistory(!showHistory)
+              setRevenueMessage({ type: '', text: '' })
+            }}
+            className="apple-btn apple-btn-secondary" 
+            style={{ padding: '8px 16px !important', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Clock size={16} /> {showHistory ? 'Log New Revenue' : 'Log Past Team Revenue'}
+          </button>
+        </div>
+
+        {revenueMessage.text && (
+          <div style={{ padding: '12px 16px', borderRadius: '10px', marginBottom: '24px', background: revenueMessage.type === 'success' ? 'rgba(48, 213, 200, 0.08)' : 'rgba(255, 69, 58, 0.08)', border: `1px solid ${revenueMessage.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)'}`, color: revenueMessage.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)', fontSize: '0.9rem', fontWeight: '500' }}>
+            {revenueMessage.text}
+          </div>
+        )}
+
+        {!showHistory ? (
+          <form onSubmit={handleRevenueSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', padding: '20px' }}>
+              <label className="apple-form-label" style={{ marginBottom: '12px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TEAM MEMBER</label>
+              <div style={{ position: 'relative' }}>
+                <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                <select 
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="apple-form-control"
+                  style={{ paddingLeft: '44px', fontWeight: '500', color: selectedMemberId ? '#fff' : 'var(--apple-text-secondary)' }}
+                >
+                  <option value="" disabled>Select team member</option>
+                  {activeTeamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="apple-three-col-grid" style={{ gap: '16px' }}>
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>YEAR</label>
+                <div style={{ position: 'relative' }}>
+                  <Calendar size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                  <select 
+                    value={revenueYear} 
+                    onChange={(e) => setRevenueYear(parseInt(e.target.value))}
+                    className="apple-form-control"
+                    style={{ paddingLeft: '44px' }}
+                  >
+                    {getAvailableYears().map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>MONTH</label>
+                <div style={{ position: 'relative' }}>
+                  <Calendar size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                  <select 
+                    value={revenueMonth} 
+                    onChange={(e) => setRevenueMonth(parseInt(e.target.value))}
+                    className="apple-form-control"
+                    style={{ paddingLeft: '44px' }}
+                  >
+                    {MONTH_NAMES.map((m, idx) => <option key={m} value={idx}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {!isFutureMonth(revenueYear, revenueMonth) && (
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '12px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SELECT WEEK</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {getWeekRanges(revenueYear, revenueMonth).map(w => {
+                    const isSelected = selectedWeek === w.value
+                    return (
+                      <div 
+                        key={w.value}
+                        onClick={() => setSelectedWeek(w.value)}
+                        style={{
+                          background: isSelected ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255, 255, 255, 0.01)',
+                          border: `1px solid ${isSelected ? 'var(--apple-accent-blue)' : 'var(--apple-border)'}`,
+                          borderRadius: '12px', padding: '14px', cursor: 'pointer', transition: 'all 0.2s',
+                          display: 'flex', alignItems: 'center', gap: '12px', position: 'relative'
+                        }}
+                      >
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isSelected ? 'rgba(0, 113, 227, 0.15)' : 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Calendar size={16} color={isSelected ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: '600', color: isSelected ? '#fff' : 'var(--apple-text-secondary)' }}>{w.label}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>{w.range}</div>
+                        </div>
+                        {isSelected && <Check size={16} color="var(--apple-accent-blue)" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }} />}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="apple-two-col-grid" style={{ gap: '16px' }}>
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CLIENT NAME</label>
+                <div style={{ position: 'relative' }}>
+                  <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                  <input 
+                    type="text" 
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    disabled={noClientInfo || isFutureMonth(revenueYear, revenueMonth)}
+                    className="apple-form-control"
+                    placeholder="Enter client name"
+                    style={{ paddingLeft: '44px', opacity: (noClientInfo || isFutureMonth(revenueYear, revenueMonth)) ? 0.5 : 1 }}
+                  />
+                </div>
+                {!isFutureMonth(revenueYear, revenueMonth) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', paddingLeft: '4px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="noClient"
+                      checked={noClientInfo}
+                      onChange={(e) => {
+                        setNoClientInfo(e.target.checked)
+                        if (e.target.checked) setClientName('')
+                      }}
+                      style={{ accentColor: 'var(--apple-accent-blue)', width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="noClient" style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', cursor: 'pointer', userSelect: 'none' }}>No Client Info</label>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SOURCE</label>
+                <div style={{ position: 'relative' }}>
+                  <LinkIcon size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                  <select 
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                    className="apple-form-control"
+                    style={{ paddingLeft: '44px' }}
+                  >
+                    <option>Instagram</option>
+                    <option>Facebook</option>
+                    <option>LinkedIn</option>
+                    <option>Referral</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AMOUNT (USD)</label>
+                <div style={{ position: 'relative' }}>
+                  <DollarSign size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                  <input 
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    value={revenueAmount}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) setRevenueAmount(val)
+                    }}
+                    className="apple-form-control"
+                    placeholder="0.00"
+                    style={{ paddingLeft: '44px', fontWeight: '600' }}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="apple-btn apple-btn-primary" 
+              disabled={savingRevenue}
+              style={{ width: '100%', padding: '16px !important', fontSize: '1rem', marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '8px' }}
+            >
+              {savingRevenue ? 'Processing...' : (editingRevenue ? 'Update Contribution' : <><PlusCircle size={20} /> Log Contribution</>)}
+            </button>
+            
+            {editingRevenue && (
+              <button 
+                type="button" 
+                onClick={() => {
+                  setEditingRevenue(null)
+                  setRevenueAmount('')
+                  setRevenueMessage({ type: '', text: '' })
+                }}
+                className="apple-btn apple-btn-secondary"
+                style={{ width: '100%', marginTop: '-12px' }}
+              >
+                Cancel Editing
+              </button>
+            )}
+          </form>
+        ) : (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div className="apple-two-col-grid" style={{ gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>FILTER MEMBER</label>
+                <select 
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="apple-form-control"
+                >
+                  <option value="" disabled>Select team member</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>YEAR</label>
+                  <select 
+                    value={revenueYear} 
+                    onChange={(e) => setRevenueYear(parseInt(e.target.value))}
+                    className="apple-form-control"
+                  >
+                    {getAvailableYears().map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>MONTH</label>
+                  <select 
+                    value={revenueMonth} 
+                    onChange={(e) => setRevenueMonth(parseInt(e.target.value))}
+                    className="apple-form-control"
+                  >
+                    {MONTH_NAMES.map((m, idx) => <option key={m} value={idx}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {!selectedMemberId ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--apple-border)', borderRadius: '12px' }}>
+                <p style={{ color: 'var(--apple-text-secondary)', margin: 0 }}>Please select a team member to view their historical revenue.</p>
+              </div>
+            ) : historicalRevenues.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--apple-border)', borderRadius: '12px' }}>
+                <p style={{ color: 'var(--apple-text-secondary)', margin: 0 }}>No revenue records found for this member in {MONTH_NAMES[revenueMonth]} {revenueYear}.</p>
+              </div>
+            ) : (
+              <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '10px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.01)', fontSize: '0.8rem' }}>
+                      <th style={{ padding: '12px 16px', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Week / Client</th>
+                      <th style={{ padding: '12px 16px', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Source</th>
+                      <th style={{ padding: '12px 16px', color: 'var(--apple-text-secondary)', fontWeight: '600', textAlign: 'right' }}>Amount</th>
+                      <th style={{ padding: '12px 16px', color: 'var(--apple-text-secondary)', fontWeight: '600', textAlign: 'center' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historicalRevenues.map(r => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.88rem' }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: '600', color: '#ffffff' }}>Week {r.week_number || 'N/A'}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{r.client_name || 'N/A'}</div>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: 'var(--apple-text-secondary)' }}>{r.source || 'N/A'}</td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '700', color: '#4ade80' }}>
+                          ${Number(r.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                            <button onClick={() => handleEditRevenue(r)} className="apple-btn apple-btn-secondary" style={{ padding: '4px 10px !important', fontSize: '0.75rem', borderRadius: '8px !important' }}>
+                              Edit
+                            </button>
+                            <button onClick={() => handleDeleteRevenue(r.id)} className="apple-btn" style={{ padding: '4px 10px !important', fontSize: '0.75rem', borderRadius: '8px !important', background: 'rgba(255,69,58,0.1)', color: 'var(--apple-accent-red)', borderColor: 'rgba(255,69,58,0.2)' }}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {editingReport && (
