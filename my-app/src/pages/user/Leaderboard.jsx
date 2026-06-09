@@ -20,19 +20,15 @@ export default function Leaderboard({ user }) {
       try {
         const targetMonthStr = toRevenueMonthString(currentYear, currentMonth)
 
-        const [teamsRes, profilesRes, revsRes] = await Promise.all([
-          supabase.from('teams').select('*'),
-          supabase.from('profiles').select('id, first_name, last_name, team_id, platform_role, is_deactivated'),
-          supabase.from('monthly_revenues').select('*').eq('revenue_month', targetMonthStr)
-        ])
+        const { data, error: rpcError } = await supabase.rpc('get_leaderboard_data', {
+          target_month: targetMonthStr
+        })
 
-        if (teamsRes.error) throw teamsRes.error
-        if (profilesRes.error) throw profilesRes.error
-        if (revsRes.error) throw revsRes.error
+        if (rpcError) throw rpcError
 
-        setTeams(teamsRes.data || [])
-        setProfiles(profilesRes.data || [])
-        setRevenues(revsRes.data || [])
+        setTeams(data?.teams || [])
+        setProfiles(data?.profiles || [])
+        setRevenues(data?.revenues || [])
       } catch (err) {
         setError(err.message)
       } finally {
