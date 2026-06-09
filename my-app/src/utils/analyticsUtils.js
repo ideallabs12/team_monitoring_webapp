@@ -1,4 +1,4 @@
-import { normalizeMonth, getLastNMonths, parseRevenueMonth, formatRevenueMonthShort } from './revenueUtils'
+import { normalizeMonth, getLastNMonths, parseRevenueMonth, formatRevenueMonthShort, getEffectiveTargetAmount } from './revenueUtils'
 
 /**
  * Returns the team mapping as a helper.
@@ -80,6 +80,54 @@ export function calculateExpectedVsActual(disReports, revenues, months, selected
       Expected: expected,
       Actual: actual,
       Accuracy: accuracy
+    }
+  })
+}
+
+/**
+ * Target vs Actual Revenue
+ * Calculates monthly team target (sum of member monthly_targets) vs actual revenue.
+ * Uses carry-forward logic: if a target was last set 2 months ago, it still applies.
+ * Returns array of: { period, monthStr, Target, Actual }
+ */
+export function calculateTargetVsActual(targets, revenues, months, selectedTeamId, memberships, profiles, teams) {
+  const nonAdminProfiles = profiles.filter(p => p.platform_role !== 'admin')
+
+  return months.map(month => {
+    // Build list of { userId, teamId } pairs to sum targets for
+    const pairs = []
+
+    if (!selectedTeamId || selectedTeamId === 'all') {
+      // All non-admin members across every team
+      teams.forEach(team => {
+        memberships
+          .filter(m => m.team_id === team.id && nonAdminProfiles.some(p => p.id === m.user_id))
+          .forEach(m => pairs.push({ userId: m.user_id, teamId: team.id }))
+      })
+    } else {
+      memberships
+        .filter(m => m.team_id === selectedTeamId && nonAdminProfiles.some(p => p.id === m.user_id))
+        .forEach(m => pairs.push({ userId: m.user_id, teamId: selectedTeamId }))
+    }
+
+    // Sum effective targets (carry-forward: most recent target on or before this month)
+    const targetTotal = pairs.reduce(
+      (sum, { userId, teamId }) => sum + getEffectiveTargetAmount(targets, userId, teamId, month),
+      0
+    )
+
+    // Sum actual revenues
+    let monthRevs = revenues.filter(r => normalizeMonth(r.revenue_month) === month)
+    if (selectedTeamId && selectedTeamId !== 'all') {
+      monthRevs = monthRevs.filter(r => r.team_id === selectedTeamId)
+    }
+    const actual = monthRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+
+    return {
+      period: formatRevenueMonthShort(month),
+      monthStr: month,
+      Target: targetTotal,
+      Actual: actual,
     }
   })
 }
