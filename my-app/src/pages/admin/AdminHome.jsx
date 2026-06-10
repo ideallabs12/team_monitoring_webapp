@@ -1,42 +1,41 @@
 import { useEffect, useMemo, useState } from 'react'
-
 import { supabase } from '../../supabaseClient'
+import { useNavigate } from 'react-router-dom'
 import {
-  formatRevenueMonth,
-  getEffectiveTarget,
-  getTargetAssignmentMonths,
-  normalizeMonth,
-  sumRevenues
-} from '../../utils/revenueUtils'
+  Users,
+  TrendingUp,
+  FileText,
+  BarChart2,
+  ArrowRight,
+  Target
+} from 'lucide-react'
 
-let adminHomeCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
+let adminHomeCache = { loaded: false, teams: [], profiles: [], revenues: [], disReports: [] }
 
 export default function AdminHome() {
   const [loading, setLoading] = useState(!adminHomeCache.loaded)
   const [teams, setTeams] = useState(adminHomeCache.teams)
   const [profiles, setProfiles] = useState(adminHomeCache.profiles)
   const [revenues, setRevenues] = useState(adminHomeCache.revenues)
-  const [targets, setTargets] = useState(adminHomeCache.targets)
-
-  const [selectedTeamId, setSelectedTeamId] = useState('')
-  const [selectedMonth, setSelectedMonth] = useState(getTargetAssignmentMonths(0, 0)[0])
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [disReports, setDisReports] = useState(adminHomeCache.disReports)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [teamsRes, profilesRes, revRes] = await Promise.all([
+        const today = new Date().toISOString().split('T')[0]
+        const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*')
+          supabase.from('monthly_revenues').select('*'),
+          supabase.from('dis_reports').select('user_id').eq('report_date', today)
         ])
-        const t = teamsRes.data || []; const p = profilesRes.data || []; const r = revRes.data || []
-        setTeams(t); setProfiles(p); setRevenues(r)
-
-        const { data: targetData, error: targetErr } = await supabase.from('monthly_targets').select('*')
-        const tgt = (!targetErr && targetData) ? targetData : []
-        setTargets(tgt)
-        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tgt }
+        const t = teamsRes.data || []
+        const p = profilesRes.data || []
+        const r = revRes.data || []
+        const d = disRes.data || []
+        setTeams(t); setProfiles(p); setRevenues(r); setDisReports(d)
+        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r, disReports: d }
       } catch (err) {
         console.error('Error loading admin home data:', err)
       } finally {
@@ -46,260 +45,215 @@ export default function AdminHome() {
     loadData()
   }, [])
 
-  useEffect(() => {
-    if (!selectedTeamId && teams.length > 0) {
-      setSelectedTeamId(teams[0].id)
-    }
-  }, [selectedTeamId, teams])
+  const nonAdminProfiles = useMemo(
+    () => profiles.filter(p => p.platform_role !== 'admin' && !p.is_deactivated),
+    [profiles]
+  )
 
-  const activeTeamMembers = useMemo(() => {
-    if (!selectedTeamId) return []
-    return profiles
-      .filter(p => p.team_id === selectedTeamId && p.platform_role !== 'admin' && !p.is_deactivated)
-  }, [selectedTeamId, profiles])
+  const submittedTodayCount = useMemo(() => {
+    const submittedIds = new Set(disReports.map(r => r.user_id))
+    return nonAdminProfiles.filter(p => submittedIds.has(p.id)).length
+  }, [disReports, nonAdminProfiles])
 
-  const memberTargets = useMemo(() => {
-    if (!selectedTeamId) return []
-    return profiles
-      .filter(p => p.platform_role !== 'admin')
-      .map(member => {
-        const target = getEffectiveTarget(targets, member.id, selectedTeamId, selectedMonth)
-        const currentTarget = target ? Number(target.target_amount || 0) : 0
-        const reached = sumRevenues(revenues.filter(r =>
-          r.user_id === member.id &&
-          r.team_id === selectedTeamId &&
-          normalizeMonth(r.revenue_month) === selectedMonth
-        ))
-        const achievement = currentTarget > 0 ? (reached / currentTarget) * 100 : 0
-        const isActiveInTeam = activeTeamMembers.some(a => a.id === member.id)
+  const totalMembers = nonAdminProfiles.length
+  const missedTodayCount = totalMembers - submittedTodayCount
+  const compliancePercent = totalMembers > 0 ? Math.round((submittedTodayCount / totalMembers) * 100) : 0
 
-        return {
-          ...member,
-          currentTarget,
-          targetSourceMonth: target ? normalizeMonth(target.target_month) : '',
-          reached,
-          achievement,
-          isActiveInTeam
-        }
-      })
-      .filter(m => m.isActiveInTeam || m.currentTarget > 0 || m.reached > 0)
-      .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
-  }, [profiles, targets, revenues, selectedTeamId, selectedMonth, activeTeamMembers])
+  const currentMonth = new Date().toISOString().slice(0, 7) + '-01'
+  const mtdRevenue = useMemo(() => {
+    return revenues
+      .filter(r => r.revenue_month === currentMonth)
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+  }, [revenues, currentMonth])
 
-  const summary = useMemo(() => {
-    const expected = memberTargets.reduce((sum, member) => sum + member.currentTarget, 0)
-    const reached = memberTargets.reduce((sum, member) => sum + member.reached, 0)
-    const achievement = expected > 0 ? (reached / expected) * 100 : 0
-    return { expected, reached, achievement }
-  }, [memberTargets])
-
-  const monthOptions = useMemo(() => getTargetAssignmentMonths(11, 12), [])
-
-
-
-  if (loading) return <div style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</div>
+  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading dashboard...</div>
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ margin: 0, fontSize: '2rem' }}>Admin Dashboard</h1>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
-          Assign monthly targets and monitor target vs reached clearly.
+      {/* ===== PAGE HEADER ===== */}
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '700', color: '#fff' }}>Admin Dashboard</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '0.95rem' }}>
+          Overview of today's activity and platform-wide metrics.
         </p>
       </div>
 
-      <div className="card" style={{ marginBottom: '24px' }}>
-        {/* Card header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: '18px' }}>
-          <div>
-            <h3 style={{ margin: '0 0 6px 0' }}>Team Member Targets</h3>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              View targets and achievement for the selected month. Targets are assigned by Team Leads.
-            </p>
+      {/* ===== QUICK STATS GRID ===== */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '36px' }}>
+
+        {/* Total Members */}
+        <div className="card" style={{ position: 'relative', overflow: 'hidden', padding: '22px 24px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#4F46E5' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>
+              Total Members
+            </div>
+            <Users size={16} style={{ color: '#4F46E5' }} />
           </div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            {memberTargets.length} team member{memberTargets.length === 1 ? '' : 's'}
+          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#fff' }}>{totalMembers}</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{teams.length} teams</div>
+        </div>
+
+        {/* DIS Submitted Today */}
+        <div className="card" style={{ position: 'relative', overflow: 'hidden', padding: '22px 24px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>
+              DIS Submitted Today
+            </div>
+            <FileText size={16} style={{ color: '#10b981' }} />
+          </div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#10b981' }}>{submittedTodayCount}</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            <span style={{ color: compliancePercent >= 80 ? '#10b981' : compliancePercent >= 50 ? '#fbbf24' : '#f87171', fontWeight: '600' }}>
+              {compliancePercent}% compliance
+            </span>
           </div>
         </div>
 
-        {/* Team + Month dropdowns */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', alignItems: 'end', marginBottom: '20px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Team</label>
-            <select
-              value={selectedTeamId}
-              onChange={(e) => {
-                setSelectedTeamId(e.target.value)
-              }}
-              className="form-control"
-            >
-              {teams.map(team => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+        {/* Missed DIS Today */}
+        <div className="card" style={{ position: 'relative', overflow: 'hidden', padding: '22px 24px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: missedTodayCount > 0 ? '#ef4444' : '#10b981' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>
+              Missed DIS Today
+            </div>
+            <BarChart2 size={16} style={{ color: missedTodayCount > 0 ? '#ef4444' : '#10b981' }} />
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Effective Month</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value)
-              }}
-              className="form-control"
-            >
-              {monthOptions.map(month => (
-                <option key={month} value={month}>{formatRevenueMonth(month)}</option>
-              ))}
-            </select>
+          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: missedTodayCount > 0 ? '#f87171' : '#10b981' }}>
+            {missedTodayCount}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            {missedTodayCount === 0 ? '🎉 100% compliance!' : `out of ${totalMembers} members`}
           </div>
         </div>
 
-        {/* ===== SUMMARY CARDS (moved here from the bottom) ===== */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <div style={{
-            padding: '16px 20px',
-            borderRadius: '12px',
-            border: '1px solid rgba(96,165,250,0.35)',
-            background: 'rgba(96,165,250,0.08)'
-          }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Target — {formatRevenueMonth(selectedMonth)}
+        {/* MTD Revenue */}
+        <div className="card" style={{ position: 'relative', overflow: 'hidden', padding: '22px 24px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#fbbf24' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>
+              MTD Revenue
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#60a5fa' }}>${summary.expected.toFixed(2)}</div>
+            <TrendingUp size={16} style={{ color: '#fbbf24' }} />
           </div>
-
-          <div style={{
-            padding: '16px 20px',
-            borderRadius: '12px',
-            border: '1px solid rgba(74,222,128,0.35)',
-            background: 'rgba(74,222,128,0.08)'
-          }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Reached — {formatRevenueMonth(selectedMonth)}
-            </div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#4ade80' }}>${summary.reached.toFixed(2)}</div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#fbbf24' }}>
+            ${mtdRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-
-          <div style={{
-            padding: '16px 20px',
-            borderRadius: '12px',
-            border: '1px solid rgba(251,191,36,0.35)',
-            background: 'rgba(251,191,36,0.08)'
-          }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Achievement</div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#fbbf24' }}>
-              {summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}
-            </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            Month-to-date (all teams)
           </div>
         </div>
 
-        {/* Members tables */}
-        {(() => {
-          const activeTargets = memberTargets.filter(m => m.isActiveInTeam)
-          const historicalTargets = memberTargets.filter(m => !m.isActiveInTeam)
+      </div>
 
-          if (activeTargets.length === 0 && historicalTargets.length === 0) {
-            return <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>No historical or active non-admin members found for this team in this period.</p>
-          }
-
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {activeTargets.length > 0 && (
-                <div style={{ overflowX: 'auto' }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#fff' }}>Active Members</h4>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Current Target</th>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Applies From</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeTargets.map(member => {
-                        return (
-                          <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '12px 8px' }}>
-                              <div style={{ color: '#fff', fontWeight: '700' }}>{member.first_name} {member.last_name}</div>
-                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{member.email}</div>
-                            </td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                              <span style={{ color: '#60a5fa', fontWeight: '800' }}>${member.currentTarget.toFixed(2)}</span>
-                            </td>
-                            <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
-                              {member.targetSourceMonth ? formatRevenueMonth(member.targetSourceMonth) : 'Not assigned'}
-                            </td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
-                              ${member.reached.toFixed(2)}
-                            </td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
-                              {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {historicalTargets.length > 0 && (
-                <div style={{ overflowX: 'auto', opacity: 0.85, padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Historical Members</h4>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Target</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historicalTargets.map(member => (
-                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 8px' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {member.first_name} {member.last_name}
-                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff' }}>
-                                {member.is_deactivated ? 'Former' : 'Transferred'}
-                              </span>
-                            </div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '2px' }}>{member.email}</div>
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            ${member.currentTarget.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            ${member.reached.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )
-        })()}
-
-        {message.text && (
-          <div style={{
-            marginTop: '12px',
-            padding: '10px 12px',
-            borderRadius: '8px',
-            color: message.type === 'error' ? '#f87171' : '#4ade80',
-            background: message.type === 'error' ? 'rgba(239,68,68,0.08)' : 'rgba(74,222,128,0.08)',
-            border: `1px solid ${message.type === 'error' ? 'rgba(239,68,68,0.25)' : 'rgba(74,222,128,0.25)'}`
+      {/* ===== DIS COMPLIANCE PROGRESS ===== */}
+      <div className="card" style={{ marginBottom: '28px', padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '600', color: '#fff' }}>Today's DIS Compliance</h3>
+          <span style={{
+            fontSize: '0.8rem', fontWeight: '700', padding: '3px 10px', borderRadius: '20px',
+            background: compliancePercent >= 80 ? 'rgba(16,185,129,0.12)' : compliancePercent >= 50 ? 'rgba(251,191,36,0.12)' : 'rgba(239,68,68,0.12)',
+            color: compliancePercent >= 80 ? '#10b981' : compliancePercent >= 50 ? '#fbbf24' : '#f87171',
+            border: `1px solid ${compliancePercent >= 80 ? 'rgba(16,185,129,0.3)' : compliancePercent >= 50 ? 'rgba(251,191,36,0.3)' : 'rgba(239,68,68,0.3)'}`
           }}>
-            {message.text}
+            {compliancePercent}%
+          </span>
+        </div>
+
+        <div style={{ height: '10px', background: 'rgba(255,255,255,0.07)', borderRadius: '5px', overflow: 'hidden', marginBottom: '12px' }}>
+          <div style={{
+            height: '100%',
+            width: `${compliancePercent}%`,
+            borderRadius: '5px',
+            background: compliancePercent >= 80
+              ? 'linear-gradient(to right, #10b981, #34d399)'
+              : compliancePercent >= 50
+                ? 'linear-gradient(to right, #f59e0b, #fbbf24)'
+                : 'linear-gradient(to right, #ef4444, #f87171)',
+            transition: 'width 0.4s ease-out'
+          }} />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+          <span><span style={{ color: '#10b981', fontWeight: '600' }}>{submittedTodayCount}</span> submitted</span>
+          <span><span style={{ color: '#f87171', fontWeight: '600' }}>{missedTodayCount}</span> pending</span>
+          <span>{totalMembers} total members</span>
+        </div>
+      </div>
+
+      {/* ===== QUICK LINKS ===== */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+        {[
+          {
+            label: 'View DIS Reports',
+            description: 'Audit daily submissions, check who submitted and who missed.',
+            icon: FileText,
+            color: '#4F46E5',
+            path: '/admin/dis'
+          },
+          {
+            label: 'Revenue & Targets',
+            description: 'View team member targets, expected vs actual revenue comparisons.',
+            icon: Target,
+            color: '#10b981',
+            path: '/admin/revenue'
+          },
+          {
+            label: 'Analytics',
+            description: 'Executive KPIs, performance trends, and growth charts.',
+            icon: TrendingUp,
+            color: '#fbbf24',
+            path: '/admin/analytics'
+          },
+          {
+            label: 'Manage Teams',
+            description: 'View team rosters, member profiles, and team composition.',
+            icon: Users,
+            color: '#3b82f6',
+            path: '/admin/teams'
+          },
+        ].map(item => (
+          <div
+            key={item.path}
+            className="card"
+            onClick={() => navigate(item.path)}
+            style={{
+              cursor: 'pointer',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              transition: 'all 0.2s ease',
+              border: '1px solid rgba(255,255,255,0.05)'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-3px)'
+              e.currentTarget.style.borderColor = `${item.color}40`
+              e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.3)`
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'none'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '8px',
+                background: `${item.color}18`, border: `1px solid ${item.color}30`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <item.icon size={18} style={{ color: item.color }} />
+              </div>
+              <ArrowRight size={16} style={{ color: 'var(--text-secondary)' }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: '600', color: '#fff', fontSize: '0.95rem', marginBottom: '4px' }}>{item.label}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{item.description}</div>
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   )
