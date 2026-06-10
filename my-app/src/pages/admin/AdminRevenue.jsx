@@ -353,21 +353,22 @@ export default function AdminRevenue() {
                 <button
                   key={opt.value}
                   onClick={() => setAveragePeriod(opt.value)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  border: 'none',
-                  background: averagePeriod === opt.value ? '#3b82f6' : 'transparent',
-                  color: averagePeriod === opt.value ? '#fff' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    background: averagePeriod === opt.value ? '#3b82f6' : 'transparent',
+                    color: averagePeriod === opt.value ? '#fff' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
