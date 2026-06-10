@@ -75,7 +75,6 @@ export default function AdminRevenue() {
   const allTimeTotal = sumRevenues(nonAdminRevenues)
 
   const averagePeriodOptions = [
-    { label: '1M', value: 1 },
     { label: '2M', value: 2 },
     { label: '3M', value: 3 },
     { label: '6M', value: 6 },
@@ -113,21 +112,7 @@ export default function AdminRevenue() {
 
   const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
 
-  const currentMonthStr = useMemo(() => getLastNMonths(1)[0], [])
 
-  const currentMonthRevenues = useMemo(() => {
-    return nonAdminRevenues.filter(r => normalizeMonth(r.revenue_month) === currentMonthStr)
-  }, [nonAdminRevenues, currentMonthStr])
-
-  const topContributorsThisMonth = useMemo(() => {
-    return nonAdminProfiles.map(profile => {
-      const thisMonthSum = sumRevenues(currentMonthRevenues.filter(r => r.user_id === profile.id))
-      return { ...profile, thisMonthTotal: thisMonthSum }
-    }).filter(m => m.thisMonthTotal > 0)
-      .sort((a, b) => b.thisMonthTotal - a.thisMonthTotal)
-  }, [nonAdminProfiles, currentMonthRevenues])
-
-  const highestMember = topContributorsThisMonth.length > 0 ? topContributorsThisMonth[0] : null
 
   // Period-based month set — for the Expected vs Actual section
   const monthSet = useMemo(() => {
@@ -200,35 +185,6 @@ export default function AdminRevenue() {
           <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#4ade80' }}>
             ${allTimeTotal.toFixed(2)}
           </div>
-        </div>
-
-        <div className="card">
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Performing Team</h3>
-          {highestTeam ? (
-            <div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff' }}>{highestTeam.name}</div>
-              <div style={{ color: '#60a5fa', fontWeight: 'bold', marginTop: '4px' }}>${highestTeam.allTimeTotal.toFixed(2)}</div>
-            </div>
-          ) : (
-            <div style={{ color: 'var(--text-secondary)' }}>No revenue data</div>
-          )}
-        </div>
-
-        <div className="card">
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Individual Contributor (This Month)</h3>
-          {highestMember ? (
-            <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
-                {highestMember.first_name} {highestMember.last_name}
-                {highestMember.is_deactivated && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px', fontWeight: 'normal' }}>(Former)</span>}
-              </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#a78bfa', marginTop: '4px' }}>
-                ${highestMember.thisMonthTotal.toFixed(2)}
-              </div>
-            </div>
-          ) : (
-            <div style={{ color: 'var(--text-secondary)' }}>No revenue data for this month</div>
-          )}
         </div>
       </div>
 
