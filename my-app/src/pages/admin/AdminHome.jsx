@@ -478,12 +478,12 @@ export default function AdminHome() {
         gridTemplateColumns: '1fr 380px',
         gap: '20px',
         marginBottom: '20px',
-        height: '340px'
+        alignItems: 'stretch'
       }}>
 
         {/* Revenue Trend Area Chart */}
-        <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexShrink: 0 }}>
+        <div className="terminal-card" style={{ padding: '22px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
               <div style={{
                 fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
@@ -504,42 +504,40 @@ export default function AdminHome() {
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
-                  axisLine={false} tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={v => fmt(v).replace('$', '')}
-                  tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
-                  axisLine={false} tickLine={false} width={44}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine
-                  y={lastMonthRev} stroke="rgba(99,102,241,0.4)"
-                  strokeDasharray="6 3"
-                  label={{ value: 'LM', fill: '#6366f1', fontSize: 9, fontFamily: 'monospace' }}
-                />
-                <Area
-                  type="monotone" dataKey="total" name="Revenue"
-                  stroke="#6366f1" strokeWidth={2.5}
-                  fill="url(#revGrad)"
-                  dot={{ fill: '#6366f1', r: 3, strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: '#818cf8', strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                axisLine={false} tickLine={false}
+              />
+              <YAxis
+                tickFormatter={v => fmt(v).replace('$', '')}
+                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                axisLine={false} tickLine={false} width={44}
+              />
+              <Tooltip content={<ChartTooltip />} />
+              <ReferenceLine
+                y={lastMonthRev} stroke="rgba(99,102,241,0.4)"
+                strokeDasharray="6 3"
+                label={{ value: 'LM', fill: '#6366f1', fontSize: 9, fontFamily: 'monospace' }}
+              />
+              <Area
+                type="monotone" dataKey="total" name="Revenue"
+                stroke="#6366f1" strokeWidth={2.5}
+                fill="url(#revGrad)"
+                dot={{ fill: '#6366f1', r: 3, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#818cf8', strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Team Watchlist */}
@@ -642,56 +640,51 @@ export default function AdminHome() {
         gridTemplateColumns: '1fr 300px 300px',
         gap: '20px',
         marginBottom: '20px',
-        alignItems: 'stretch',
-        height: '380px'
+        alignItems: 'start'
       }}>
 
         {/* Team Revenue Bar Chart (last 6 months) */}
-        <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexShrink: 0 }}>
-            <div>
-              <div style={{
-                fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-                color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
-              }}>
-                TEAM BREAKDOWN
-              </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f1f5f9' }}>
-                Revenue by Team · Last 6 Months
-              </div>
+        <div className="terminal-card" style={{ padding: '22px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{
+              fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
+              color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
+            }}>
+              TEAM BREAKDOWN
+            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f1f5f9' }}>
+              Revenue by Team · Last 6 Months
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
-                  axisLine={false} tickLine={false}
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+              <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                axisLine={false} tickLine={false}
+              />
+              <YAxis
+                tickFormatter={v => fmt(v).replace('$', '')}
+                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                axisLine={false} tickLine={false} width={44}
+              />
+              <Tooltip content={<ChartTooltip />} />
+              {teams.map((team, i) => (
+                <Bar
+                  key={team.id}
+                  dataKey={team.name}
+                  stackId="a"
+                  fill={TEAM_COLORS[i % TEAM_COLORS.length]}
+                  radius={i === teams.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                 />
-                <YAxis
-                  tickFormatter={v => fmt(v).replace('$', '')}
-                  tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
-                  axisLine={false} tickLine={false} width={44}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                {teams.map((team, i) => (
-                  <Bar
-                    key={team.id}
-                    dataKey={team.name}
-                    stackId="a"
-                    fill={TEAM_COLORS[i % TEAM_COLORS.length]}
-                    radius={i === teams.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
 
           {/* Legend */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px' }}>
             {teams.map((team, i) => (
               <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{
@@ -707,8 +700,8 @@ export default function AdminHome() {
         </div>
 
         {/* MTD Revenue Share Pie Chart */}
-        <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ flexShrink: 0, marginBottom: '8px' }}>
+        <div className="terminal-card" style={{ padding: '22px' }}>
+          <div style={{ marginBottom: '8px' }}>
             <div style={{
               fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
               color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
@@ -722,40 +715,38 @@ export default function AdminHome() {
 
           {revenueShareData.length > 0 ? (
             <>
-              <div style={{ flex: 1, minHeight: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={revenueShareData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%" cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={3}
-                    >
-                      {revenueShareData.map((entry, i) => (
-                        <Cell key={`cell-${i}`} fill={entry.color} stroke="rgba(15,23,42,0.8)" strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) =>
-                        active && payload?.length ? (
-                          <div style={{
-                            background: '#0f172a', border: '1px solid rgba(99,102,241,0.4)',
-                            borderRadius: '8px', padding: '8px 12px', fontSize: '0.78rem'
-                          }}>
-                            <div style={{ color: payload[0].payload.color, fontWeight: '700' }}>{payload[0].name}</div>
-                            <div style={{ color: '#e2e8f0', fontFamily: 'monospace', fontWeight: '700' }}>{fmt(payload[0].value)}</div>
-                          </div>
-                        ) : null
-                      }
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={revenueShareData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%" cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                  >
+                    {revenueShareData.map((entry, i) => (
+                      <Cell key={`cell-${i}`} fill={entry.color} stroke="rgba(15,23,42,0.8)" strokeWidth={2} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) =>
+                      active && payload?.length ? (
+                        <div style={{
+                          background: '#0f172a', border: '1px solid rgba(99,102,241,0.4)',
+                          borderRadius: '8px', padding: '8px 12px', fontSize: '0.78rem'
+                        }}>
+                          <div style={{ color: payload[0].payload.color, fontWeight: '700' }}>{payload[0].name}</div>
+                          <div style={{ color: '#e2e8f0', fontFamily: 'monospace', fontWeight: '700' }}>{fmt(payload[0].value)}</div>
+                        </div>
+                      ) : null
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
               {/* Legend */}
-              <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
                 {revenueShareData.map((d, i) => {
                   const total = revenueShareData.reduce((s, x) => s + x.value, 0)
                   const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0'
@@ -770,7 +761,7 @@ export default function AdminHome() {
               </div>
             </>
           ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontSize: '0.78rem', fontFamily: 'monospace' }}>
               NO DATA THIS MONTH
             </div>
           )}
