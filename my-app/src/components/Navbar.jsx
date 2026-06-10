@@ -55,7 +55,7 @@ export default function Navbar({ user }) {
   }
 
   const isActive = (path) => location.pathname === path
-  const isOthersActive = ['/revenue-history'].includes(location.pathname)
+  const isOthersActive = ['/revenue-history', '/milestones'].includes(location.pathname)
   const isTeamHubActive = ['/team-analytics', '/team-management'].includes(location.pathname)
 
   const navLinks = [
@@ -70,6 +70,7 @@ export default function Navbar({ user }) {
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
     { to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' },
+    { to: '/milestones', label: 'Milestones', desc: 'All-time records & achievements' },
   ]
   if (profile?.platform_role === 'teamlead') {
     othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
