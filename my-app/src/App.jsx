@@ -232,7 +232,6 @@ function App() {
           <Route path="/historical-revenue" element={hasProfile && !isAdmin ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue-history" element={hasProfile && !isAdmin ? <RevenueHistory user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/leaderboard" element={hasProfile && !isAdmin ? <Leaderboard user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/milestones" element={hasProfile && !isAdmin ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
@@ -250,6 +249,7 @@ function App() {
           <Route path="dis" element={<AdminDis />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="milestones" element={<Milestones user={user} />} />
+          <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
