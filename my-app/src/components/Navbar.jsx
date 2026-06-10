@@ -56,7 +56,7 @@ export default function Navbar({ user }) {
 
   const isActive = (path) => location.pathname === path
   const isOthersActive = ['/revenue-history'].includes(location.pathname)
-  const isTeamHubActive = ['/team-analytics', '/team-management'].includes(location.pathname)
+  const isTeamHubActive = ['/team-analytics', '/team-management', '/team-dis-report'].includes(location.pathname)
 
   const navLinks = [
     { to: '/home', label: 'Home' },
@@ -78,6 +78,7 @@ export default function Navbar({ user }) {
   const teamHubLinks = [
     { to: '/team-analytics', label: 'Team Analytics', desc: 'Charts & insights' },
     { to: '/team-management', label: 'Team Management', desc: 'Targets & DIS board' },
+    { to: '/team-dis-report', label: 'Team DIS Report', desc: 'Audit team submissions' },
   ]
 
   const linkStyle = (active) => ({

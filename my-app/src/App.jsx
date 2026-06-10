@@ -16,6 +16,7 @@ import Milestones from './pages/user/Milestones'
 import UserDis from './pages/user/UserDis'
 import TeamAnalytics from './pages/user/TeamAnalytics'
 import TeamManagement from './pages/user/TeamManagement'
+import TeamDisReport from './pages/user/TeamDisReport'
 import CompleteProfile from './pages/CompleteProfile'
 import ProfileSettings from './pages/ProfileSettings'
 import ForgotPassword from './pages/ForgotPassword'
@@ -235,6 +236,7 @@ function App() {
           <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-dis-report" element={hasProfile && !isAdmin ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
