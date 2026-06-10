@@ -486,6 +486,15 @@ export default function AdminDis() {
                 teamSpecificRevenue = revRecord ? Number(revRecord.amount) : 0
               }
 
+              const displayTeamName = row.teams?.name || (() => {
+                const userProfile = profiles.find(p => p.id === row.user_id)
+                if (userProfile?.team_id) {
+                  const userTeam = teams.find(t => t.id === userProfile.team_id)
+                  return userTeam?.name || ''
+                }
+                return ''
+              })()
+
               return (
                 <div
                   key={row.id}
@@ -504,7 +513,7 @@ export default function AdminDis() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
                       {row.profiles?.email}
                     </div>
-                    {isAllTeams && row.teams?.name && (
+                    {isAllTeams && displayTeamName && (
                       <div style={{ marginTop: '8px' }}>
                         <span style={{
                           padding: '2px 8px',
@@ -515,7 +524,7 @@ export default function AdminDis() {
                           background: 'rgba(96,165,250,0.1)',
                           border: '1px solid rgba(96,165,250,0.2)',
                           color: '#60a5fa'
-                        }}>{row.teams.name}</span>
+                        }}>{displayTeamName}</span>
                       </div>
                     )}
                   </div>
