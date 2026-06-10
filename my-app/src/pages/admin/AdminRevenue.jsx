@@ -22,6 +22,7 @@ export default function AdminRevenue() {
   // Period filter now lives inside the "Expected vs Actual" section
   const [periodFilter, setPeriodFilter] = useState(1)
   const [averagePeriod, setAveragePeriod] = useState(6)
+  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(true)
   const [selectedTeamId, setSelectedTeamId] = useState('')
 
   useEffect(() => {
@@ -83,24 +84,25 @@ export default function AdminRevenue() {
   ]
 
   const teamAverages = useMemo(() => {
-    const filtered = filterRevenuesByCompletedPeriod(nonAdminRevenues, averagePeriod)
+    const filtered = includeCurrentMonth 
+      ? filterRevenuesByPeriod(nonAdminRevenues, averagePeriod)
+      : filterRevenuesByCompletedPeriod(nonAdminRevenues, averagePeriod)
+
     return teams.map(team => {
       const teamRevs = filtered.filter(r => r.team_id === team.id)
       const sum = sumRevenues(teamRevs)
-      let average = 0
-      if (averagePeriod > 0) {
-        average = sum / averagePeriod
-      } else {
-        const uniqueMonths = new Set(teamRevs.map(r => normalizeMonth(r.revenue_month))).size
-        average = uniqueMonths > 0 ? sum / uniqueMonths : 0
-      }
+      
+      // Like Excel's AVERAGE(), only divide by the months that actually have data
+      const uniqueMonths = new Set(teamRevs.map(r => normalizeMonth(r.revenue_month))).size
+      const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+      
       return {
         teamId: team.id,
         teamName: team.name,
         average: Number(average.toFixed(2))
       }
     }).sort((a, b) => b.average - a.average)
-  }, [nonAdminRevenues, teams, averagePeriod])
+  }, [nonAdminRevenues, teams, averagePeriod, includeCurrentMonth])
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#f43f5e']
 
@@ -334,11 +336,23 @@ export default function AdminRevenue() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '3px' }}>
-            {averagePeriodOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setAveragePeriod(opt.value)}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
+            {/* Toggle for Current Month */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={includeCurrentMonth}
+                onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#3b82f6', cursor: 'pointer' }}
+              />
+              Include Current Month
+            </label>
+
+            <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '3px' }}>
+              {averagePeriodOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setAveragePeriod(opt.value)}
                 style={{
                   padding: '6px 14px',
                   borderRadius: '20px',
