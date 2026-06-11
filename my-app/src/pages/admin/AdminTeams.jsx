@@ -56,6 +56,11 @@ export default function AdminTeams() {
     toRevenueMonthString(now.getFullYear(), now.getMonth())
   )
 
+  // Team Performance Breakdown state
+  const [breakdownAllTime, setBreakdownAllTime] = useState(false)
+  const [breakdownYear, setBreakdownYear] = useState(new Date().getFullYear())
+  const [breakdownMonth, setBreakdownMonth] = useState(new Date().getMonth())
+
   useEffect(() => {
     async function loadData() {
       const [teamsRes, profilesRes, revRes] = await Promise.all([
@@ -163,6 +168,39 @@ export default function AdminTeams() {
   const teamMaxMonthRevenue = useMemo(() => {
     return Math.max(...teamTrendData.map(d => d.total), 1)
   }, [teamTrendData])
+
+  // Calculations for Team Performance Breakdown
+  const teamProfiles = useMemo(() => {
+    if (!activeTeam) return []
+    return profiles.filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin')
+  }, [profiles, activeTeam])
+
+  const memberBreakdown = useMemo(() => {
+    if (!activeTeam) return []
+    
+    const monthStr = toRevenueMonthString(breakdownYear, breakdownMonth)
+    
+    return teamProfiles.map(member => {
+      const memberRevs = revenues.filter(r => {
+        const matchesUserAndTeam = r.user_id === member.id && r.team_id === activeTeam.id
+        if (!matchesUserAndTeam) return false
+        
+        if (breakdownAllTime) return true
+        return normalizeMonth(r.revenue_month) === monthStr
+      })
+      
+      const totalContributed = memberRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+      
+      return {
+        ...member,
+        totalContributed
+      }
+    }).sort((a, b) => b.totalContributed - a.totalContributed)
+  }, [activeTeam, teamProfiles, revenues, breakdownAllTime, breakdownYear, breakdownMonth])
+
+  const breakdownTotalRevenue = useMemo(() => {
+    return memberBreakdown.reduce((sum, m) => sum + m.totalContributed, 0)
+  }, [memberBreakdown])
 
   if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading teams ledger...</div>
 
@@ -765,6 +803,181 @@ export default function AdminTeams() {
             </div>
           )
         })()}
+
+        {/* ===== TEAM PERFORMANCE BREAKDOWN SECTION ===== */}
+        <div className="apple-card" style={{ marginTop: '28px', padding: '24px !important' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Individual Shares</div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Team Performance Breakdown</h3>
+            </div>
+
+            {/* Controls Row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              {/* Apple-style Switch Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>All Time</span>
+                <button 
+                  type="button"
+                  onClick={() => setBreakdownAllTime(!breakdownAllTime)}
+                  style={{
+                    position: 'relative',
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: '12px',
+                    background: breakdownAllTime ? 'var(--apple-accent-blue)' : 'rgba(255,255,255,0.15)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.3s'
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    position: 'absolute',
+                    top: '3px',
+                    left: breakdownAllTime ? '23px' : '3px',
+                    transition: 'left 0.25s var(--apple-ease)'
+                  }} />
+                </button>
+              </div>
+
+              {/* Month Picker */}
+              <select
+                value={breakdownMonth}
+                onChange={e => setBreakdownMonth(Number(e.target.value))}
+                disabled={breakdownAllTime}
+                className="apple-form-control"
+                style={{ 
+                  opacity: breakdownAllTime ? 0.35 : 1, 
+                  width: 'auto', 
+                  padding: '6px 14px', 
+                  fontSize: '0.88rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  cursor: breakdownAllTime ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, idx) => (
+                  <option key={m} value={idx}>{m}</option>
+                ))}
+              </select>
+
+              {/* Year Picker */}
+              <select
+                value={breakdownYear}
+                onChange={e => setBreakdownYear(Number(e.target.value))}
+                disabled={breakdownAllTime}
+                className="apple-form-control"
+                style={{ 
+                  opacity: breakdownAllTime ? 0.35 : 1, 
+                  width: 'auto', 
+                  padding: '6px 14px', 
+                  fontSize: '0.88rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  cursor: breakdownAllTime ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Selection Total Banner */}
+          <div style={{ 
+            background: 'rgba(255, 255, 255, 0.015)',
+            border: '1px solid var(--apple-border)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {breakdownAllTime ? 'All Time Total Revenue' : 'Selected Month Total Revenue'}
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--apple-accent-green)', marginTop: '2px' }}>
+                ${breakdownTotalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', padding: '3px 10px' }}>
+              💼 TEAM STATEMENT
+            </span>
+          </div>
+
+          {/* Contributors List */}
+          <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)' }}>
+                  <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</th>
+                  <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Share</th>
+                  <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Revenue Contributed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {memberBreakdown.map((m, index) => {
+                  const maxContr = Math.max(1, ...memberBreakdown.map(x => x.totalContributed))
+                  const pct = (m.totalContributed / maxContr) * 100
+                  const overallPct = breakdownTotalRevenue > 0 ? (m.totalContributed / breakdownTotalRevenue) * 100 : 0
+                  return (
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
+                      <td style={{ padding: '14px 20px', color: '#fff', fontWeight: '600' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.8rem', fontWeight: '800' }}>#{index + 1}</span>
+                          <div>
+                            <div>{m.first_name} {m.last_name}</div>
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>
+                                {m.platform_role === 'teamlead' ? 'Lead' : 'Member'}
+                              </span>
+                              {m.is_deactivated && (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--apple-accent-red)', background: 'rgba(255,69,58,0.1)', padding: '0 4px', borderRadius: '3px', fontWeight: '600' }}>
+                                  Deactivated
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 20px', width: '50%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--apple-border)' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: 'var(--apple-accent-blue)', borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', fontWeight: '600', minWidth: '40px', textAlign: 'right' }}>
+                            {overallPct.toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 20px', textAlign: 'right', color: m.totalContributed > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)', fontWeight: '700' }}>
+                        ${m.totalContributed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  )
+                })}
+                {memberBreakdown.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: '24px 20px', color: 'var(--apple-text-secondary)', textAlign: 'center', fontStyle: 'italic' }}>
+                      No team member contributions found for this selection.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     )
   }
