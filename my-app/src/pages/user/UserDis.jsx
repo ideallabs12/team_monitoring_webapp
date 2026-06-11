@@ -72,10 +72,7 @@ export default function UserDis() {
           // Use cached profile if we have it to avoid flash
           if (globalDisCache.userId === user.id && globalDisCache.profile) {
             setProfile(globalDisCache.profile)
-            
-            const settings = globalDisCache.profile.team_settings || {}
-            const hasDisAccess = Object.values(settings).some(s => s.has_dis)
-            if (!hasDisAccess && Object.keys(settings).length > 0) {
+            if (globalDisCache.profile.has_dis_reporting === false) {
               setAccessDenied(true)
               setLoading(false)
               return
@@ -92,9 +89,7 @@ export default function UserDis() {
             globalDisCache.userId = user.id
             globalDisCache.profile = prof
 
-            const settings = prof.team_settings || {}
-            const hasDisAccess = Object.values(settings).some(s => s.has_dis)
-            if (!hasDisAccess && Object.keys(settings).length > 0) {
+            if (prof.has_dis_reporting === false) {
               setAccessDenied(true)
               setLoading(false)
               return
@@ -116,14 +111,15 @@ export default function UserDis() {
     async function fetchTeams() {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('team_id, secondary_team_roles, platform_role')
         .eq('id', currentUser.id)
         .single()
       
-      const teamSettings = profileData?.team_settings || {}
-      const teamIdsToFetch = Object.entries(teamSettings)
-        .filter(([_, settings]) => settings.has_dis)
-        .map(([id]) => id)
+      const teamIdsToFetch = []
+      if (profileData?.team_id) teamIdsToFetch.push(profileData.team_id)
+      if (profileData?.secondary_team_roles) {
+        teamIdsToFetch.push(...Object.keys(profileData.secondary_team_roles))
+      }
 
       if (teamIdsToFetch.length > 0) {
         const { data: teamsData } = await supabase
@@ -135,7 +131,9 @@ export default function UserDis() {
           const loadedTeams = teamsData.map(t => ({
             id: t.id,
             name: t.name,
-            role: teamSettings[t.id]?.role === 'teamlead' ? 'lead' : 'member'
+            role: t.id === profileData.team_id 
+              ? (profileData.platform_role === 'teamlead' ? 'lead' : 'member')
+              : (profileData.secondary_team_roles?.[t.id] === 'teamlead' ? 'lead' : 'member')
           }))
           // Sort primary team first
           loadedTeams.sort((a, b) => a.id === profileData.team_id ? -1 : 1)

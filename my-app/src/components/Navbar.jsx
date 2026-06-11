@@ -15,7 +15,7 @@ export default function Navbar({ user }) {
 
   useEffect(() => {
     if (user) {
-      supabase.from('profiles').select('*').eq('id', user.id).single()
+      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting, platform_role, secondary_team_roles').eq('id', user.id).single()
         .then(({ data }) => {
           if (data) setProfile(data)
         })
@@ -62,15 +62,12 @@ export default function Navbar({ user }) {
     { to: '/home', label: 'Home' },
     { to: '/team', label: 'Team' }
   ]
-  const hasRevAccess = profile && profile.team_settings ? Object.values(profile.team_settings).some(s => s.has_revenue) : (profile?.has_revenue_logging !== false)
-  const hasDisAccess = profile && profile.team_settings ? Object.values(profile.team_settings).some(s => s.has_dis) : (profile?.has_dis_reporting !== false)
-
-  if (hasRevAccess) navLinks.push({ to: '/revenue', label: 'Revenue' })
-  if (hasDisAccess) navLinks.push({ to: '/dis', label: 'DIS' })
+  if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
+  if (profile?.has_dis_reporting !== false) navLinks.push({ to: '/dis', label: 'DIS' })
 
   navLinks.push({ to: '/profile', label: 'Profile' })
 
-  const isTeamLead = profile?.platform_role === 'teamlead' || Object.values(profile?.team_settings || {}).some(s => s.role === 'teamlead')
+  const isTeamLead = profile?.platform_role === 'teamlead' || Object.values(profile?.secondary_team_roles || {}).includes('teamlead')
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [

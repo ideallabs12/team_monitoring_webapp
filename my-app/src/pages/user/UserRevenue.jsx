@@ -64,32 +64,34 @@ export default function UserRevenue({ user, isAdminView }) {
   async function loadData() {
     try {
       const [profileRes, allTeamsRes, revDataRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('profiles').select('team_id, secondary_team_roles, has_revenue_logging').eq('id', user.id).single(),
         supabase.from('teams').select('*'),
         supabase.from('monthly_revenues').select('*, teams(name)').eq('user_id', user.id).order('revenue_month', { ascending: false })
       ])
 
       setAllTeams(allTeamsRes.data || [])
 
-      setUserProfile(profileRes.data)
-      const teamSettings = profileRes.data?.team_settings || {}
-      const assignedTeams = []
-      let hasGlobalRevenueAccess = false
-
-      Object.entries(teamSettings).forEach(([tId, settings]) => {
-        if (settings.has_revenue) {
-          hasGlobalRevenueAccess = true
-          const team = allTeamsRes.data?.find(t => t.id === tId)
-          if (team) {
-            assignedTeams.push(team)
-          }
-        }
-      })
-
-      if (!hasGlobalRevenueAccess && Object.keys(teamSettings).length > 0) {
+      // Get user's single team
+      if (profileRes.data?.has_revenue_logging === false) {
         setAccessDenied(true)
         setLoading(false)
         return
+      }
+      setUserProfile(profileRes.data)
+      const assignedTeams = []
+      if (profileRes.data?.team_id) {
+        const userTeam = allTeamsRes.data?.find(t => t.id === profileRes.data.team_id)
+        if (userTeam) {
+          assignedTeams.push(userTeam)
+        }
+      }
+      if (profileRes.data?.secondary_team_roles) {
+        Object.keys(profileRes.data.secondary_team_roles).forEach(secId => {
+          const userTeam = allTeamsRes.data?.find(t => t.id === secId)
+          if (userTeam && !assignedTeams.find(t => t.id === secId)) {
+            assignedTeams.push(userTeam)
+          }
+        })
       }
 
       const revData = revDataRes.data || []
@@ -736,8 +738,10 @@ export default function UserRevenue({ user, isAdminView }) {
 
               // Determine role from profile
               let teamRole = 'former member'
-              if (userProfile?.team_settings && userProfile.team_settings[teamId]) {
-                teamRole = userProfile.team_settings[teamId].role === 'teamlead' ? 'lead' : 'member'
+              if (userProfile?.team_id === teamId) {
+                teamRole = userProfile.platform_role === 'teamlead' ? 'lead' : 'member'
+              } else if (userProfile?.secondary_team_roles && userProfile.secondary_team_roles[teamId]) {
+                teamRole = userProfile.secondary_team_roles[teamId] === 'teamlead' ? 'lead' : 'member'
               }
 
               const teamRevs = revenues.filter(r => r.team_id === teamId)

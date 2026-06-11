@@ -47,7 +47,7 @@ export default function TeamDisReport({ user }) {
         
         if (error) throw error
         
-        const isTeamLead = prof?.platform_role === 'teamlead' || Object.values(prof?.team_settings || {}).some(s => s.role === 'teamlead')
+        const isTeamLead = prof?.platform_role === 'teamlead' || Object.values(prof?.secondary_team_roles || {}).includes('teamlead')
         
         if (!isTeamLead) {
           setAccessDenied(true)
@@ -58,9 +58,10 @@ export default function TeamDisReport({ user }) {
         setProfile(prof)
         
         const ledTeamIds = []
-        if (prof.team_settings) {
-          Object.entries(prof.team_settings).forEach(([tId, settings]) => {
-            if (settings.role === 'teamlead') ledTeamIds.push(tId)
+        if (prof.platform_role === 'teamlead' && prof.team_id) ledTeamIds.push(prof.team_id)
+        if (prof.secondary_team_roles) {
+          Object.entries(prof.secondary_team_roles).forEach(([tId, role]) => {
+            if (role === 'teamlead') ledTeamIds.push(tId)
           })
         }
 
@@ -106,7 +107,7 @@ export default function TeamDisReport({ user }) {
       ])
 
       const profilesData = (profilesRes.data || []).filter(p => 
-        p.team_settings && p.team_settings[selectedTeamId]
+        p.team_id === selectedTeamId || Object.keys(p.secondary_team_roles || {}).includes(selectedTeamId)
       )
       const revenuesData = revenuesRes.data || []
       const allReportsData = reportsRes.data || []
