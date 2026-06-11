@@ -325,6 +325,17 @@ export default function AdminHome() {
     return contribs[0] || null
   }, [nonAdminProfiles, revenues, currentMonthStr])
 
+  /* Top 5 performers list this month */
+  const topPerformersList = useMemo(() => {
+    return nonAdminProfiles.map(p => {
+      const amount = sumRevenues(revenues.filter(r => r.user_id === p.id && normalizeMonth(r.revenue_month) === currentMonthStr))
+      return { ...p, amount }
+    })
+    .filter(p => p.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5)
+  }, [nonAdminProfiles, revenues, currentMonthStr])
+
   /* Fastest growing team */
   const fastestGrowingTeam = useMemo(() => {
     const ranked = [...teamWatchlist].sort((a, b) => b.chg - a.chg)
@@ -387,27 +398,136 @@ export default function AdminHome() {
           -webkit-backdrop-filter: blur(20px);
           transition: border-color 0.3s var(--apple-ease), box-shadow 0.3s var(--apple-ease);
           box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
         .terminal-card:hover {
           border-color: var(--apple-border-strong);
           box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
         }
         .watchlist-row:hover { background: rgba(255, 255, 255, 0.03) !important; }
+
+        /* Responsive Grid layouts */
+        .admin-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 24px;
+          width: 100%;
+          min-width: 0;
+        }
+        .admin-grid-top {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 20px;
+          margin-bottom: 20px;
+          align-items: stretch;
+          width: 100%;
+          min-width: 0;
+        }
+        .admin-grid-bottom {
+          display: grid;
+          grid-template-columns: 1fr 300px 300px;
+          gap: 20px;
+          margin-bottom: 20px;
+          align-items: stretch;
+          width: 100%;
+          min-width: 0;
+        }
+        .admin-quick-nav-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          width: 100%;
+          min-width: 0;
+        }
+
+        /* Ensure direct grid items can shrink */
+        .admin-stats-grid > *,
+        .admin-grid-top > *,
+        .admin-grid-bottom > *,
+        .admin-quick-nav-grid > * {
+          min-width: 0;
+        }
+
+        .admin-ticker-container {
+          margin: -36px -40px 24px -40px;
+        }
+        
+        .admin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 24px 0 20px 0;
+          border-bottom: 1px solid var(--apple-border);
+          margin-bottom: 24px;
+        }
+
+        @media (max-width: 1200px) {
+          .admin-grid-top {
+            grid-template-columns: 1fr;
+          }
+          .admin-grid-bottom {
+            grid-template-columns: 1fr 1fr;
+          }
+          .admin-grid-bottom > :first-child {
+            grid-column: span 2;
+          }
+        }
+        
+        @media (max-width: 900px) {
+          .admin-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .admin-grid-bottom {
+            grid-template-columns: 1fr;
+          }
+          .admin-grid-bottom > :first-child {
+            grid-column: span 1;
+          }
+          .admin-quick-nav-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .admin-ticker-container {
+            margin: -24px -20px 20px -20px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .admin-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          .admin-header > div:last-child {
+            text-align: left !important;
+          }
+        }
+
+        @media (max-width: 580px) {
+          .admin-stats-grid {
+            grid-template-columns: 1fr;
+          }
+          .admin-quick-nav-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
       {/* ── TICKER TAPE ── */}
-      <div style={{ margin: '-24px -24px 0 -24px' }}>
+      <div className="admin-ticker-container">
         <TickerTape items={tickerItems} />
       </div>
 
       {/* ── HEADER ── */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '24px 0 20px 0', borderBottom: '1px solid var(--apple-border)',
-        marginBottom: '24px'
-      }}>
+      <div className="admin-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{
               width: '8px', height: '8px', borderRadius: '50%', background: '#34d399',
               boxShadow: '0 0 8px #34d399'
@@ -423,7 +543,7 @@ export default function AdminHome() {
             Real-time performance monitoring · {teams.length} teams · {totalMembers} members
           </p>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div>
           <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#ffffff', letterSpacing: '0.02em' }}>
             {clock.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
@@ -434,12 +554,7 @@ export default function AdminHome() {
       </div>
 
       {/* ── TOP STAT CARDS ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
+      <div className="admin-stats-grid">
         <StatCard
           label="MTD REVENUE"
           value={fmt(mtdRevenue)}
@@ -476,68 +591,130 @@ export default function AdminHome() {
       </div>
 
       {/* ── MAIN GRID: Chart + Watchlist ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 380px',
-        gap: '20px',
-        marginBottom: '20px',
-        alignItems: 'stretch'
-      }}>
-
-        {/* Revenue Trend Area Chart */}
-        <div className="terminal-card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <div style={{
-                fontSize: '0.72rem',
-                color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
-                fontWeight: '600'
-              }}>
-                REVENUE TREND
+      <div className="admin-grid-top">
+        {/* Left Column: Revenue Trend + Top Contributors */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+          {/* Revenue Trend Area Chart */}
+          <div className="terminal-card" style={{ padding: '22px', flex: 1.1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{
+                  fontSize: '0.72rem',
+                  color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
+                  fontWeight: '600'
+                }}>
+                  REVENUE TREND
+                </div>
+                <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
+                  12-Month Overview
+                </div>
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
-                12-Month Overview
-              </div>
+              <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600' }}>
+                ALL TEAMS
+              </span>
             </div>
-            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600' }}>
-              ALL TEAMS
-            </span>
+
+            <div style={{ flex: 1, minHeight: '240px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
+                    axisLine={false} tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={v => fmt(v).replace('$', '')}
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
+                    axisLine={false} tickLine={false} width={44}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <ReferenceLine
+                    y={lastMonthRev} stroke="rgba(255,255,255,0.15)"
+                    strokeDasharray="4 4"
+                    label={{ value: 'LM', fill: 'var(--apple-text-secondary)', fontSize: 9 }}
+                  />
+                  <Area
+                    type="monotone" dataKey="total" name="Revenue"
+                    stroke="var(--apple-accent-blue)" strokeWidth={3}
+                    fill="url(#revGrad)"
+                    dot={{ fill: 'var(--apple-accent-blue)', r: 3, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
-                axisLine={false} tickLine={false}
-              />
-              <YAxis
-                tickFormatter={v => fmt(v).replace('$', '')}
-                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
-                axisLine={false} tickLine={false} width={44}
-              />
-              <Tooltip content={<ChartTooltip />} />
-              <ReferenceLine
-                y={lastMonthRev} stroke="rgba(255,255,255,0.15)"
-                strokeDasharray="4 4"
-                label={{ value: 'LM', fill: 'var(--apple-text-secondary)', fontSize: 9 }}
-              />
-              <Area
-                type="monotone" dataKey="total" name="Revenue"
-                stroke="var(--apple-accent-blue)" strokeWidth={3}
-                fill="url(#revGrad)"
-                dot={{ fill: 'var(--apple-accent-blue)', r: 3, strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {/* Top Performers Leaderboard Card */}
+          <div className="terminal-card" style={{ padding: '22px', flex: 0.9, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{
+                  fontSize: '0.72rem',
+                  color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
+                  fontWeight: '600'
+                }}>
+                  LEADERBOARD
+                </div>
+                <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
+                  Top Contributors this Month
+                </div>
+              </div>
+              <span className="apple-badge apple-badge-green" style={{ fontSize: '0.7rem', fontWeight: '600' }}>
+                REVENUE
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {topPerformersList.map((p, index) => {
+                const teamName = teams.find(t => t.id === p.team_id)?.name || 'No Team'
+                const initials = `${p.first_name?.[0] || ''}${p.last_name?.[0] || ''}`.toUpperCase()
+                return (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '12px', borderBottom: index < topPerformersList.length - 1 ? '1px solid var(--apple-border)' : 'none' }}>
+                    <div style={{
+                      width: '24px', height: '24px', borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid var(--apple-border)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.75rem', fontWeight: '700', color: 'var(--apple-text-primary)'
+                    }}>
+                      {index + 1}
+                    </div>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '10px',
+                      background: 'linear-gradient(135deg, var(--apple-accent-blue), #30d5c8)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.9rem', fontWeight: '700', color: '#fff', flexShrink: 0
+                    }}>
+                      {initials || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--apple-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {p.first_name} {p.last_name}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {teamName}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
+                      ${p.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                )
+              })}
+              {topPerformersList.length === 0 && (
+                <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '20px' }}>
+                  No active revenue contributions logged this month.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Team Watchlist */}
@@ -636,16 +813,10 @@ export default function AdminHome() {
       </div>
 
       {/* ── SECOND ROW: Bar Chart + Pie Chart + DIS+Insights ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 300px 300px',
-        gap: '20px',
-        marginBottom: '20px',
-        alignItems: 'start'
-      }}>
+      <div className="admin-grid-bottom">
 
         {/* Team Revenue Bar Chart (last 6 months) */}
-        <div className="terminal-card" style={{ padding: '22px' }}>
+        <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '16px' }}>
             <div style={{
               fontSize: '0.72rem',
@@ -659,31 +830,33 @@ export default function AdminHome() {
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
-                axisLine={false} tickLine={false}
-              />
-              <YAxis
-                tickFormatter={v => fmt(v).replace('$', '')}
-                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
-                axisLine={false} tickLine={false} width={44}
-              />
-              <Tooltip content={<ChartTooltip />} />
-              {teams.map((team, i) => (
-                <Bar
-                  key={team.id}
-                  dataKey={team.name}
-                  stackId="a"
-                  fill={TEAM_COLORS[i % TEAM_COLORS.length]}
-                  radius={i === teams.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+          <div style={{ flex: 1, minHeight: '220px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
+                  axisLine={false} tickLine={false}
                 />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
+                <YAxis
+                  tickFormatter={v => fmt(v).replace('$', '')}
+                  tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
+                  axisLine={false} tickLine={false} width={44}
+                />
+                <Tooltip content={<ChartTooltip />} />
+                {teams.map((team, i) => (
+                  <Bar
+                    key={team.id}
+                    dataKey={team.name}
+                    stackId="a"
+                    fill={TEAM_COLORS[i % TEAM_COLORS.length]}
+                    radius={i === teams.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
           {/* Legend */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px' }}>
@@ -702,7 +875,7 @@ export default function AdminHome() {
         </div>
 
         {/* MTD Revenue Share Pie Chart */}
-        <div className="terminal-card" style={{ padding: '22px' }}>
+        <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '8px' }}>
             <div style={{
               fontSize: '0.72rem',
@@ -717,38 +890,40 @@ export default function AdminHome() {
           </div>
 
           {revenueShareData.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={revenueShareData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%" cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                  >
-                    {revenueShareData.map((entry, i) => (
-                      <Cell key={`cell-${i}`} fill={entry.color} stroke="var(--apple-card)" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) =>
-                      active && payload?.length ? (
-                        <div style={{
-                          background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
-                          borderRadius: '12px', padding: '10px 14px', fontSize: '0.78rem',
-                          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(20px)'
-                        }}>
-                          <div style={{ color: payload[0].payload.color, fontWeight: '700' }}>{payload[0].name}</div>
-                          <div style={{ color: '#fff', fontWeight: '700', marginTop: '4px' }}>{fmt(payload[0].value)}</div>
-                        </div>
-                      ) : null
-                    }
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <div style={{ flex: 1, minHeight: '200px', width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={revenueShareData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%" cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                    >
+                      {revenueShareData.map((entry, i) => (
+                        <Cell key={`cell-${i}`} fill={entry.color} stroke="var(--apple-card)" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) =>
+                        active && payload?.length ? (
+                          <div style={{
+                            background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+                            borderRadius: '12px', padding: '10px 14px', fontSize: '0.78rem',
+                            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(20px)'
+                          }}>
+                            <div style={{ color: payload[0].payload.color, fontWeight: '700' }}>{payload[0].name}</div>
+                            <div style={{ color: '#fff', fontWeight: '700', marginTop: '4px' }}>{fmt(payload[0].value)}</div>
+                          </div>
+                        ) : null
+                      }
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
               {/* Legend */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
                 {revenueShareData.map((d, i) => {
@@ -763,7 +938,7 @@ export default function AdminHome() {
                   )
                 })}
               </div>
-            </>
+            </div>
           ) : (
             <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
               NO DATA THIS MONTH
@@ -772,7 +947,7 @@ export default function AdminHome() {
         </div>
 
         {/* DIS Compliance + Insights column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
 
           {/* DIS Gauge */}
           <div className="terminal-card" style={{ padding: '20px' }}>
@@ -893,7 +1068,7 @@ export default function AdminHome() {
       </div>
 
       {/* ── QUICK NAV ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+      <div className="admin-quick-nav-grid">
         {[
           { label: 'DIS REPORTS',    sub: 'Audit submissions',          color: 'var(--apple-accent-blue)', path: '/admin/dis',       icon: FileText },
           { label: 'REVENUE',        sub: 'Targets & actuals',          color: 'var(--apple-accent-green)', path: '/admin/revenue',   icon: TrendingUp },

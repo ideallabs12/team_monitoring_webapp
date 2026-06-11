@@ -24,7 +24,7 @@ import {
   Pie, 
   Cell 
 } from 'recharts'
-import { getLastNMonths, formatRevenueMonthShort } from '../../utils/revenueUtils'
+import { getLastNMonths, formatRevenueMonthShort, sumEffectiveTargets } from '../../utils/revenueUtils'
 
 const CHART_COLORS = [
   '#0071e3', // Apple Blue
@@ -46,7 +46,7 @@ export default function TeamAnalytics({ user }) {
   // Data states
   const [teamMembers, setTeamMembers] = useState([])
   const [revenues, setRevenues] = useState([])
-  const [disReports, setDisReports] = useState([])
+  const [targets, setTargets] = useState([])
   
   // User selections
   const [timeframe, setTimeframe] = useState('3m') // 'this_month', '2m', '3m', '6m', '12m', 'all_time'
@@ -124,18 +124,14 @@ export default function TeamAnalytics({ user }) {
         if (revError) throw revError
         setRevenues(revs || [])
         
-        // 3. Fetch DIS reports for these team members
-        if (memberUserIds.length > 0) {
-          const { data: reports, error: repError } = await supabase
-            .from('dis_reports')
-            .select('*')
-            .in('user_id', memberUserIds)
-          
-          if (repError) throw repError
-          setDisReports(reports || [])
-        } else {
-          setDisReports([])
-        }
+        // 3. Fetch targets for this team
+        const { data: targs, error: tError } = await supabase
+          .from('monthly_targets')
+          .select('*')
+          .eq('team_id', profile.team_id)
+        
+        if (tError) throw tError
+        setTargets(targs || [])
         
       } catch (err) {
         console.error("Error fetching team analytics data:", err)
@@ -149,7 +145,7 @@ export default function TeamAnalytics({ user }) {
 
 
 
-  // 1. Performance Overview calculations (Current month actual vs expected)
+  // 1. Performance Overview calculations (Current month actual vs target)
   const currentMonthStats = useMemo(() => {
     const currentMonth = getCurrentMonthStr()
     
@@ -157,19 +153,16 @@ export default function TeamAnalytics({ user }) {
     const actualRevenues = revenues.filter(r => r.revenue_month === currentMonth)
     const totalActual = actualRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
     
-    // Expected Revenue (from daily DIS reports in the current month)
-    const memberUserIds = new Set(teamMembers.map(m => m.id))
-    const currentMonthReports = disReports.filter(r => {
-      return memberUserIds.has(r.user_id) && r.report_date.startsWith(currentMonth.substring(0, 7))
-    })
-    const totalExpected = currentMonthReports.reduce((sum, r) => sum + Number(r.expected_revenue || 0), 0)
+    // Assigned Target (sum of effective targets for team members for the current month)
+    const memberUserIds = teamMembers.map(m => m.id)
+    const totalExpected = sumEffectiveTargets(targets, memberUserIds, profile?.team_id, currentMonth)
     
     return {
       totalActual,
       totalExpected,
       monthLabel: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     }
-  }, [revenues, disReports, teamMembers])
+  }, [revenues, targets, teamMembers, profile])
 
   // 2. Trend Line Data based on selected timeframe
   const trendData = useMemo(() => {
@@ -347,7 +340,7 @@ export default function TeamAnalytics({ user }) {
           </div>
         </div>
 
-        {/* Expected Revenue Card */}
+        {/* Team Target Card */}
         <div className="apple-card" style={{ 
           background: 'linear-gradient(135deg, rgba(0, 113, 227, 0.08) 0%, rgba(30, 41, 59, 0.4) 100%)', 
           borderColor: 'rgba(0, 113, 227, 0.25)',
@@ -359,7 +352,7 @@ export default function TeamAnalytics({ user }) {
         }}>
           <div>
             <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--apple-text-secondary)' }}>
-              Expected Team Revenue (MTD)
+              Team Target (MTD)
             </span>
             <div style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: '800', color: '#0071e3', marginTop: '8px' }}>
               ${currentMonthStats.totalExpected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -367,7 +360,7 @@ export default function TeamAnalytics({ user }) {
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Calendar size={14} style={{ color: '#0071e3' }} />
-            <span>DIS daily forecasts for {currentMonthStats.monthLabel}</span>
+            <span>Assigned targets for {currentMonthStats.monthLabel}</span>
           </div>
         </div>
       </div>
