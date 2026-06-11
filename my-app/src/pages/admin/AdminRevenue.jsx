@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine
+  ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts'
 import {
-  TrendingUp, Activity, BarChart2, DollarSign
+  TrendingUp, Activity, BarChart2, DollarSign, Users, Calendar, Award
 } from 'lucide-react'
 import {
   filterRevenuesByPeriod,
@@ -108,7 +108,7 @@ export default function AdminRevenue() {
     [revenues, nonAdminIds]
   )
 
-  // Use all-time revenues for top-level cards (no global period filter)
+  // Use all-time revenues for top-level cards
   const allTimeTotal = sumRevenues(nonAdminRevenues)
 
   const averagePeriodOptions = [
@@ -128,7 +128,6 @@ export default function AdminRevenue() {
       const teamRevs = filtered.filter(r => r.team_id === team.id)
       const sum = sumRevenues(teamRevs)
       
-      // Like Excel's AVERAGE(), only divide by the months that actually have data
       const uniqueMonths = new Set(teamRevs.map(r => normalizeMonth(r.revenue_month))).size
       const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
       
@@ -150,19 +149,45 @@ export default function AdminRevenue() {
 
   const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
 
-  // Last 12 months combined company-wide revenue trend data
+  // Last 12 months combined company-wide revenue trend data (Actual vs Target)
   const company12MonthTrend = useMemo(() => {
     const months = getLastNMonths(12).reverse()
     return months.map(m => {
       const monthlyRevs = nonAdminRevenues.filter(r => normalizeMonth(r.revenue_month) === m)
-      const total = sumRevenues(monthlyRevs)
+      const totalActual = sumRevenues(monthlyRevs)
+      
+      const totalExpected = nonAdminProfiles.reduce((sum, member) => {
+        return sum + getEffectiveTargetAmount(targets, member.id, member.team_id, m)
+      }, 0)
+
       return {
         month: formatRevenueMonthShort(m),
-        total,
+        actual: totalActual,
+        expected: totalExpected,
+        total: totalActual, // For backwards compatibility if any
         key: m
       }
     })
-  }, [nonAdminRevenues])
+  }, [nonAdminRevenues, nonAdminProfiles, targets])
+
+  // Company 12-month statistics
+  const company12MonthTotal = useMemo(() => {
+    return company12MonthTrend.reduce((sum, d) => sum + d.actual, 0)
+  }, [company12MonthTrend])
+
+  const companyMonthlyAvg = useMemo(() => {
+    const monthsWithData = company12MonthTrend.filter(d => d.actual > 0).length
+    return monthsWithData > 0 ? company12MonthTotal / monthsWithData : 0
+  }, [company12MonthTotal, company12MonthTrend])
+
+  const companyMaxMonthRevenue = useMemo(() => {
+    return Math.max(1, ...company12MonthTrend.map(d => d.actual))
+  }, [company12MonthTrend])
+
+  const companyBestMonth = useMemo(() => {
+    if (company12MonthTrend.length === 0) return null
+    return company12MonthTrend.reduce((best, cur) => cur.actual > best.actual ? cur : best)
+  }, [company12MonthTrend])
 
   // Period-based month set — for the Expected vs Actual section
   const monthSet = useMemo(() => {
@@ -230,108 +255,177 @@ export default function AdminRevenue() {
         </p>
       </div>
 
-      {/* ===== SPECIAL TOP STAT & TREND SECTION ===== */}
+      {/* ===== SPECIAL TOP STATS GRID ===== */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '1fr 2.5fr', 
+        gridTemplateColumns: '1fr 1fr', 
         gap: '24px', 
-        marginBottom: '32px' 
+        marginBottom: '28px' 
       }} className="apple-two-col-grid">
         
         {/* Special All Time Revenue Card */}
         <div className="apple-card" style={{ 
-          background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(0, 113, 227, 0.15) 100%)',
+          background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(0, 113, 227, 0.1) 100%)',
           border: '1px solid rgba(52, 211, 153, 0.3)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'flex-start',
-          padding: '32px 28px',
-          borderRadius: '24px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          padding: '24px 28px',
+          borderRadius: '20px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
           backdropFilter: 'blur(20px)',
-          minHeight: '260px',
           position: 'relative',
           overflow: 'hidden'
         }}>
-          {/* Subtle design element */}
-          <div style={{ 
-            position: 'absolute', 
-            top: '-50px', 
-            right: '-50px', 
-            width: '150px', 
-            height: '150px', 
-            borderRadius: '50%', 
-            background: 'radial-gradient(circle, rgba(52,211,153,0.2) 0%, transparent 70%)',
-            pointerEvents: 'none'
-          }} />
-          
-          <span className="apple-badge apple-badge-green" style={{ marginBottom: '16px', fontSize: '0.75rem', padding: '4px 10px' }}>
-            💼 TOTAL SALES
+          <span className="apple-badge apple-badge-green" style={{ marginBottom: '12px', fontSize: '0.75rem' }}>
+            💼 ALL TIME GROSS
           </span>
-          <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+          <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.82rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
             All Time Company Revenue
           </div>
-          <div style={{ fontSize: 'clamp(2.2rem, 4vw, 2.8rem)', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em', lineHeight: '1.1' }}>
+          <div style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em' }}>
             ${allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div style={{ marginTop: '16px', color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem' }}>
-            Combined gross performance across all active teams.
           </div>
         </div>
 
-        {/* Company Performance Trend Card */}
+        {/* Special 12-Month Revenue Card */}
         <div className="apple-card" style={{ 
-          padding: '24px 28px', 
-          borderRadius: '24px',
+          background: 'linear-gradient(135deg, rgba(0, 113, 227, 0.15) 0%, rgba(175, 82, 222, 0.1) 100%)',
+          border: '1px solid rgba(0, 113, 227, 0.3)',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          minHeight: '260px'
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          padding: '24px 28px',
+          borderRadius: '20px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
+          backdropFilter: 'blur(20px)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#ffffff' }}>Company Performance Trend</h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                Combined monthly gross revenue over the last 12 months.
-              </p>
-            </div>
-            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600', padding: '3px 8px' }}>
-              LAST 12 MONTHS
-            </span>
+          <span className="apple-badge apple-badge-blue" style={{ marginBottom: '12px', fontSize: '0.75rem' }}>
+            📈 12M ACCUMULATED
+          </span>
+          <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.82rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            Last 12 Months Combined Revenue
           </div>
+          <div style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: '800', color: 'var(--apple-accent-blue)', letterSpacing: '-0.02em' }}>
+            ${company12MonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+      </div>
 
-          <div style={{ flex: 1, height: '170px', width: '100%', minHeight: '160px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={company12MonthTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="companyRevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
-                  axisLine={false} tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={v => fmtShort(v).replace('$', '')}
-                  tick={{ fill: 'var(--apple-text-secondary)', fontSize: 9 }}
-                  axisLine={false} tickLine={false} width={42}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Area
-                  type="monotone" dataKey="total" name="Total Revenue"
-                  stroke="var(--apple-accent-blue)" strokeWidth={3}
-                  fill="url(#companyRevGrad)"
-                  dot={{ fill: 'var(--apple-accent-blue)', r: 3, strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+      {/* ===== LAST 12 MONTHS BREAKDOWN GRID ===== */}
+      <div className="apple-card" style={{ padding: '24px', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Company Revenue</div>
+            <h3 className="apple-title-small" style={{ margin: 0, border: 'none' }}>Last 12 Months Breakdown</h3>
           </div>
+        </div>
+
+        {/* Month grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }} className="apple-two-col-grid">
+          {company12MonthTrend.map((d, i) => {
+            const pct = companyMaxMonthRevenue > 0 ? (d.actual / companyMaxMonthRevenue) * 100 : 0
+            const isCurrentMonth = i === company12MonthTrend.length - 1
+            return (
+              <div key={d.key} style={{
+                background: isCurrentMonth ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${isCurrentMonth ? 'rgba(0, 113, 227, 0.25)' : 'rgba(255,255,255,0.06)'}`,
+                borderRadius: '12px',
+                padding: '14px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {d.month}
+                  </span>
+                  {isCurrentMonth && (
+                    <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>MTD</span>
+                  )}
+                </div>
+                {/* Mini progress bar */}
+                <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${pct}%`,
+                    background: d.actual > 0 ? 'var(--apple-accent-blue)' : 'transparent',
+                    borderRadius: '2px',
+                    transition: 'width 0.5s ease'
+                  }} />
+                </div>
+                <div style={{
+                  fontSize: '0.92rem',
+                  fontWeight: '700',
+                  color: d.actual > 0 ? '#fff' : 'rgba(255,255,255,0.2)'
+                }}>
+                  {d.actual > 0
+                    ? `$${d.actual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                    : '—'}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Summary row */}
+        <div style={{ display: 'flex', gap: '32px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--apple-border)', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>Monthly Average</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff' }}>
+              ${companyMonthlyAvg.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>Active Members</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Users size={16} color="var(--apple-text-secondary)" /> {nonAdminProfiles.length}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>Best Month</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
+              {companyBestMonth && companyBestMonth.actual > 0 ? `${companyBestMonth.month} ($${companyBestMonth.actual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })})` : '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== CREATIVE PERFORMANCE TREND COMPOSED CHART ===== */}
+      <div className="apple-card" style={{ padding: '24px 28px', borderRadius: '20px', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Performance Trend Analysis</h3>
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+              Creative overlay comparison: Combined actual sales (bars) vs target expectations (line) for last 12 months.
+            </p>
+          </div>
+          <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600', padding: '3px 8px' }}>
+            TARGET VS ACTUAL
+          </span>
+        </div>
+
+        <div style={{ flex: 1, height: '240px', width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={company12MonthTrend} margin={{ top: 20, right: 5, left: 5, bottom: 5 }}>
+              <defs>
+                <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0071e3" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#0071e3" stopOpacity={0.15} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.03)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={v => fmtShort(v).replace('$', '')} tick={{ fill: 'var(--apple-text-secondary)', fontSize: 9 }} axisLine={false} tickLine={false} width={42} />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="actual" name="Actual Revenue" fill="url(#actualGrad)" radius={[6, 6, 0, 0]} barSize={24} />
+              <Line type="monotone" dataKey="expected" name="Target Expectation" stroke="#30d5c8" strokeWidth={3} dot={{ fill: '#30d5c8', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#fff', stroke: '#30d5c8', strokeWidth: 2 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
