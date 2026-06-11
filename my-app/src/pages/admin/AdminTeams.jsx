@@ -255,7 +255,7 @@ export default function AdminTeams() {
   // ==========================================
   if (activeTeam) {
     const activeProfiles = profiles
-      .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin' && !p.is_deactivated)
+      .filter(p => (p.team_id === activeTeam.id || Object.keys(p.secondary_team_roles || {}).includes(activeTeam.id)) && p.platform_role !== 'admin' && !p.is_deactivated)
       .sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
 
     const activeProfileIds = new Set(activeProfiles.map(p => p.id))
