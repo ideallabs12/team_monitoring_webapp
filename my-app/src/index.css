@@ -645,7 +645,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .admin-shell {
   display: flex;
   min-height: 100vh;
-  background: #0b0f18;
+  background: var(--apple-bg);
+  font-family: var(--apple-font);
 }
 
 /* ── Sidebar wrapper (desktop) ── */
@@ -662,8 +663,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .admin-sidebar {
   width: 220px;
   height: 100vh;
-  background: #0d1117;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--apple-card);
+  border-right: 1px solid var(--apple-border);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -689,18 +690,18 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: linear-gradient(135deg, var(--apple-accent-blue), #30d5c8);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #fff;
   flex-shrink: 0;
 }
 
 .admin-sidebar-brand-name {
   font-size: 1rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--apple-text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -719,34 +720,34 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   gap: 11px;
   padding: 9px 12px;
   border-radius: 8px;
-  color: #64748b;
+  color: var(--apple-text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s var(--apple-ease), color 0.15s var(--apple-ease);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .admin-sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--apple-text-primary);
 }
 
 .admin-sidebar-link.active {
-  background: rgba(255, 255, 255, 0.07);
-  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--apple-text-primary);
   font-weight: 600;
 }
 
 .admin-sidebar-link.active svg {
-  color: #f1f5f9;
+  color: var(--apple-text-primary);
 }
 
 /* ── Bottom: Profile + Sign Out ── */
 .admin-sidebar-bottom {
   padding: 16px 10px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--apple-border);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -758,15 +759,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   gap: 10px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--apple-border);
 }
 
 .admin-sidebar-avatar {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, var(--apple-accent-blue), #8b5cf6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -786,7 +787,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .admin-sidebar-profile-name {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--apple-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -795,9 +796,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .admin-sidebar-role-badge {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--apple-accent-red);
+  background: rgba(255, 69, 58, 0.12);
+  border: 1px solid rgba(255, 69, 58, 0.25);
   border-radius: 4px;
   padding: 1px 6px;
   display: inline-block;
@@ -814,7 +815,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   border-radius: 8px;
   background: transparent;
   border: none;
-  color: #64748b;
+  color: var(--apple-text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -824,8 +825,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .admin-sidebar-signout:hover {
-  background: rgba(239, 68, 68, 0.08);
-  color: #f87171;
+  background: rgba(255, 69, 58, 0.08);
+  color: var(--apple-accent-red);
 }
 
 /* ── Main content area ── */
@@ -834,7 +835,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #0b0f18;
+  background: var(--apple-bg);
 }
 
 .admin-content {
@@ -860,8 +861,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   gap: 14px;
   padding: 14px 20px;
-  background: #0d1117;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: var(--apple-card);
+  border-bottom: 1px solid var(--apple-border);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -1600,12 +1601,12 @@ select.apple-input {
 }
 
 .dis-team-card {
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--apple-border);
+  border-radius: 14px;
   padding: 18px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s var(--apple-ease);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1614,16 +1615,16 @@ select.apple-input {
 }
 
 .dis-team-card:hover {
-  background: rgba(30, 41, 59, 0.65);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--apple-border-strong);
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .dis-team-card.active {
-  background: rgba(79, 70, 229, 0.12);
-  border-color: rgba(79, 70, 229, 0.55);
-  box-shadow: 0 0 16px rgba(79, 70, 229, 0.18);
+  background: rgba(0, 113, 227, 0.08);
+  border-color: rgba(0, 113, 227, 0.55);
+  box-shadow: 0 0 16px rgba(0, 113, 227, 0.18);
 }
 
 .dis-team-card-glow {
@@ -1632,12 +1633,12 @@ select.apple-input {
   right: 0;
   width: 48px;
   height: 48px;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.15) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .dis-team-card.active .dis-team-card-glow {
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.3) 0%, transparent 70%);
 }
 
 .dis-progress-bar-container {
@@ -1659,13 +1660,13 @@ select.apple-input {
   justify-content: space-between;
   align-items: center;
   font-size: 0.78rem;
-  color: var(--text-secondary);
+  color: var(--apple-text-secondary);
 }
 
 .dis-badge-submitted {
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  color: #4ade80;
+  background: rgba(48, 213, 200, 0.12);
+  border: 1px solid rgba(48, 213, 200, 0.25);
+  color: var(--apple-accent-green);
   padding: 2px 8px;
   border-radius: 20px;
   font-weight: 600;
@@ -1673,9 +1674,9 @@ select.apple-input {
 }
 
 .dis-badge-missed {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: rgba(255, 69, 58, 0.12);
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  color: var(--apple-accent-red);
   padding: 2px 8px;
   border-radius: 20px;
   font-weight: 600;
@@ -1683,10 +1684,11 @@ select.apple-input {
 }
 
 .dis-card-glass {
-  background: rgba(30, 41, 59, 0.25) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--apple-border) !important;
+  border-radius: 18px;
 }
 
 .dis-header-section {
@@ -1694,7 +1696,7 @@ select.apple-input {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--apple-border);
   padding-bottom: 20px;
 }
 
@@ -1709,7 +1711,7 @@ select.apple-input {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: var(--apple-text-secondary);
   pointer-events: none;
 }
 
@@ -1744,29 +1746,29 @@ select.apple-input {
 }
 
 .dis-report-submitted-card {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.25s var(--apple-ease) !important;
 }
 
 .dis-report-submitted-card:hover {
   transform: translateY(-3px) !important;
-  border-color: rgba(79, 70, 229, 0.35) !important;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(0, 113, 227, 0.35) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
 .dis-report-missed-card {
-  background: rgba(239, 68, 68, 0.02) !important;
-  border: 1px solid rgba(239, 68, 68, 0.12) !important;
-  border-radius: 12px;
+  background: rgba(255, 69, 58, 0.02) !important;
+  border: 1px solid rgba(255, 69, 58, 0.15) !important;
+  border-radius: 14px;
   padding: 16px;
-  transition: all 0.2s ease;
+  transition: all 0.2s var(--apple-ease);
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 .dis-report-missed-card:hover {
-  background: rgba(239, 68, 68, 0.04) !important;
-  border-color: rgba(239, 68, 68, 0.25) !important;
+  background: rgba(255, 69, 58, 0.04) !important;
+  border-color: rgba(255, 69, 58, 0.25) !important;
   transform: translateY(-2px);
 }
 

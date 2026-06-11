@@ -27,11 +27,11 @@ const fmt = (n) =>
 const fmtFull = (n) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const pctColor = (v) => (v > 0 ? '#10b981' : v < 0 ? '#ef4444' : '#94a3b8')
-const pctBg   = (v) => (v > 0 ? 'rgba(16,185,129,0.1)' : v < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(148,163,184,0.1)')
-const pctBorder= (v) => (v > 0 ? 'rgba(16,185,129,0.3)' : v < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(148,163,184,0.3)')
+const pctColor = (v) => (v > 0 ? '#34d399' : v < 0 ? '#ff453a' : '#86868b')
+const pctBg   = (v) => (v > 0 ? 'rgba(52,211,153,0.12)' : v < 0 ? 'rgba(255,69,58,0.12)' : 'rgba(255,255,255,0.05)')
+const pctBorder= (v) => (v > 0 ? 'rgba(52,211,153,0.25)' : v < 0 ? 'rgba(255,69,58,0.25)' : 'rgba(255,255,255,0.08)')
 
-const TEAM_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#f43f5e']
+const TEAM_COLORS = ['#0071e3', '#30d5c8', '#ff9f0a', '#af52de', '#ff2d55', '#ffcc00', '#5ac8fa']
 
 let adminHomeCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [], disReports: [] }
 
@@ -40,11 +40,11 @@ function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#0f172a', border: '1px solid rgba(99,102,241,0.4)',
-      borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+      background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+      borderRadius: '12px', padding: '12px 16px', fontSize: '0.8rem',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)'
     }}>
-      <div style={{ color: '#94a3b8', marginBottom: '6px', fontWeight: '600' }}>{label}</div>
+      <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600' }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color || '#fff', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
           <span>{p.name}</span>
@@ -80,17 +80,18 @@ function TickerTape({ items }) {
   return (
     <div style={{
       overflow: 'hidden',
-      background: 'rgba(15,23,42,0.95)',
-      borderBottom: '1px solid rgba(99,102,241,0.2)',
-      padding: '8px 0',
+      background: 'rgba(22, 22, 23, 0.85)',
+      borderBottom: '1px solid var(--apple-border)',
+      padding: '10px 0',
       whiteSpace: 'nowrap',
-      userSelect: 'none'
+      userSelect: 'none',
+      backdropFilter: 'blur(20px)'
     }}>
       <div ref={ref} style={{ display: 'inline-flex', gap: '0' }}>
         {doubled.map((item, i) => (
           <div key={i} style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '0 28px', borderRight: '1px solid rgba(255,255,255,0.06)'
+            padding: '0 28px', borderRight: '1px solid var(--apple-border)'
           }}>
             <span style={{
               fontSize: '0.7rem', fontWeight: '800', letterSpacing: '0.08em',
@@ -98,7 +99,7 @@ function TickerTape({ items }) {
             }}>
               {item.ticker}
             </span>
-            <span style={{ fontSize: '0.75rem', color: '#e2e8f0', fontFamily: 'monospace', fontWeight: '600' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-primary)', fontFamily: 'monospace', fontWeight: '600' }}>
               {fmt(item.value)}
             </span>
             <span style={{
@@ -120,24 +121,28 @@ function TickerTape({ items }) {
 function StatCard({ label, value, sub, color, icon: Icon, change, pulse }) {
   return (
     <div style={{
-      background: 'rgba(15,23,42,0.8)',
-      border: `1px solid ${color}25`,
-      borderRadius: '12px',
-      padding: '20px',
+      background: 'var(--apple-card)',
+      border: '1px solid var(--apple-border)',
+      borderRadius: '18px',
+      padding: '22px',
       position: 'relative',
       overflow: 'hidden',
-      backdropFilter: 'blur(8px)'
-    }}>
-      {/* Glow top bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-        background: `linear-gradient(to right, transparent, ${color}, transparent)`
-      }} />
-
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+      transition: 'transform 0.3s var(--apple-ease), border-color 0.3s var(--apple-ease)'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-2px)'
+      e.currentTarget.style.borderColor = 'var(--apple-border-strong)'
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'none'
+      e.currentTarget.style.borderColor = 'var(--apple-border)'
+    }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
         <span style={{
-          fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em',
-          color: '#64748b', fontWeight: '700', fontFamily: 'monospace'
+          fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em',
+          color: 'var(--apple-text-secondary)', fontWeight: '600'
         }}>
           {label}
         </span>
@@ -154,24 +159,24 @@ function StatCard({ label, value, sub, color, icon: Icon, change, pulse }) {
       </div>
 
       <div style={{
-        fontSize: '1.9rem', fontWeight: '800', color: '#f1f5f9',
-        fontFamily: 'monospace', letterSpacing: '-0.02em', marginBottom: '6px'
+        fontSize: '2rem', fontWeight: '700', color: 'var(--apple-text-primary)',
+        letterSpacing: '-0.02em', marginBottom: '6px'
       }}>
         {value}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{sub}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)' }}>{sub}</span>
         {change !== undefined && (
           <span style={{
-            fontSize: '0.7rem', fontWeight: '700', fontFamily: 'monospace',
+            fontSize: '0.75rem', fontWeight: '600',
             color: pctColor(change),
             background: pctBg(change),
             border: `1px solid ${pctBorder(change)}`,
-            borderRadius: '4px', padding: '2px 7px',
+            borderRadius: '20px', padding: '2px 10px',
             display: 'flex', alignItems: 'center', gap: '3px'
           }}>
-            {change > 0 ? <ArrowUpRight size={11} /> : change < 0 ? <ArrowDownRight size={11} /> : <Minus size={11} />}
+            {change > 0 ? <ArrowUpRight size={12} /> : change < 0 ? <ArrowDownRight size={12} /> : <Minus size={12} />}
             {Math.abs(change).toFixed(1)}%
           </span>
         )}
@@ -362,7 +367,7 @@ export default function AdminHome() {
 
   /* ── render ── */
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: "var(--apple-font)" }}>
       <style>{`
         @keyframes pulseRing {
           0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
@@ -375,17 +380,19 @@ export default function AdminHome() {
           to   { opacity: 1; transform: translateY(0); }
         }
         .terminal-card {
-          background: rgba(15,23,42,0.85);
-          border: 1px solid rgba(99,102,241,0.15);
-          border-radius: 12px;
-          backdrop-filter: blur(8px);
-          transition: border-color 0.2s, box-shadow 0.2s;
+          background: var(--apple-card);
+          border: 1px solid var(--apple-border);
+          border-radius: 18px;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          transition: border-color 0.3s var(--apple-ease), box-shadow 0.3s var(--apple-ease);
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
         }
         .terminal-card:hover {
-          border-color: rgba(99,102,241,0.35);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+          border-color: var(--apple-border-strong);
+          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
         }
-        .watchlist-row:hover { background: rgba(99,102,241,0.06) !important; }
+        .watchlist-row:hover { background: rgba(255, 255, 255, 0.03) !important; }
       `}</style>
 
       {/* ── TICKER TAPE ── */}
@@ -396,35 +403,31 @@ export default function AdminHome() {
       {/* ── HEADER ── */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '24px 0 20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)',
+        padding: '24px 0 20px 0', borderBottom: '1px solid var(--apple-border)',
         marginBottom: '24px'
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '8px', height: '8px', borderRadius: '50%', background: '#10b981',
-              animation: 'pulseRing 2s infinite', boxShadow: '0 0 0 0 #10b981'
+              width: '8px', height: '8px', borderRadius: '50%', background: '#34d399',
+              boxShadow: '0 0 8px #34d399'
             }} />
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', color: '#f1f5f9', letterSpacing: '-0.02em' }}>
-              COMMAND TERMINAL
+            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.02em' }}>
+              Admin Dashboard
             </h1>
-            <span style={{
-              fontSize: '0.65rem', fontWeight: '700', fontFamily: 'monospace',
-              background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
-              color: '#818cf8', borderRadius: '4px', padding: '2px 8px', letterSpacing: '0.06em'
-            }}>
+            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               ADMIN
             </span>
           </div>
-          <p style={{ margin: '4px 0 0 18px', color: '#475569', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+          <p style={{ margin: '4px 0 0 18px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
             Real-time performance monitoring · {teams.length} teams · {totalMembers} members
           </p>
         </div>
-        <div style={{ textAlign: 'right', fontFamily: 'monospace' }}>
-          <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#f1f5f9', letterSpacing: '0.04em' }}>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#ffffff', letterSpacing: '0.02em' }}>
             {clock.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '2px' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
             {clock.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
           </div>
         </div>
@@ -441,7 +444,7 @@ export default function AdminHome() {
           label="MTD REVENUE"
           value={fmt(mtdRevenue)}
           sub="Month-to-date · all teams"
-          color="#6366f1"
+          color="var(--apple-accent-blue)"
           icon={TrendingUp}
           change={momChange}
           pulse
@@ -450,14 +453,14 @@ export default function AdminHome() {
           label="ACTIVE MEMBERS"
           value={totalMembers}
           sub={`across ${teams.length} teams`}
-          color="#06b6d4"
+          color="var(--apple-accent-green)"
           icon={Users}
         />
         <StatCard
           label="DIS COMPLIANCE"
           value={`${compliancePct}%`}
           sub={`${submittedCount} / ${totalMembers} submitted today`}
-          color={compliancePct >= 80 ? '#10b981' : compliancePct >= 50 ? '#f59e0b' : '#ef4444'}
+          color={compliancePct >= 80 ? 'var(--apple-accent-green-solid)' : compliancePct >= 50 ? 'var(--apple-accent-orange)' : 'var(--apple-accent-red)'}
           icon={FileText}
           change={compliancePct - 100}
           pulse={compliancePct < 100}
@@ -466,7 +469,7 @@ export default function AdminHome() {
           label="TOP TEAM MTD"
           value={teamWatchlist[0] ? fmt(teamWatchlist[0].cur) : '$0'}
           sub={teamWatchlist[0]?.name || '—'}
-          color="#f59e0b"
+          color="var(--apple-accent-orange)"
           icon={Target}
           change={teamWatchlist[0]?.chg}
         />
@@ -486,55 +489,52 @@ export default function AdminHome() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
               <div style={{
-                fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-                color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
+                fontSize: '0.72rem',
+                color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
+                fontWeight: '600'
               }}>
                 REVENUE TREND
               </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f1f5f9' }}>
+              <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
                 12-Month Overview
               </div>
             </div>
-            <div style={{
-              background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)',
-              borderRadius: '6px', padding: '4px 12px',
-              fontSize: '0.72rem', fontFamily: 'monospace', color: '#818cf8', fontWeight: '700'
-            }}>
+            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600' }}>
               ALL TEAMS
-            </div>
+            </span>
           </div>
 
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
                 tickFormatter={v => fmt(v).replace('$', '')}
-                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
                 axisLine={false} tickLine={false} width={44}
               />
               <Tooltip content={<ChartTooltip />} />
               <ReferenceLine
-                y={lastMonthRev} stroke="rgba(99,102,241,0.4)"
-                strokeDasharray="6 3"
-                label={{ value: 'LM', fill: '#6366f1', fontSize: 9, fontFamily: 'monospace' }}
+                y={lastMonthRev} stroke="rgba(255,255,255,0.15)"
+                strokeDasharray="4 4"
+                label={{ value: 'LM', fill: 'var(--apple-text-secondary)', fontSize: 9 }}
               />
               <Area
                 type="monotone" dataKey="total" name="Revenue"
-                stroke="#6366f1" strokeWidth={2.5}
+                stroke="var(--apple-accent-blue)" strokeWidth={3}
                 fill="url(#revGrad)"
-                dot={{ fill: '#6366f1', r: 3, strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: '#818cf8', strokeWidth: 0 }}
+                dot={{ fill: 'var(--apple-accent-blue)', r: 3, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -544,12 +544,13 @@ export default function AdminHome() {
         <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '16px' }}>
             <div style={{
-              fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-              color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
+              fontSize: '0.72rem',
+              color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
+              fontWeight: '600'
             }}>
               WATCHLIST
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f1f5f9' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
               Team Performance
             </div>
           </div>
@@ -558,8 +559,8 @@ export default function AdminHome() {
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 80px 60px',
             padding: '6px 10px', marginBottom: '4px',
-            fontSize: '0.65rem', fontFamily: 'monospace', color: '#334155',
-            textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: '700'
+            fontSize: '0.72rem', color: 'var(--apple-text-secondary)',
+            textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600'
           }}>
             <span>TEAM</span>
             <span style={{ textAlign: 'right' }}>MTD</span>
@@ -575,50 +576,50 @@ export default function AdminHome() {
                 style={{
                   display: 'grid', gridTemplateColumns: '1fr 80px 60px',
                   padding: '10px',
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   cursor: 'pointer',
-                  transition: 'background 0.15s',
+                  transition: 'background 0.15s var(--apple-ease)',
                   alignItems: 'center'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                   <div style={{
-                    width: '28px', height: '28px', borderRadius: '6px',
-                    background: `${team.color}18`, border: `1px solid ${team.color}35`,
+                    width: '28px', height: '28px', borderRadius: '8px',
+                    background: `${team.color}15`, border: `1px solid ${team.color}30`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: '800', fontFamily: 'monospace', color: team.color }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: '700', color: team.color }}>
                       {team.name.substring(0, 2).toUpperCase()}
                     </span>
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{
-                      fontSize: '0.8rem', fontWeight: '600', color: '#e2e8f0',
+                      fontSize: '0.85rem', fontWeight: '600', color: 'var(--apple-text-primary)',
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                     }}>
                       {team.name}
                     </div>
-                    <div style={{ fontSize: '0.67rem', color: '#475569', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)' }}>
                       {team.memberCount} members
                     </div>
                   </div>
                 </div>
 
                 <div style={{
-                  textAlign: 'right', fontSize: '0.82rem',
-                  fontWeight: '700', fontFamily: 'monospace', color: '#f1f5f9'
+                  textAlign: 'right', fontSize: '0.85rem',
+                  fontWeight: '700', color: 'var(--apple-text-primary)'
                 }}>
                   {fmt(team.cur)}
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
                   <span style={{
-                    fontSize: '0.72rem', fontWeight: '700', fontFamily: 'monospace',
+                    fontSize: '0.75rem', fontWeight: '600',
                     color: pctColor(team.chg),
                     display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px'
                   }}>
-                    {team.chg > 0 ? <ArrowUpRight size={11} /> : team.chg < 0 ? <ArrowDownRight size={11} /> : <Minus size={11} />}
+                    {team.chg > 0 ? <ArrowUpRight size={12} /> : team.chg < 0 ? <ArrowDownRight size={12} /> : <Minus size={12} />}
                     {Math.abs(team.chg).toFixed(1)}%
                   </span>
                 </div>
@@ -626,7 +627,7 @@ export default function AdminHome() {
             ))}
 
             {teamWatchlist.length === 0 && (
-              <div style={{ color: '#475569', fontSize: '0.8rem', textAlign: 'center', padding: '20px', fontFamily: 'monospace' }}>
+              <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '20px' }}>
                 NO DATA
               </div>
             )}
@@ -647,27 +648,28 @@ export default function AdminHome() {
         <div className="terminal-card" style={{ padding: '22px' }}>
           <div style={{ marginBottom: '16px' }}>
             <div style={{
-              fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-              color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
+              fontSize: '0.72rem',
+              color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
+              fontWeight: '600'
             }}>
               TEAM BREAKDOWN
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f1f5f9' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
               Revenue by Team · Last 6 Months
             </div>
           </div>
 
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" vertical={false} />
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
                 tickFormatter={v => fmt(v).replace('$', '')}
-                tick={{ fill: '#475569', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
                 axisLine={false} tickLine={false} width={44}
               />
               <Tooltip content={<ChartTooltip />} />
@@ -691,7 +693,7 @@ export default function AdminHome() {
                   width: '8px', height: '8px', borderRadius: '2px',
                   background: TEAM_COLORS[i % TEAM_COLORS.length], flexShrink: 0
                 }} />
-                <span style={{ fontSize: '0.7rem', color: '#64748b', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)' }}>
                   {team.name}
                 </span>
               </div>
@@ -703,12 +705,13 @@ export default function AdminHome() {
         <div className="terminal-card" style={{ padding: '22px' }}>
           <div style={{ marginBottom: '8px' }}>
             <div style={{
-              fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-              color: '#475569', textTransform: 'uppercase', marginBottom: '4px'
+              fontSize: '0.72rem',
+              color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px',
+              fontWeight: '600'
             }}>
               MTD SHARE
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f1f5f9' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.01em' }}>
               Revenue by Team
             </div>
           </div>
@@ -727,18 +730,19 @@ export default function AdminHome() {
                     paddingAngle={3}
                   >
                     {revenueShareData.map((entry, i) => (
-                      <Cell key={`cell-${i}`} fill={entry.color} stroke="rgba(15,23,42,0.8)" strokeWidth={2} />
+                      <Cell key={`cell-${i}`} fill={entry.color} stroke="var(--apple-card)" strokeWidth={2} />
                     ))}
                   </Pie>
                   <Tooltip
                     content={({ active, payload }) =>
                       active && payload?.length ? (
                         <div style={{
-                          background: '#0f172a', border: '1px solid rgba(99,102,241,0.4)',
-                          borderRadius: '8px', padding: '8px 12px', fontSize: '0.78rem'
+                          background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+                          borderRadius: '12px', padding: '10px 14px', fontSize: '0.78rem',
+                          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(20px)'
                         }}>
                           <div style={{ color: payload[0].payload.color, fontWeight: '700' }}>{payload[0].name}</div>
-                          <div style={{ color: '#e2e8f0', fontFamily: 'monospace', fontWeight: '700' }}>{fmt(payload[0].value)}</div>
+                          <div style={{ color: '#fff', fontWeight: '700', marginTop: '4px' }}>{fmt(payload[0].value)}</div>
                         </div>
                       ) : null
                     }
@@ -753,15 +757,15 @@ export default function AdminHome() {
                   return (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                      <span style={{ fontSize: '0.7rem', color: d.color, fontFamily: 'monospace', fontWeight: '700' }}>{pct}%</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                      <span style={{ fontSize: '0.72rem', color: d.color, fontWeight: '700' }}>{pct}%</span>
                     </div>
                   )
                 })}
               </div>
             </>
           ) : (
-            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
               NO DATA THIS MONTH
             </div>
           )}
@@ -773,8 +777,9 @@ export default function AdminHome() {
           {/* DIS Gauge */}
           <div className="terminal-card" style={{ padding: '20px' }}>
             <div style={{
-              fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-              color: '#475569', textTransform: 'uppercase', marginBottom: '14px'
+              fontSize: '0.72rem',
+              color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '14px',
+              fontWeight: '600'
             }}>
               DIS COMPLIANCE · TODAY
             </div>
@@ -786,7 +791,7 @@ export default function AdminHome() {
                   <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="7" />
                   <circle
                     cx="36" cy="36" r="28" fill="none"
-                    stroke={compliancePct >= 80 ? '#10b981' : compliancePct >= 50 ? '#f59e0b' : '#ef4444'}
+                    stroke={compliancePct >= 80 ? 'var(--apple-accent-green-solid)' : compliancePct >= 50 ? 'var(--apple-accent-orange)' : 'var(--apple-accent-red)'}
                     strokeWidth="7"
                     strokeLinecap="round"
                     strokeDasharray={`${2 * Math.PI * 28}`}
@@ -797,8 +802,7 @@ export default function AdminHome() {
                 <div style={{
                   position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800',
-                  fontFamily: 'monospace',
-                  color: compliancePct >= 80 ? '#10b981' : compliancePct >= 50 ? '#f59e0b' : '#ef4444'
+                  color: compliancePct >= 80 ? 'var(--apple-accent-green-solid)' : compliancePct >= 50 ? 'var(--apple-accent-orange)' : 'var(--apple-accent-red)'
                 }}>
                   {compliancePct}%
                 </div>
@@ -807,22 +811,22 @@ export default function AdminHome() {
               <div style={{ flex: 1 }}>
                 <div style={{ marginBottom: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#10b981', fontFamily: 'monospace', fontWeight: '600' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--apple-accent-green-solid)', fontWeight: '600' }}>
                       ✓ {submittedCount}
                     </span>
-                    <span style={{ fontSize: '0.72rem', color: '#ef4444', fontFamily: 'monospace', fontWeight: '600' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--apple-accent-red)', fontWeight: '600' }}>
                       ✗ {missedCount}
                     </span>
                   </div>
                   <div style={{ height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div style={{
                       height: '100%', width: `${compliancePct}%`, borderRadius: '3px',
-                      background: compliancePct >= 80 ? '#10b981' : compliancePct >= 50 ? '#f59e0b' : '#ef4444',
+                      background: compliancePct >= 80 ? 'var(--apple-accent-green-solid)' : compliancePct >= 50 ? 'var(--apple-accent-orange)' : 'var(--apple-accent-red)',
                       transition: 'width 0.5s ease-out'
                     }} />
                   </div>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#475569', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)' }}>
                   {totalMembers} members total
                 </div>
               </div>
@@ -831,20 +835,20 @@ export default function AdminHome() {
             <div
               onClick={() => navigate('/admin/dis')}
               style={{
-                cursor: 'pointer', textAlign: 'center', padding: '8px',
-                borderRadius: '8px', border: '1px solid rgba(99,102,241,0.2)',
-                background: 'rgba(99,102,241,0.06)',
-                fontSize: '0.72rem', color: '#818cf8', fontFamily: 'monospace',
-                fontWeight: '600', letterSpacing: '0.05em',
-                transition: 'background 0.15s, border-color 0.15s'
+                cursor: 'pointer', textAlign: 'center', padding: '10px',
+                borderRadius: '12px', border: '1px solid var(--apple-border)',
+                background: 'rgba(255, 255, 255, 0.04)',
+                fontSize: '0.78rem', color: '#ffffff',
+                fontWeight: '600', letterSpacing: '0.02em',
+                transition: 'all 0.2s var(--apple-ease)'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(99,102,241,0.15)'
-                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.45)'
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
+                e.currentTarget.style.borderColor = 'var(--apple-border-strong)'
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(99,102,241,0.06)'
-                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.2)'
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'
+                e.currentTarget.style.borderColor = 'var(--apple-border)'
               }}
             >
               VIEW DIS REPORTS →
@@ -854,9 +858,9 @@ export default function AdminHome() {
           {/* Insights Feed */}
           <div className="terminal-card" style={{ padding: '20px', flex: 1 }}>
             <div style={{
-              fontSize: '0.68rem', fontFamily: 'monospace', letterSpacing: '0.1em',
-              color: '#475569', textTransform: 'uppercase', marginBottom: '14px',
-              display: 'flex', alignItems: 'center', gap: '8px'
+              fontSize: '0.72rem',
+              color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '14px',
+              display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600'
             }}>
               <Activity size={12} />
               AI INSIGHTS
@@ -866,20 +870,20 @@ export default function AdminHome() {
               {insights.map((ins, i) => (
                 <div key={i} style={{
                   display: 'flex', gap: '10px', alignItems: 'flex-start',
-                  padding: '10px', borderRadius: '8px',
-                  background: `${ins.color}08`,
-                  border: `1px solid ${ins.color}20`,
+                  padding: '12px', borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.01)',
+                  border: '1px solid var(--apple-border)',
                   animation: `fadeSlideIn 0.3s ease ${i * 0.08}s both`
                 }}>
                   <ins.icon size={14} style={{ color: ins.color, flexShrink: 0, marginTop: '1px' }} />
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', lineHeight: '1.5' }}>
                     {ins.text}
                   </span>
                 </div>
               ))}
 
               {insights.length === 0 && (
-                <div style={{ fontSize: '0.75rem', color: '#334155', fontFamily: 'monospace', textAlign: 'center', padding: '12px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textAlign: 'center', padding: '12px' }}>
                   NO SIGNALS DETECTED
                 </div>
               )}
@@ -891,49 +895,48 @@ export default function AdminHome() {
       {/* ── QUICK NAV ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
         {[
-          { label: 'DIS REPORTS',    sub: 'Audit submissions',          color: '#6366f1', path: '/admin/dis',       icon: FileText },
-          { label: 'REVENUE',        sub: 'Targets & actuals',          color: '#10b981', path: '/admin/revenue',   icon: TrendingUp },
-          { label: 'ANALYTICS',      sub: 'Performance trends',         color: '#f59e0b', path: '/admin/analytics', icon: Activity },
-          { label: 'TEAMS',          sub: 'Rosters & members',          color: '#06b6d4', path: '/admin/teams',     icon: Users },
+          { label: 'DIS REPORTS',    sub: 'Audit submissions',          color: 'var(--apple-accent-blue)', path: '/admin/dis',       icon: FileText },
+          { label: 'REVENUE',        sub: 'Targets & actuals',          color: 'var(--apple-accent-green)', path: '/admin/revenue',   icon: TrendingUp },
+          { label: 'ANALYTICS',      sub: 'Performance trends',         color: 'var(--apple-accent-orange)', path: '/admin/analytics', icon: Activity },
+          { label: 'TEAMS',          sub: 'Rosters & members',          color: 'var(--apple-accent-blue)', path: '/admin/teams',     icon: Users },
         ].map(item => (
           <div
             key={item.path}
             onClick={() => navigate(item.path)}
             style={{
-              background: 'rgba(15,23,42,0.8)',
-              border: `1px solid rgba(255,255,255,0.05)`,
-              borderRadius: '10px', padding: '16px',
+              background: 'var(--apple-card)',
+              border: `1px solid var(--apple-border)`,
+              borderRadius: '14px', padding: '16px',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex', alignItems: 'center', gap: '12px',
-              backdropFilter: 'blur(8px)'
+              transition: 'all 0.25s var(--apple-ease)',
+              display: 'flex', alignItems: 'center', gap: '12px'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = `${item.color}40`
-              e.currentTarget.style.background = `${item.color}0a`
+              e.currentTarget.style.borderColor = 'var(--apple-border-strong)'
               e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-              e.currentTarget.style.background = 'rgba(15,23,42,0.8)'
+              e.currentTarget.style.borderColor = 'var(--apple-border)'
               e.currentTarget.style.transform = 'none'
+              e.currentTarget.style.boxShadow = 'none'
             }}
           >
             <div style={{
-              width: '36px', height: '36px', borderRadius: '8px',
-              background: `${item.color}15`, border: `1px solid ${item.color}30`,
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: `${item.color}12`, border: `1px solid ${item.color}25`,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
               <item.icon size={16} style={{ color: item.color }} />
             </div>
             <div>
               <div style={{
-                fontSize: '0.72rem', fontWeight: '800', fontFamily: 'monospace',
-                color: '#e2e8f0', letterSpacing: '0.05em'
+                fontSize: '0.8rem', fontWeight: '700',
+                color: 'var(--apple-text-primary)', letterSpacing: '0.02em'
               }}>
                 {item.label}
               </div>
-              <div style={{ fontSize: '0.68rem', color: '#475569', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>
                 {item.sub}
               </div>
             </div>
