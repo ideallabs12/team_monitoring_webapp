@@ -111,14 +111,14 @@ export default function UserDis() {
     async function fetchTeams() {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('team_id, secondary_team_ids, platform_role')
+        .select('team_id, secondary_team_roles, platform_role')
         .eq('id', currentUser.id)
         .single()
       
       const teamIdsToFetch = []
       if (profileData?.team_id) teamIdsToFetch.push(profileData.team_id)
-      if (profileData?.secondary_team_ids) {
-        teamIdsToFetch.push(...profileData.secondary_team_ids)
+      if (profileData?.secondary_team_roles) {
+        teamIdsToFetch.push(...Object.keys(profileData.secondary_team_roles))
       }
 
       if (teamIdsToFetch.length > 0) {
@@ -131,7 +131,9 @@ export default function UserDis() {
           const loadedTeams = teamsData.map(t => ({
             id: t.id,
             name: t.name,
-            role: profileData.platform_role === 'teamlead' ? 'lead' : 'member'
+            role: t.id === profileData.team_id 
+              ? (profileData.platform_role === 'teamlead' ? 'lead' : 'member')
+              : (profileData.secondary_team_roles?.[t.id] === 'teamlead' ? 'lead' : 'member')
           }))
           // Sort primary team first
           loadedTeams.sort((a, b) => a.id === profileData.team_id ? -1 : 1)

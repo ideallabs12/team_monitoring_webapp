@@ -17,7 +17,9 @@ export default function AdminUserControlPanel() {
   const [successMsg, setSuccessMsg] = useState('')
   
   const [newTeamId, setNewTeamId] = useState('')
-  const [secondaryTeamIds, setSecondaryTeamIds] = useState([])
+  const [secondaryTeamRoles, setSecondaryTeamRoles] = useState({})
+  const [newSecondaryTeamId, setNewSecondaryTeamId] = useState('')
+  const [newSecondaryRole, setNewSecondaryRole] = useState('user')
 
   useEffect(() => {
     async function loadData() {
@@ -36,7 +38,7 @@ export default function AdminUserControlPanel() {
         setRevenues(revRes.data || [])
         setDisReports(disRes.data || [])
         setNewTeamId(profileRes.data.team_id || '')
-        setSecondaryTeamIds(profileRes.data.secondary_team_ids || [])
+        setSecondaryTeamRoles(profileRes.data.secondary_team_roles || {})
       } catch (err) {
         console.error('Error loading user data:', err)
         setErrorMsg('Failed to load user profile.')
@@ -142,13 +144,13 @@ export default function AdminUserControlPanel() {
         .from('profiles')
         .update({ 
           team_id: newTeamId || null,
-          secondary_team_ids: secondaryTeamIds
+          secondary_team_roles: secondaryTeamRoles
         })
         .eq('id', user.id)
       if (error) throw error
 
       setSuccessMsg('Team assignments updated successfully!')
-      setUser({ ...user, team_id: newTeamId || null, secondary_team_ids: secondaryTeamIds })
+      setUser({ ...user, team_id: newTeamId || null, secondary_team_roles: secondaryTeamRoles })
     } catch (err) {
       setErrorMsg(err.message || 'Failed to update team assignments.')
     } finally {
@@ -156,13 +158,18 @@ export default function AdminUserControlPanel() {
     }
   }
 
-  // Handle toggling secondary teams in the checklist
-  const handleToggleSecondaryTeam = (teamId) => {
-    if (secondaryTeamIds.includes(teamId)) {
-      setSecondaryTeamIds(secondaryTeamIds.filter(id => id !== teamId))
-    } else {
-      setSecondaryTeamIds([...secondaryTeamIds, teamId])
-    }
+  const handleAddSecondaryTeam = () => {
+    if (!newSecondaryTeamId) return
+    const updatedRoles = { ...secondaryTeamRoles, [newSecondaryTeamId]: newSecondaryRole }
+    setSecondaryTeamRoles(updatedRoles)
+    setNewSecondaryTeamId('')
+    setNewSecondaryRole('user')
+  }
+
+  const handleRemoveSecondaryTeam = (teamId) => {
+    const updatedRoles = { ...secondaryTeamRoles }
+    delete updatedRoles[teamId]
+    setSecondaryTeamRoles(updatedRoles)
   }
 
   // Remove User from Primary Team
@@ -232,8 +239,8 @@ export default function AdminUserControlPanel() {
 
   const isDeactivated = !!user.is_deactivated
   const currentTeam = user.team_id ? teams.find(t => t.id === user.team_id) : null
-  const currentSecondaryTeams = user.secondary_team_ids 
-    ? teams.filter(t => user.secondary_team_ids.includes(t.id)) 
+  const currentSecondaryTeams = user.secondary_team_roles 
+    ? teams.filter(t => Object.keys(user.secondary_team_roles).includes(t.id)) 
     : []
 
   return (
@@ -403,11 +410,17 @@ export default function AdminUserControlPanel() {
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>Secondary Teams</label>
               {currentSecondaryTeams.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {currentSecondaryTeams.map(t => (
-                    <span key={t.id} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', borderRadius: '8px', fontSize: '0.85rem', color: '#e2e8f0' }}>
-                      {t.name}
-                    </span>
+                    <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>{t.name}</span>
+                        <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px', textTransform: 'capitalize' }}>
+                          {user.secondary_team_roles[t.id]}
+                        </span>
+                      </div>
+                      {/* Removing directly from state requires clicking Save below, or we could auto-save. For now, we update the state and the user must click Save */}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -432,22 +445,46 @@ export default function AdminUserControlPanel() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Select Secondary Teams (Optional)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '140px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  {teams.filter(t => t.id !== newTeamId).map(t => (
-                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#e2e8f0', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={secondaryTeamIds.includes(t.id)}
-                        onChange={() => handleToggleSecondaryTeam(t.id)}
-                        style={{ accentColor: 'var(--apple-accent-blue)' }}
-                      />
-                      {t.name}
-                    </label>
-                  ))}
-                  {teams.filter(t => t.id !== newTeamId).length === 0 && (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>No other teams available.</span>
-                  )}
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Edit Secondary Teams</label>
+                
+                {/* List current secondary teams with remove button */}
+                {Object.keys(secondaryTeamRoles).length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                    {Object.entries(secondaryTeamRoles).map(([tId, role]) => {
+                      const t = teams.find(x => x.id === tId)
+                      return (
+                        <div key={tId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>{t?.name} ({role})</span>
+                          <button type="button" onClick={() => handleRemoveSecondaryTeam(tId)} style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Add new secondary team */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                  <select 
+                    value={newSecondaryTeamId} 
+                    onChange={e => setNewSecondaryTeamId(e.target.value)}
+                    className="apple-input"
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">-- Add Team --</option>
+                    {teams.filter(t => t.id !== newTeamId && !secondaryTeamRoles[t.id]).map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={newSecondaryRole}
+                    onChange={e => setNewSecondaryRole(e.target.value)}
+                    className="apple-input"
+                    style={{ width: '110px' }}
+                  >
+                    <option value="user">Member</option>
+                    <option value="teamlead">Lead</option>
+                  </select>
+                  <button type="button" onClick={handleAddSecondaryTeam} disabled={!newSecondaryTeamId} className="apple-btn apple-btn-secondary" style={{ padding: '8px 12px' }}>Add</button>
                 </div>
               </div>
 

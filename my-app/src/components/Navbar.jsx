@@ -15,7 +15,7 @@ export default function Navbar({ user }) {
 
   useEffect(() => {
     if (user) {
-      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting, platform_role').eq('id', user.id).single()
+      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting, platform_role, secondary_team_roles').eq('id', user.id).single()
         .then(({ data }) => {
           if (data) setProfile(data)
         })
@@ -67,11 +67,13 @@ export default function Navbar({ user }) {
 
   navLinks.push({ to: '/profile', label: 'Profile' })
 
+  const isTeamLead = profile?.platform_role === 'teamlead' || Object.values(profile?.secondary_team_roles || {}).includes('teamlead')
+
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
     { to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' },
   ]
-  if (profile?.platform_role === 'teamlead') {
+  if (isTeamLead) {
     othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
   }
 
@@ -127,7 +129,7 @@ export default function Navbar({ user }) {
                 </Link>
               ))}
 
-              {profile?.platform_role === 'teamlead' && (
+              {isTeamLead && (
                 <div
                   ref={teamHubRef}
                   style={{ position: 'relative' }}
@@ -314,7 +316,7 @@ export default function Navbar({ user }) {
                   </Link>
                 ))}
 
-                {profile?.platform_role === 'teamlead' && (
+                {isTeamLead && (
                   <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--apple-border)' }}>
                     <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px', paddingLeft: '2px' }}>
                       Team Hub

@@ -21,6 +21,8 @@ export default function TeamDisReport({ user }) {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [team, setTeam] = useState(null)
+  const [ledTeams, setLedTeams] = useState([])
+  const [selectedTeamId, setSelectedTeamId] = useState(null)
   const [accessDenied, setAccessDenied] = useState(false)
   
   const [profiles, setProfiles] = useState([])
@@ -45,7 +47,9 @@ export default function TeamDisReport({ user }) {
         
         if (error) throw error
         
-        if (prof?.platform_role !== 'teamlead') {
+        const isTeamLead = prof?.platform_role === 'teamlead' || Object.values(prof?.secondary_team_roles || {}).includes('teamlead')
+        
+        if (!isTeamLead) {
           setAccessDenied(true)
           setLoading(false)
           return
@@ -53,14 +57,25 @@ export default function TeamDisReport({ user }) {
         
         setProfile(prof)
         
-        if (prof.team_id) {
-          const { data: tm } = await supabase
+        const ledTeamIds = []
+        if (prof.platform_role === 'teamlead' && prof.team_id) ledTeamIds.push(prof.team_id)
+        if (prof.secondary_team_roles) {
+          Object.entries(prof.secondary_team_roles).forEach(([tId, role]) => {
+            if (role === 'teamlead') ledTeamIds.push(tId)
+          })
+        }
+
+        if (ledTeamIds.length > 0) {
+          const { data: tms } = await supabase
             .from('teams')
             .select('*')
-            .eq('id', prof.team_id)
-            .single()
+            .in('id', ledTeamIds)
           
-          if (tm) setTeam(tm)
+          if (tms && tms.length > 0) {
+            setLedTeams(tms)
+            setTeam(tms[0])
+            setSelectedTeamId(tms[0].id)
+          }
         }
       } catch (err) {
         console.error("Error loading team lead profile:", err)
@@ -71,14 +86,14 @@ export default function TeamDisReport({ user }) {
   }, [user])
 
   const loadData = async () => {
-    if (!profile?.team_id) return
+    if (!selectedTeamId) return
     setLoading(true)
     try {
       const monthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
 
       const [profilesRes, revenuesRes, reportsRes, missingReportsRes] = await Promise.all([
         supabase.from('profiles').select('*'), // Fetch all, filter below
-        supabase.from('monthly_revenues').select('*').eq('team_id', profile.team_id).eq('revenue_month', monthStr),
+        supabase.from('monthly_revenues').select('*').eq('team_id', selectedTeamId).eq('revenue_month', monthStr),
         supabase.from('dis_reports').select(`
           *,
           profiles (
@@ -87,12 +102,12 @@ export default function TeamDisReport({ user }) {
             email,
             team_id
           )
-        `).eq('report_date', selectedDate).eq('team_id', profile.team_id), // Filter reports by team
-        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate).eq('team_id', profile.team_id)
+        `).eq('report_date', selectedDate).eq('team_id', selectedTeamId), // Filter reports by team
+        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate).eq('team_id', selectedTeamId)
       ])
 
       const profilesData = (profilesRes.data || []).filter(p => 
-        p.team_id === profile.team_id || (p.secondary_team_ids || []).includes(profile.team_id)
+        p.team_id === selectedTeamId || Object.keys(p.secondary_team_roles || {}).includes(selectedTeamId)
       )
       const revenuesData = revenuesRes.data || []
       const allReportsData = reportsRes.data || []
@@ -121,10 +136,10 @@ export default function TeamDisReport({ user }) {
   }
 
   useEffect(() => {
-    if (profile?.team_id) {
+    if (selectedTeamId) {
       loadData()
     }
-  }, [selectedDate, profile])
+  }, [selectedDate, selectedTeamId])
 
   // Process data for the team
   const teamData = useMemo(() => {
@@ -228,7 +243,25 @@ export default function TeamDisReport({ user }) {
       {/* ===== HEADER SECTION ===== */}
       <div className="dis-header-section">
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#fff' }}>Team DIS Report</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#fff' }}>Team DIS Report</h2>
+            
+            {ledTeams.length > 1 && (
+              <select
+                value={selectedTeamId}
+                onChange={(e) => {
+                  setSelectedTeamId(e.target.value)
+                  setTeam(ledTeams.find(t => t.id === e.target.value))
+                }}
+                className="apple-form-control"
+                style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                {ledTeams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
           <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
             Track, search, and audit Daily Information Sheets submissions for <strong>{team?.name || 'Your Team'}</strong>.
           </p>

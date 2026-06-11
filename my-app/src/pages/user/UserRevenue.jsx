@@ -17,6 +17,7 @@ export default function UserRevenue({ user, isAdminView }) {
   const [revenues, setRevenues] = useState(revenueCache.userId === user?.id ? revenueCache.revenues : [])
   const [teams, setTeams] = useState(revenueCache.userId === user?.id ? revenueCache.teams : [])
   const [loading, setLoading] = useState(revenueCache.userId !== user?.id)
+  const [userProfile, setUserProfile] = useState(null)
 
   // Form state
   const [selectedTeam, setSelectedTeam] = useState('')
@@ -63,7 +64,7 @@ export default function UserRevenue({ user, isAdminView }) {
   async function loadData() {
     try {
       const [profileRes, allTeamsRes, revDataRes] = await Promise.all([
-        supabase.from('profiles').select('team_id, secondary_team_ids, has_revenue_logging').eq('id', user.id).single(),
+        supabase.from('profiles').select('team_id, secondary_team_roles, has_revenue_logging').eq('id', user.id).single(),
         supabase.from('teams').select('*'),
         supabase.from('monthly_revenues').select('*, teams(name)').eq('user_id', user.id).order('revenue_month', { ascending: false })
       ])
@@ -76,6 +77,7 @@ export default function UserRevenue({ user, isAdminView }) {
         setLoading(false)
         return
       }
+      setUserProfile(profileRes.data)
       const assignedTeams = []
       if (profileRes.data?.team_id) {
         const userTeam = allTeamsRes.data?.find(t => t.id === profileRes.data.team_id)
@@ -83,8 +85,8 @@ export default function UserRevenue({ user, isAdminView }) {
           assignedTeams.push(userTeam)
         }
       }
-      if (profileRes.data?.secondary_team_ids) {
-        profileRes.data.secondary_team_ids.forEach(secId => {
+      if (profileRes.data?.secondary_team_roles) {
+        Object.keys(profileRes.data.secondary_team_roles).forEach(secId => {
           const userTeam = allTeamsRes.data?.find(t => t.id === secId)
           if (userTeam && !assignedTeams.find(t => t.id === secId)) {
             assignedTeams.push(userTeam)
@@ -127,9 +129,9 @@ export default function UserRevenue({ user, isAdminView }) {
   const last12Total = useMemo(() => sumRevenues(filterRevenuesByPeriod(revenues, 12)), [revenues])
 
   const uniqueTeamIds = useMemo(() => {
-    // User belongs to only one team, so just use that one (or all revenue team IDs if user has no assigned team)
+    // Include all currently assigned teams (primary + secondary)
     if (teams.length > 0) {
-      return [teams[0].id]
+      return teams.map(t => t.id)
     }
     // Fallback: get unique team IDs from revenues if user has no assigned team
     const revTeamIds = revenues.map(r => r.team_id)
@@ -734,9 +736,13 @@ export default function UserRevenue({ user, isAdminView }) {
               const teamObj = allTeams.find(t => t.id === teamId)
               if (!teamObj) return null
 
-              // Determine role from profile (single-team model)
-              const isUserTeam = teams.length > 0 && teams[0].id === teamId
-              const teamRole = isUserTeam ? 'member' : 'former member'
+              // Determine role from profile
+              let teamRole = 'former member'
+              if (userProfile?.team_id === teamId) {
+                teamRole = userProfile.platform_role === 'teamlead' ? 'lead' : 'member'
+              } else if (userProfile?.secondary_team_roles && userProfile.secondary_team_roles[teamId]) {
+                teamRole = userProfile.secondary_team_roles[teamId] === 'teamlead' ? 'lead' : 'member'
+              }
 
               const teamRevs = revenues.filter(r => r.team_id === teamId)
               const teamAllTime = sumRevenues(teamRevs)

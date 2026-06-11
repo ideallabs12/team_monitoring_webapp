@@ -131,8 +131,8 @@ export default function AdminTeams() {
 
   // Find secondary teams this user belongs to
   const memberSecondaryTeams = useMemo(() => {
-    if (!viewingProfileUser || !viewingProfileUser.secondary_team_ids) return []
-    return teams.filter(t => viewingProfileUser.secondary_team_ids.includes(t.id))
+    if (!viewingProfileUser || !viewingProfileUser.secondary_team_roles) return []
+    return teams.filter(t => Object.keys(viewingProfileUser.secondary_team_roles).includes(t.id))
   }, [viewingProfileUser, teams])
 
   // Current Month String
@@ -235,7 +235,7 @@ export default function AdminTeams() {
               <div style={{ paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Secondary Teams</span>
                 <p style={{ margin: '4px 0 0 0', color: '#fff', fontWeight: '500' }}>
-                  {memberSecondaryTeams.length > 0 ? memberSecondaryTeams.map(t => t.name).join(', ') : <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)' }}>None</span>}
+                  {memberSecondaryTeams.length > 0 ? memberSecondaryTeams.map(t => `${t.name} (${viewingProfileUser.secondary_team_roles[t.id]})`).join(', ') : <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)' }}>None</span>}
                 </p>
               </div>
                 <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
@@ -340,8 +340,14 @@ export default function AdminTeams() {
   // ==========================================
   if (activeTeam) {
     const activeProfiles = profiles
-      .filter(p => (p.team_id === activeTeam.id || (p.secondary_team_ids || []).includes(activeTeam.id)) && p.platform_role !== 'admin' && !p.is_deactivated)
-      .sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
+      .filter(p => (p.team_id === activeTeam.id || Object.keys(p.secondary_team_roles || {}).includes(activeTeam.id)) && p.platform_role !== 'admin' && !p.is_deactivated)
+      .sort((a, b) => {
+        const aIsLead = a.team_id === activeTeam.id ? a.platform_role === 'teamlead' : (a.secondary_team_roles || {})[activeTeam.id] === 'teamlead'
+        const bIsLead = b.team_id === activeTeam.id ? b.platform_role === 'teamlead' : (b.secondary_team_roles || {})[activeTeam.id] === 'teamlead'
+        if (aIsLead && !bIsLead) return -1
+        if (!aIsLead && bIsLead) return 1
+        return 0
+      })
 
     const activeProfileIds = new Set(activeProfiles.map(p => p.id))
 
@@ -614,7 +620,7 @@ export default function AdminTeams() {
                 const monthRevenue = revenues
                   .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0)
-                const isLead = profile.platform_role === 'teamlead'
+                const isLead = profile.team_id === activeTeam.id ? profile.platform_role === 'teamlead' : (profile.secondary_team_roles || {})[activeTeam.id] === 'teamlead'
                 const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase()
 
                 return (
