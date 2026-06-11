@@ -254,30 +254,31 @@ export default function AdminDis() {
   if (loading && !adminDisCache.loaded) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', gap: '16px' }}>
-        <RefreshCw size={36} className="spin-anim" style={{ color: 'var(--primary)' }} />
-        <div style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', fontWeight: '500' }}>Loading DIS Dashboard...</div>
+        <RefreshCw size={36} className="spin-anim" style={{ color: 'var(--apple-accent-blue)' }} />
+        <div style={{ color: 'var(--apple-text-secondary)', fontSize: '1.05rem', fontWeight: '500' }}>Loading DIS Dashboard...</div>
       </div>
     )
   }
 
   return (
-    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
       
       {/* ===== HEADER SECTION ===== */}
-      <div className="dis-header-section">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(24px, 5vw, 40px)', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#fff' }}>DIS Audit Hub</h2>
-          <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <div className="apple-kicker">DIS Audit Hub</div>
+          <h1 className="apple-title-large">Daily Information Sheets</h1>
+          <p className="apple-lead">
             Track, search, and audit Daily Information Sheets submissions.
           </p>
         </div>
         <button
           onClick={loadData}
           disabled={loading}
-          className="btn btn-secondary"
-          style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+          className="apple-btn apple-btn-secondary"
+          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
         >
-          <RefreshCw size={14} className={loading ? 'spin-anim' : ''} />
+          <RefreshCw size={14} className={loading ? 'spin-anim' : ''} style={{ marginRight: '6px' }} />
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
@@ -286,43 +287,43 @@ export default function AdminDis() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '28px' }}>
         
         {/* MTD Revenue */}
-        <div className="card dis-card-glass" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }} />
+        <div className="apple-card" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-green)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+            <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
               {isAllTeams ? 'All Teams Revenue (MTD)' : `${activeTeam?.name || ''} Revenue`}
             </h3>
-            <TrendingUp size={16} style={{ color: '#10b981' }} />
+            <TrendingUp size={16} style={{ color: 'var(--apple-accent-green)' }} />
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#10b981' }}>
-            ${displayedStats.totalRevenue.toFixed(2)}
+          <div style={{ fontSize: '1.85rem', fontWeight: '800', color: 'var(--apple-accent-green)' }}>
+            ${displayedStats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
         {/* Expected Revenue */}
-        <div className="card dis-card-glass" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#3b82f6' }} />
+        <div className="apple-card" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-blue)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+            <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
               Expected Revenue (MTD)
             </h3>
-            <DollarSign size={16} style={{ color: '#3b82f6' }} />
+            <DollarSign size={16} style={{ color: 'var(--apple-accent-blue)' }} />
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#3b82f6' }}>
-            ${displayedStats.totalExpected.toFixed(2)}
+          <div style={{ fontSize: '1.85rem', fontWeight: '800', color: 'var(--apple-accent-blue)' }}>
+            ${displayedStats.totalExpected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
         {/* Positive Leads */}
-        <div className="card dis-card-glass" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#fbbf24' }} />
+        <div className="apple-card" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-orange)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+            <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
               Positive Leads
             </h3>
-            <Zap size={16} style={{ color: '#fbbf24' }} />
+            <Zap size={16} style={{ color: 'var(--apple-accent-orange)' }} />
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#fbbf24' }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: '800', color: 'var(--apple-accent-orange)' }}>
             {displayedStats.totalLeads}
           </div>
         </div>
@@ -330,84 +331,86 @@ export default function AdminDis() {
       </div>
 
       {/* ===== SEARCH & DATE FILTER CONTROLS ===== */}
-      <div className="card dis-card-glass" style={{ marginBottom: '28px', padding: '20px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', flex: 1 }}>
-            
-            {/* Date Selection */}
-            <div style={{ minWidth: '200px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Report Date
-              </label>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Calendar size={16} style={{ position: 'absolute', left: '12px', color: 'var(--text-secondary)', pointerEvents: 'none' }} />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  className="form-control"
-                  style={{ paddingLeft: '38px' }}
-                />
-              </div>
+      <div className="apple-card" style={{ marginBottom: '28px', padding: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'center' }} className="apple-two-col-grid">
+          
+          {/* Date Selection */}
+          <div>
+            <label className="apple-form-label">
+              Report Date
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Calendar size={16} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="apple-form-control"
+                style={{ paddingLeft: '38px' }}
+              />
             </div>
-
-            {/* Search Input */}
-            <div className="dis-search-container">
-              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Search Employee
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Search size={16} className="dis-search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="form-control dis-search-input"
-                />
-              </div>
-            </div>
-
           </div>
 
-          <div style={{ alignSelf: 'flex-end', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Active Filter: <strong style={{ color: '#fff', fontSize: '0.9rem' }}>{isAllTeams ? 'All Teams' : (activeTeam?.name || '')}</strong>
+          {/* Search Input */}
+          <div>
+            <label className="apple-form-label">
+              Search Employee
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search size={16} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="apple-form-control"
+                style={{ paddingLeft: '38px' }}
+              />
+            </div>
           </div>
+
         </div>
       </div>
 
       {/* ===== INTERACTIVE TEAM SELECTOR BOARD ===== */}
-      <div style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <h3 style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Select Team to Filter
         </h3>
         
-        <div className="dis-team-selector-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           
           {/* "All Teams" Card */}
           <div 
-            className={`dis-team-card ${isAllTeams ? 'active' : ''}`}
+            className="apple-card"
+            style={{
+              cursor: 'pointer',
+              border: isAllTeams ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
+              background: isAllTeams ? 'rgba(0,113,227,0.06)' : 'var(--apple-card)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              padding: '16px'
+            }}
             onClick={() => setSelectedTeamId('all')}
           >
-            <div className="dis-team-card-glow" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ fontWeight: '700', fontSize: '0.98rem', color: '#fff' }}>All Teams</div>
-              <UsersRound size={16} style={{ color: isAllTeams ? 'var(--primary)' : 'var(--text-secondary)' }} />
+              <UsersRound size={16} style={{ color: isAllTeams ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)' }} />
             </div>
             
-            <div className="dis-progress-bar-container">
+            <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
               <div 
-                className="dis-progress-bar-fill" 
-                style={{ width: `${globalStats.progress}%`, background: 'linear-gradient(to right, #4F46E5, #3b82f6)' }}
+                style={{ width: `${globalStats.progress}%`, height: '100%', background: 'var(--apple-accent-blue)' }}
               />
             </div>
 
-            <div className="dis-team-card-stats">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
               <span>{globalStats.progress}% Compliance</span>
               <span style={{ display: 'flex', gap: '6px' }}>
-                <span className="dis-badge-submitted" title="Submitted count">{globalStats.submittedCount}</span>
-                <span className="dis-badge-missed" title="Missed count">{globalStats.missedCount}</span>
+                <span style={{ color: 'var(--apple-accent-green)', fontWeight: '700' }} title="Submitted count">{globalStats.submittedCount}</span>
+                <span style={{ color: 'var(--apple-accent-red)', fontWeight: '700' }} title="Missed count">{globalStats.missedCount}</span>
               </span>
             </div>
           </div>
@@ -415,38 +418,45 @@ export default function AdminDis() {
           {/* Each Team Card */}
           {teamData.map(team => {
             const isActive = selectedTeamId === team.id;
-            const colorGrad = team.progress > 75 
-              ? 'linear-gradient(to right, #10b981, #34d399)' 
+            const colorCode = team.progress > 75 
+              ? 'var(--apple-accent-green)' 
               : team.progress > 40 
-                ? 'linear-gradient(to right, #f59e0b, #fbbf24)' 
-                : 'linear-gradient(to right, #ef4444, #f87171)';
+                ? 'var(--apple-accent-orange)' 
+                : 'var(--apple-accent-red)';
             
             return (
               <div 
                 key={team.id}
-                className={`dis-team-card ${isActive ? 'active' : ''}`}
+                className="apple-card"
+                style={{
+                  cursor: 'pointer',
+                  border: isActive ? `1px solid ${colorCode}` : '1px solid var(--apple-border)',
+                  background: isActive ? `${colorCode}08` : 'var(--apple-card)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '16px'
+                }}
                 onClick={() => setSelectedTeamId(team.id)}
               >
-                <div className="dis-team-card-glow" />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                   <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {team.name}
                   </div>
-                  <Users size={15} style={{ color: isActive ? 'var(--primary)' : 'var(--text-secondary)', flexShrink: 0 }} />
+                  <Users size={15} style={{ color: isActive ? colorCode : 'var(--apple-text-secondary)', flexShrink: 0 }} />
                 </div>
                 
-                <div className="dis-progress-bar-container">
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                   <div 
-                    className="dis-progress-bar-fill" 
-                    style={{ width: `${team.progress}%`, background: colorGrad }}
+                    style={{ width: `${team.progress}%`, height: '100%', background: colorCode }}
                   />
                 </div>
 
-                <div className="dis-team-card-stats">
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
                   <span>{team.progress}% Compliance</span>
                   <span style={{ display: 'flex', gap: '6px' }}>
-                    <span className="dis-badge-submitted" title="Submitted count">{team.submittedCount}</span>
-                    <span className="dis-badge-missed" title="Missed count">{team.missing.length}</span>
+                    <span style={{ color: 'var(--apple-accent-green)', fontWeight: '700' }} title="Submitted count">{team.submittedCount}</span>
+                    <span style={{ color: 'var(--apple-accent-red)', fontWeight: '700' }} title="Missed count">{team.missing.length}</span>
                   </span>
                 </div>
               </div>
@@ -456,20 +466,18 @@ export default function AdminDis() {
         </div>
       </div>
 
-
-
       {/* ===== SUBMITTED REPORTS SECTION (FIRST) ===== */}
-      <div className="dis-card-grid-container">
-        <div className="dis-section-title">
-          <CheckCircle2 size={18} style={{ color: '#10b981' }} />
-          <span>Submitted Reports</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>
-            {filteredSubmissions.length} report{filteredSubmissions.length !== 1 ? 's' : ''}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <CheckCircle2 size={18} style={{ color: 'var(--apple-accent-green)' }} />
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Submitted Reports</h3>
+          <span className="apple-badge apple-badge-green" style={{ fontSize: '0.75rem' }}>
+            {filteredSubmissions.length}
           </span>
         </div>
 
         {filteredSubmissions.length > 0 ? (
-          <div className="dis-grid-cols">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {filteredSubmissions.map(row => {
               const monthStr = `${row.report_date.split('-')[0]}-${row.report_date.split('-')[1]}-01`
 
@@ -498,55 +506,49 @@ export default function AdminDis() {
               return (
                 <div
                   key={row.id}
-                  className="card dis-card-glass dis-report-submitted-card"
+                  className="apple-card"
                   style={{
                     padding: '20px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '14px',
+                    border: '1px solid var(--apple-border)'
                   }}
                 >
-                  <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '10px' }}>
-                    <div style={{ fontWeight: '600', color: '#fff', fontSize: '1rem' }}>
+                  <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+                    <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.98rem' }}>
                       {row.profiles?.first_name} {row.profiles?.last_name}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', wordBreak: 'break-all', marginTop: '2px' }}>
                       {row.profiles?.email}
                     </div>
                     {isAllTeams && displayTeamName && (
                       <div style={{ marginTop: '8px' }}>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          fontSize: '0.68rem',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          background: 'rgba(96,165,250,0.1)',
-                          border: '1px solid rgba(96,165,250,0.2)',
-                          color: '#60a5fa'
-                        }}>{displayTeamName}</span>
+                        <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.68rem' }}>
+                          {displayTeamName}
+                        </span>
                       </div>
                     )}
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Zap size={13} style={{ color: '#fbbf24' }} /> Positive Leads:
+                      <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Zap size={13} style={{ color: 'var(--apple-accent-orange)' }} /> Positive Leads:
                       </span>
-                      <span style={{ fontWeight: 'bold', color: '#fbbf24' }}>{row.positive_leads}</span>
+                      <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-orange)' }}>{row.positive_leads}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <DollarSign size={13} style={{ color: '#10b981' }} /> MTD Revenue:
+                      <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <DollarSign size={13} style={{ color: 'var(--apple-accent-green)' }} /> MTD Revenue:
                       </span>
-                      <span style={{ fontWeight: 'bold', color: '#10b981' }}>${teamSpecificRevenue.toFixed(2)}</span>
+                      <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-green)' }}>${teamSpecificRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Activity size={13} style={{ color: '#3b82f6' }} /> Expected Revenue:
+                      <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Activity size={13} style={{ color: 'var(--apple-accent-blue)' }} /> Expected Revenue:
                       </span>
-                      <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>${Number(row.expected_revenue).toFixed(2)}</span>
+                      <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -554,60 +556,60 @@ export default function AdminDis() {
             })}
           </div>
         ) : (
-          <div className="card dis-card-glass" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+          <div className="apple-card" style={{ padding: '28px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
             No submitted reports found matching the criteria.
           </div>
         )}
       </div>
 
       {/* ===== MISSING DIS REPORTS SECTION (SECOND) ===== */}
-      <div className="dis-card-grid-container" style={{ marginBottom: '60px' }}>
-        <div className="dis-section-title">
-          <AlertCircle size={18} style={{ color: '#f87171' }} />
-          <span>Missing DIS Reports</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500', background: 'rgba(239, 68, 68, 0.05)', padding: '2px 8px', borderRadius: '10px' }}>
-            {filteredMissing.length} pending
+      <div style={{ marginBottom: '60px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <AlertCircle size={18} style={{ color: 'var(--apple-accent-red)' }} />
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Missing DIS Reports</h3>
+          <span className="apple-badge apple-badge-red" style={{ fontSize: '0.75rem' }}>
+            {filteredMissing.length}
           </span>
         </div>
 
         {filteredMissing.length > 0 ? (
-          <div className="dis-grid-cols">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {filteredMissing.map((item, idx) => (
               <div 
                 key={idx} 
-                className="dis-report-missed-card"
+                className="apple-card"
+                style={{
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  border: '1px solid var(--apple-border)',
+                  background: 'rgba(255, 69, 58, 0.02)'
+                }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                   <div>
-                    <div style={{ fontWeight: '600', color: '#fff', fontSize: '0.95rem' }}>{item.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
+                    <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.98rem' }}>{item.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', wordBreak: 'break-all', marginTop: '2px' }}>
                       {item.email || 'No email registered'}
                     </div>
                   </div>
-                  <span style={{
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    fontSize: '0.65rem',
-                    fontWeight: '600',
-                    textTransform: 'uppercase',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    color: '#f87171',
-                    flexShrink: 0
-                  }}>Pending</span>
+                  <span className="apple-badge apple-badge-red" style={{ fontSize: '0.65rem', flexShrink: 0 }}>
+                    Pending
+                  </span>
                 </div>
                 
                 {item.teamName && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Team:</span>
-                    <span style={{ fontWeight: '500', color: '#fff' }}>{item.teamName}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', marginTop: 'auto', borderTop: '1px solid var(--apple-border)', paddingTop: '8px' }}>
+                    <span style={{ color: 'var(--apple-text-secondary)' }}>Team:</span>
+                    <span style={{ fontWeight: '600', color: '#fff' }}>{item.teamName}</span>
                   </div>
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="card dis-card-glass" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+          <div className="apple-card" style={{ padding: '28px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
             No missing reports. 100% compliance achieved! 🎉
           </div>
         )}
