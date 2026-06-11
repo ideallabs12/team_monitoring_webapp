@@ -1,3 +1,4 @@
+// updated admin revenue page instead of displaying regular trend line now it will display creative visual representaion for company performance
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 import {
