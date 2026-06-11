@@ -6,12 +6,35 @@ import {
   sumRevenues,
   getLastNMonths,
   formatRevenueMonth,
-  toRevenueMonthString
+  toRevenueMonthString,
+  formatRevenueMonthShort
 } from '../../utils/revenueUtils'
 import UserRevenue from '../user/UserRevenue'
-import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText } from 'lucide-react'
+import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText, Activity } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 
 let adminTeamsCache = { loaded: false, teams: [], profiles: [], revenues: [] }
+
+const ChartTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        background: 'rgba(15, 23, 42, 0.9)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+        padding: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(8px)'
+      }}>
+        <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.75rem', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
+        <p style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
+          ${payload[0].value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function AdminTeams() {
   const [loading, setLoading] = useState(!adminTeamsCache.loaded)
@@ -97,6 +120,24 @@ export default function AdminTeams() {
     const d = new Date()
     return toRevenueMonthString(d.getFullYear(), d.getMonth())
   }, [])
+
+  // -- TEAM PROFILE TREND DATA (Calculated for activeTeam) --
+  const team12MonthsStr = useMemo(() => getLastNMonths(12).reverse(), [])
+  const teamTrendData = useMemo(() => {
+    if (!activeTeam) return []
+    return team12MonthsStr.map(m => {
+      const total = revenues
+        .filter(r => r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === m)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+      return { month: formatRevenueMonthShort(m), total, key: m }
+    })
+  }, [revenues, activeTeam, team12MonthsStr])
+
+  const team12MonthTotal = useMemo(() => {
+    return teamTrendData.reduce((sum, d) => sum + d.total, 0)
+  }, [teamTrendData])
+
+  const teamMonthlyAvg = team12MonthTotal / 12
 
   if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading teams ledger...</div>
 
@@ -290,13 +331,109 @@ export default function AdminTeams() {
         </button>
 
         <div style={{ marginBottom: '32px' }}>
-          <span className="apple-kicker">Team Roster</span>
+          <span className="apple-kicker">Team Profile</span>
           <h2 className="apple-title-medium" style={{ textTransform: 'capitalize' }}>
-            {activeTeam.name} Members
+            {activeTeam.name}
           </h2>
           <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', margin: '4px 0 0 0' }}>
-            Review role hierarchy and revenue contributions for this team roster.
+            Review role hierarchy, 12-month performance, and member revenue contributions.
           </p>
+        </div>
+
+        {/* --- TEAM PERFORMANCE SUMMARY & TREND --- */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) 2fr', gap: '20px', marginBottom: '32px' }}>
+          
+          {/* Summary Card */}
+          <div className="apple-card" style={{ 
+            padding: '24px !important', 
+            background: 'linear-gradient(135deg, rgba(0, 113, 227, 0.08), rgba(48, 213, 200, 0.05)) !important',
+            border: '1px solid rgba(0, 113, 227, 0.2) !important',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center'
+          }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <TrendingUp size={16} color="var(--apple-accent-blue)" />
+                <h3 style={{ margin: 0, fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>
+                  Last 12 Months Total
+                </h3>
+              </div>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--apple-accent-blue)', letterSpacing: '-0.02em' }}>
+                ${team12MonthTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>Monthly Average</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '600', color: '#fff' }}>
+                  ${teamMonthlyAvg.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>Active Members</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={16} color="var(--apple-text-secondary)" /> {activeProfiles.length}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trend Line Card */}
+          <div className="apple-card" style={{ padding: '24px !important', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} color="var(--apple-text-secondary)" />
+                <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>Performance Trend</h3>
+              </div>
+              <span className="apple-badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--apple-text-secondary)' }}>
+                Trailing 12 Months
+              </span>
+            </div>
+
+            <div style={{ flex: 1, minHeight: '240px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={teamTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="teamTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
+                    axisLine={false} 
+                    tickLine={false}
+                    dy={10}
+                  />
+                  <YAxis 
+                    tickFormatter={(val) => `$${val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val}`}
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
+                    axisLine={false} 
+                    tickLine={false}
+                    dx={-10}
+                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  {teamMonthlyAvg > 0 && (
+                    <ReferenceLine 
+                      y={teamMonthlyAvg} 
+                      stroke="rgba(255,255,255,0.15)" 
+                      strokeDasharray="4 4"
+                    />
+                  )}
+                  <Area 
+                    type="monotone" 
+                    dataKey="total" 
+                    stroke="var(--apple-accent-blue)" 
+                    strokeWidth={3}
+                    fill="url(#teamTrendGrad)" 
+                    activeDot={{ r: 6, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
         {/* Month Filter */}
