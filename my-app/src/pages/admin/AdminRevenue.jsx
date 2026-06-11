@@ -1,16 +1,52 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine
+} from 'recharts'
+import {
+  TrendingUp, Activity, BarChart2, DollarSign
+} from 'lucide-react'
+import {
   filterRevenuesByPeriod,
   filterRevenuesByCompletedPeriod,
   sumRevenues,
   normalizeMonth,
   getLastNMonths,
   getEffectiveTargetAmount,
-  TIME_PERIOD_OPTIONS
+  TIME_PERIOD_OPTIONS,
+  formatRevenueMonthShort
 } from '../../utils/revenueUtils'
 
 let adminRevCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
+
+/* ─── tiny helpers ─────────────────────────────────────────────────────────── */
+const fmtFull = (n) =>
+  `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const fmtShort = (n) =>
+  n >= 1000
+    ? `$${(n / 1000).toFixed(1)}k`
+    : `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+
+/* ─── Custom tooltip for charts ─────────────────────────────────────────────── */
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{
+      background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+      borderRadius: '12px', padding: '12px 16px', fontSize: '0.8rem',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)'
+    }}>
+      <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600' }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color || '#fff', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+          <span>{p.name}</span>
+          <span style={{ fontWeight: '700' }}>{fmtFull(p.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function AdminRevenue() {
   const [loading, setLoading] = useState(!adminRevCache.loaded)
@@ -104,7 +140,7 @@ export default function AdminRevenue() {
     }).sort((a, b) => b.average - a.average)
   }, [nonAdminRevenues, teams, averagePeriod, includeCurrentMonth])
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#f43f5e']
+  const COLORS = ['#0071e3', '#30d5c8', '#ff9f0a', '#af52de', '#ff2d55', '#ffcc00', '#5ac8fa']
 
   // All-time team leaderboard
   const teamRevenues = teams.map(team => {
@@ -114,7 +150,19 @@ export default function AdminRevenue() {
 
   const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
 
-
+  // Last 12 months combined company-wide revenue trend data
+  const company12MonthTrend = useMemo(() => {
+    const months = getLastNMonths(12).reverse()
+    return months.map(m => {
+      const monthlyRevs = nonAdminRevenues.filter(r => normalizeMonth(r.revenue_month) === m)
+      const total = sumRevenues(monthlyRevs)
+      return {
+        month: formatRevenueMonthShort(m),
+        total,
+        key: m
+      }
+    })
+  }, [nonAdminRevenues])
 
   // Period-based month set — for the Expected vs Actual section
   const monthSet = useMemo(() => {
@@ -169,36 +217,135 @@ export default function AdminRevenue() {
 
   const filterLabel = TIME_PERIOD_OPTIONS.find(o => o.value === periodFilter)?.label || 'All Time'
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)' }}>Loading analytics...</div>
+  if (loading) return <div style={{ color: 'var(--apple-text-secondary)', padding: '40px', textAlign: 'center' }}>Loading analytics...</div>
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <h2 style={{ margin: 0 }}>Revenue Analytics</h2>
+    <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+      {/* Premium Header */}
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }} className="apple-header-section">
+        <div className="apple-kicker">Revenue Executive Dashboard</div>
+        <h1 className="apple-title-large">Revenue Analytics</h1>
+        <p className="apple-lead">
+          Monitor financial targets, team contributions, and overall company performance trends.
+        </p>
       </div>
 
-      {/* ===== TOP SUMMARY CARDS (all-time) ===== */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        <div className="card" style={{
-          background: 'linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(59, 130, 246, 0.1))',
-          border: '1px solid rgba(74, 222, 128, 0.3)'
+      {/* ===== SPECIAL TOP STAT & TREND SECTION ===== */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 2.5fr', 
+        gap: '24px', 
+        marginBottom: '32px' 
+      }} className="apple-two-col-grid">
+        
+        {/* Special All Time Revenue Card */}
+        <div className="apple-card" style={{ 
+          background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(0, 113, 227, 0.15) 100%)',
+          border: '1px solid rgba(52, 211, 153, 0.3)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          padding: '32px 28px',
+          borderRadius: '24px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          backdropFilter: 'blur(20px)',
+          minHeight: '260px',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>All Time Revenue</h3>
-          <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#4ade80' }}>
-            ${allTimeTotal.toFixed(2)}
+          {/* Subtle design element */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '-50px', 
+            right: '-50px', 
+            width: '150px', 
+            height: '150px', 
+            borderRadius: '50%', 
+            background: 'radial-gradient(circle, rgba(52,211,153,0.2) 0%, transparent 70%)',
+            pointerEvents: 'none'
+          }} />
+          
+          <span className="apple-badge apple-badge-green" style={{ marginBottom: '16px', fontSize: '0.75rem', padding: '4px 10px' }}>
+            💼 TOTAL SALES
+          </span>
+          <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+            All Time Company Revenue
+          </div>
+          <div style={{ fontSize: 'clamp(2.2rem, 4vw, 2.8rem)', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em', lineHeight: '1.1' }}>
+            ${allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div style={{ marginTop: '16px', color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem' }}>
+            Combined gross performance across all active teams.
+          </div>
+        </div>
+
+        {/* Company Performance Trend Card */}
+        <div className="apple-card" style={{ 
+          padding: '24px 28px', 
+          borderRadius: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          minHeight: '260px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#ffffff' }}>Company Performance Trend</h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                Combined monthly gross revenue over the last 12 months.
+              </p>
+            </div>
+            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600', padding: '3px 8px' }}>
+              LAST 12 MONTHS
+            </span>
+          </div>
+
+          <div style={{ flex: 1, height: '170px', width: '100%', minHeight: '160px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={company12MonthTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="companyRevGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
+                  axisLine={false} tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={v => fmtShort(v).replace('$', '')}
+                  tick={{ fill: 'var(--apple-text-secondary)', fontSize: 9 }}
+                  axisLine={false} tickLine={false} width={42}
+                />
+                <Tooltip content={<ChartTooltip />} />
+                <Area
+                  type="monotone" dataKey="total" name="Total Revenue"
+                  stroke="var(--apple-accent-blue)" strokeWidth={3}
+                  fill="url(#companyRevGrad)"
+                  dot={{ fill: 'var(--apple-accent-blue)', r: 3, strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
       {/* ===== TEAM MEMBERS EXPECTED VS ACTUAL ===== */}
-      <div className="card" style={{ marginBottom: '24px' }}>
-        <h3 style={{ marginBottom: '16px' }}>Team Members Expected vs Actual</h3>
+      <div className="apple-card" style={{ marginBottom: '28px' }}>
+        <h3 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+          Team Members Expected vs Actual
+        </h3>
 
         {/* Team selector + period dropdown in the same row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr', gap: '16px', alignItems: 'end', marginBottom: '18px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'end', marginBottom: '24px' }} className="apple-two-col-grid">
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Team</label>
-            <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="form-control">
+            <label className="apple-form-label">Select Team</label>
+            <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="apple-form-control">
               {teams.map(team => (
                 <option key={team.id} value={team.id}>{team.name}</option>
               ))}
@@ -206,8 +353,8 @@ export default function AdminRevenue() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Period</label>
-            <select value={periodFilter} onChange={e => setPeriodFilter(Number(e.target.value))} className="form-control">
+            <label className="apple-form-label">Select Period</label>
+            <select value={periodFilter} onChange={e => setPeriodFilter(Number(e.target.value))} className="apple-form-control">
               {TIME_PERIOD_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
@@ -216,18 +363,24 @@ export default function AdminRevenue() {
         </div>
 
         {/* Summary mini-cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-          <div className="card" style={{ border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Expected ({filterLabel})</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#60a5fa' }}>${summary.expected.toFixed(2)}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+          <div className="apple-card" style={{ border: '1px solid rgba(0, 113, 227, 0.25)', background: 'rgba(0, 113, 227, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Expected ({filterLabel})
+            </div>
+            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-blue)' }}>${summary.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
-          <div className="card" style={{ border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.08)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Actual ({filterLabel})</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#4ade80' }}>${summary.actual.toFixed(2)}</div>
+          <div className="apple-card" style={{ border: '1px solid rgba(48, 213, 200, 0.25)', background: 'rgba(48, 213, 200, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Actual ({filterLabel})
+            </div>
+            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-green)' }}>${summary.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
-          <div className="card" style={{ border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Achievement</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fbbf24' }}>
+          <div className="apple-card" style={{ border: '1px solid rgba(255, 159, 10, 0.25)', background: 'rgba(255, 159, 10, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Achievement
+            </div>
+            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-orange)' }}>
               {summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}
             </div>
           </div>
@@ -238,40 +391,42 @@ export default function AdminRevenue() {
           const historicalStats = memberStats.filter(m => !m.isActiveInTeam)
 
           if (activeStats.length === 0 && historicalStats.length === 0) {
-            return <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No historical or active non-admin members found for this team in this period.</p>
+            return <p style={{ color: 'var(--apple-text-secondary)', margin: 0, fontStyle: 'italic' }}>No historical or active non-admin members found for this team in this period.</p>
           }
 
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
               {activeStats.length > 0 && (
-                <div style={{ overflowX: 'auto' }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#fff' }}>Active Members</h4>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: '700' }}>🟢 Active Members</h4>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Expected</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Actual</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Gap</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
+                      <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.01)' }}>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Expected</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actual</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Gap</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Achievement</th>
                       </tr>
                     </thead>
                     <tbody>
                       {activeStats.map(member => (
-                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 8px', color: '#fff', fontWeight: '600' }}>
+                        <tr key={member.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
+                          <td style={{ padding: '14px 20px', color: '#fff', fontWeight: '600' }}>
                             {member.first_name} {member.last_name}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: '#60a5fa', fontWeight: '700' }}>
-                            ${member.expected.toFixed(2)}
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-accent-blue)', fontWeight: '700' }}>
+                            ${member.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
-                            ${member.actual.toFixed(2)}
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-accent-green)', fontWeight: '700' }}>
+                            ${member.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: member.gap >= 0 ? '#4ade80' : '#f87171', fontWeight: '700' }}>
-                            {member.gap >= 0 ? '+' : ''}${member.gap.toFixed(2)}
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: member.gap >= 0 ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)', fontWeight: '700' }}>
+                            {member.gap >= 0 ? '+' : ''}${member.gap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-accent-orange)', fontWeight: '700' }}>
                             {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
                           </td>
                         </tr>
@@ -282,37 +437,39 @@ export default function AdminRevenue() {
               )}
 
               {historicalStats.length > 0 && (
-                <div style={{ overflowX: 'auto', opacity: 0.85, padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Historical Members</h4>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden', opacity: 0.85 }}>
+                  <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--apple-text-secondary)', fontWeight: '700' }}>📂 Historical Members</h4>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Expected</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Actual</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Gap</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
+                      <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.01)' }}>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Expected</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actual</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Gap</th>
+                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Achievement</th>
                       </tr>
                     </thead>
                     <tbody>
                       {historicalStats.map(member => (
-                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <tr key={member.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
+                          <td style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {member.first_name} {member.last_name}
-                            <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--apple-text-secondary)' }}>
                               {member.is_deactivated ? 'Former' : 'Transferred'}
                             </span>
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            ${member.expected.toFixed(2)}
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
+                            ${member.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            ${member.actual.toFixed(2)}
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
+                            ${member.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            {member.gap >= 0 ? '+' : ''}${member.gap.toFixed(2)}
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
+                            {member.gap >= 0 ? '+' : ''}${member.gap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
                             {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
                           </td>
                         </tr>
@@ -327,42 +484,37 @@ export default function AdminRevenue() {
       </div>
 
       {/* ===== TEAM AVERAGE REVENUE ===== */}
-      <div className="card" style={{ marginBottom: '40px', padding: '24px', background: 'var(--card-bg)' }}>
+      <div className="apple-card" style={{ marginBottom: '28px', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#f1f5f9' }}>Team Average Revenue</h2>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#ffffff', fontWeight: '700' }}>Team Average Revenue</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
               Average monthly revenue per team. Select a period to compare.
             </p>
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
             {/* Toggle for Current Month */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
               <input 
                 type="checkbox" 
                 checked={includeCurrentMonth}
                 onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#3b82f6', cursor: 'pointer' }}
+                style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
               />
               Include Current Month
             </label>
 
-            <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '3px' }}>
+            <div className="apple-pill-tabs" style={{ padding: '3px' }}>
               {averagePeriodOptions.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => setAveragePeriod(opt.value)}
+                  className={`apple-pill-tab ${averagePeriod === opt.value ? 'active' : ''}`}
                   style={{
                     padding: '6px 14px',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: averagePeriod === opt.value ? '#3b82f6' : 'transparent',
-                    color: averagePeriod === opt.value ? '#fff' : 'var(--text-secondary)',
-                    cursor: 'pointer',
                     fontSize: '0.75rem',
-                    fontWeight: '600',
-                    transition: 'all 0.2s'
+                    fontWeight: '600'
                   }}
                 >
                   {opt.label}
@@ -375,9 +527,9 @@ export default function AdminRevenue() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
           {teamAverages.map((team, idx) => (
              <div key={team.teamId} style={{
-               background: 'rgba(15, 23, 42, 0.4)',
-               border: '1px solid rgba(255,255,255,0.05)',
-               borderRadius: '12px',
+               background: 'rgba(255, 255, 255, 0.02)',
+               border: '1px solid var(--apple-border)',
+               borderRadius: '16px',
                padding: '20px',
                display: 'flex',
                flexDirection: 'column',
@@ -385,7 +537,7 @@ export default function AdminRevenue() {
                overflow: 'hidden'
              }}>
                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: COLORS[idx % COLORS.length] }} />
-               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '8px', paddingLeft: '8px' }}>
+               <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', fontWeight: '600', marginBottom: '8px', paddingLeft: '8px' }}>
                  {team.teamName}
                </div>
                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', paddingLeft: '8px' }}>
@@ -394,40 +546,42 @@ export default function AdminRevenue() {
              </div>
           ))}
           {teamAverages.length === 0 && (
-            <div style={{ color: 'var(--text-secondary)', padding: '10px' }}>No teams available</div>
+            <div style={{ color: 'var(--apple-text-secondary)', padding: '10px' }}>No teams available</div>
           )}
         </div>
       </div>
 
       {/* ===== TEAM LEADERBOARD (all-time) ===== */}
-      <div className="card" style={{ marginBottom: '40px' }}>
-        <h3 style={{ marginBottom: '20px' }}>Team Leaderboard</h3>
+      <div className="apple-card" style={{ marginBottom: '40px' }}>
+        <h3 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+          Team Leaderboard
+        </h3>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {teamRevenues.map((team, index) => {
             const maxRev = highestTeam?.allTimeTotal || 1
             const percentage = Math.max(5, (team.allTimeTotal / maxRev) * 100)
 
             return (
-              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '30px 150px 1fr 100px', alignItems: 'center', gap: '16px' }}>
-                <div style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : index === 2 ? '#b45309' : 'var(--text-secondary)', fontWeight: 'bold' }}>
+              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '40px 180px 1fr 120px', alignItems: 'center', gap: '16px' }} className="apple-leaderboard-row">
+                <div style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#afafaf' : index === 2 ? '#b45309' : 'var(--apple-text-secondary)', fontWeight: '800', fontSize: '1.1rem' }}>
                   #{index + 1}
                 </div>
-                <div style={{ fontWeight: '500' }}>{team.name}</div>
+                <div style={{ fontWeight: '600', color: '#ffffff' }}>{team.name}</div>
 
-                <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--apple-border)' }}>
                   <div style={{
                     width: `${percentage}%`,
                     height: '100%',
-                    background: index === 0 ? 'linear-gradient(90deg, #4ade80, #3b82f6)' : '#3b82f6',
+                    background: index === 0 ? 'linear-gradient(90deg, var(--apple-accent-green), var(--apple-accent-blue))' : 'var(--apple-accent-blue)',
                     borderRadius: '6px',
-                    transition: 'width 0.5s ease'
+                    transition: 'width 0.8s var(--apple-ease)'
                   }}></div>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 'bold', color: '#e2e8f0' }}>
-                    ${team.allTimeTotal.toFixed(2)}
+                  <div style={{ fontWeight: '700', color: '#ffffff' }}>
+                    ${team.allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
