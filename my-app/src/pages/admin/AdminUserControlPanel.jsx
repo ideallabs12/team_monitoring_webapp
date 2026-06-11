@@ -17,6 +17,7 @@ export default function AdminUserControlPanel() {
   const [successMsg, setSuccessMsg] = useState('')
   
   const [newTeamId, setNewTeamId] = useState('')
+  const [secondaryTeamIds, setSecondaryTeamIds] = useState([])
 
   useEffect(() => {
     async function loadData() {
@@ -35,6 +36,7 @@ export default function AdminUserControlPanel() {
         setRevenues(revRes.data || [])
         setDisReports(disRes.data || [])
         setNewTeamId(profileRes.data.team_id || '')
+        setSecondaryTeamIds(profileRes.data.secondary_team_ids || [])
       } catch (err) {
         console.error('Error loading user data:', err)
         setErrorMsg('Failed to load user profile.')
@@ -128,8 +130,8 @@ export default function AdminUserControlPanel() {
     }
   }
 
-  // Update User's Team Assignment
-  const handleUpdateTeam = async (e) => {
+  // Update User's Team Assignment (Primary & Secondary)
+  const handleUpdateTeams = async (e) => {
     e.preventDefault()
     setSaving(true)
     setErrorMsg('')
@@ -138,21 +140,33 @@ export default function AdminUserControlPanel() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ team_id: newTeamId || null })
+        .update({ 
+          team_id: newTeamId || null,
+          secondary_team_ids: secondaryTeamIds
+        })
         .eq('id', user.id)
       if (error) throw error
 
-      setSuccessMsg('Team assignment updated successfully!')
-      setUser({ ...user, team_id: newTeamId || null })
+      setSuccessMsg('Team assignments updated successfully!')
+      setUser({ ...user, team_id: newTeamId || null, secondary_team_ids: secondaryTeamIds })
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to update team assignment.')
+      setErrorMsg(err.message || 'Failed to update team assignments.')
     } finally {
       setSaving(false)
     }
   }
 
-  // Remove User from Team
-  const handleRemoveFromTeam = async () => {
+  // Handle toggling secondary teams in the checklist
+  const handleToggleSecondaryTeam = (teamId) => {
+    if (secondaryTeamIds.includes(teamId)) {
+      setSecondaryTeamIds(secondaryTeamIds.filter(id => id !== teamId))
+    } else {
+      setSecondaryTeamIds([...secondaryTeamIds, teamId])
+    }
+  }
+
+  // Remove User from Primary Team
+  const handleRemoveFromPrimaryTeam = async () => {
     setSaving(true)
     setErrorMsg('')
     setSuccessMsg('')
@@ -163,11 +177,11 @@ export default function AdminUserControlPanel() {
         .eq('id', user.id)
       if (error) throw error
 
-      setSuccessMsg('User removed from team successfully!')
+      setSuccessMsg('User removed from primary team successfully!')
       setNewTeamId('')
       setUser({ ...user, team_id: null })
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to remove user from team.')
+      setErrorMsg(err.message || 'Failed to remove user from primary team.')
     } finally {
       setSaving(false)
     }
@@ -218,6 +232,9 @@ export default function AdminUserControlPanel() {
 
   const isDeactivated = !!user.is_deactivated
   const currentTeam = user.team_id ? teams.find(t => t.id === user.team_id) : null
+  const currentSecondaryTeams = user.secondary_team_ids 
+    ? teams.filter(t => user.secondary_team_ids.includes(t.id)) 
+    : []
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -362,40 +379,85 @@ export default function AdminUserControlPanel() {
             <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserIcon size={18} style={{ color: '#f59e0b' }} /> Team Assignment
             </h3>
-            {currentTeam ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{currentTeam.name}</span>
-                <button
-                  disabled={saving}
-                  onClick={handleRemoveFromTeam}
-                  style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Trash2 size={14} /> Remove
-                </button>
-              </div>
-            ) : (
-              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No team assigned.</p>
-            )}
+            
+            {/* Primary Team Info */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>Primary Team</label>
+              {currentTeam ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,160,0,0.05)', border: '1px solid rgba(255,160,0,0.2)', borderRadius: '12px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '600' }}>{currentTeam.name}</span>
+                  <button
+                    disabled={saving}
+                    onClick={handleRemoveFromPrimaryTeam}
+                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 12px 0', fontSize: '0.9rem' }}>No primary team assigned.</p>
+              )}
+            </div>
 
-            <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <select
-                value={newTeamId}
-                onChange={(e) => setNewTeamId(e.target.value)}
-                required
-                className="apple-input"
-              >
-                <option value="" disabled>-- Select a Team --</option>
-                {teams.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+            {/* Secondary Teams Info */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>Secondary Teams</label>
+              {currentSecondaryTeams.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {currentSecondaryTeams.map(t => (
+                    <span key={t.id} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', borderRadius: '8px', fontSize: '0.85rem', color: '#e2e8f0' }}>
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.85rem' }}>No secondary teams assigned.</p>
+              )}
+            </div>
+
+            <form onSubmit={handleUpdateTeams} style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '500' }}>Set Primary Team</label>
+                <select
+                  value={newTeamId}
+                  onChange={(e) => setNewTeamId(e.target.value)}
+                  className="apple-input"
+                  style={{ width: '100%', marginBottom: '12px' }}
+                >
+                  <option value="">-- None --</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Select Secondary Teams (Optional)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '140px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  {teams.filter(t => t.id !== newTeamId).map(t => (
+                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#e2e8f0', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={secondaryTeamIds.includes(t.id)}
+                        onChange={() => handleToggleSecondaryTeam(t.id)}
+                        style={{ accentColor: 'var(--apple-accent-blue)' }}
+                      />
+                      {t.name}
+                    </label>
+                  ))}
+                  {teams.filter(t => t.id !== newTeamId).length === 0 && (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>No other teams available.</span>
+                  )}
+                </div>
+              </div>
+
               <button
                 type="submit"
-                disabled={saving || !newTeamId}
+                disabled={saving}
                 className="apple-btn apple-btn-primary"
-                style={{ width: '100%' }}
+                style={{ width: '100%', marginTop: '8px' }}
               >
-                {currentTeam ? 'Change Team Assignment' : 'Assign to Team'}
+                Save Team Assignments
               </button>
             </form>
           </div>

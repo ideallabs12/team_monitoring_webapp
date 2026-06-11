@@ -122,11 +122,17 @@ export default function AdminTeams() {
   // Build list of months available for picker (last 24 months)
   const monthOptions = useMemo(() => getLastNMonths(24), [])
 
-  // Find the team this user belongs to
+  // Find the primary team this user belongs to
   const memberTeam = useMemo(() => {
     if (!viewingProfileUser || !viewingProfileUser.team_id) return null
     const team = teams.find(t => t.id === viewingProfileUser.team_id)
     return team ? { name: team.name, id: team.id } : null
+  }, [viewingProfileUser, teams])
+
+  // Find secondary teams this user belongs to
+  const memberSecondaryTeams = useMemo(() => {
+    if (!viewingProfileUser || !viewingProfileUser.secondary_team_ids) return []
+    return teams.filter(t => viewingProfileUser.secondary_team_ids.includes(t.id))
   }, [viewingProfileUser, teams])
 
   // Current Month String
@@ -219,6 +225,19 @@ export default function AdminTeams() {
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', fontWeight: '700' }}>
                   {viewingProfileUser.first_name} {viewingProfileUser.last_name}
                 </h3>
+                <div style={{ paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Primary Team</span>
+                <p style={{ margin: '4px 0 0 0', color: '#fff', fontWeight: '500' }}>
+                  {memberTeam ? memberTeam.name : <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)' }}>Unassigned</span>}
+                </p>
+              </div>
+              
+              <div style={{ paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Secondary Teams</span>
+                <p style={{ margin: '4px 0 0 0', color: '#fff', fontWeight: '500' }}>
+                  {memberSecondaryTeams.length > 0 ? memberSecondaryTeams.map(t => t.name).join(', ') : <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)' }}>None</span>}
+                </p>
+              </div>
                 <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
                   {viewingProfileUser.platform_role || 'Member'}
                 </span>
@@ -321,7 +340,7 @@ export default function AdminTeams() {
   // ==========================================
   if (activeTeam) {
     const activeProfiles = profiles
-      .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin' && !p.is_deactivated)
+      .filter(p => (p.team_id === activeTeam.id || (p.secondary_team_ids || []).includes(activeTeam.id)) && p.platform_role !== 'admin' && !p.is_deactivated)
       .sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
 
     const activeProfileIds = new Set(activeProfiles.map(p => p.id))
@@ -789,7 +808,7 @@ export default function AdminTeams() {
           teams.map(team => {
             // Count total members (excluding platform admins and deactivated)
             const teamMemberCount = profiles.filter(p => 
-              p.team_id === team.id && p.platform_role !== 'admin' && !p.is_deactivated
+              (p.team_id === team.id || (p.secondary_team_ids || []).includes(team.id)) && p.platform_role !== 'admin' && !p.is_deactivated
             ).length
 
             // Sum this month's revenue

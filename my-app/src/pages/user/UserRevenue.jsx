@@ -63,7 +63,7 @@ export default function UserRevenue({ user, isAdminView }) {
   async function loadData() {
     try {
       const [profileRes, allTeamsRes, revDataRes] = await Promise.all([
-        supabase.from('profiles').select('team_id, has_revenue_logging').eq('id', user.id).single(),
+        supabase.from('profiles').select('team_id, secondary_team_ids, has_revenue_logging').eq('id', user.id).single(),
         supabase.from('teams').select('*'),
         supabase.from('monthly_revenues').select('*, teams(name)').eq('user_id', user.id).order('revenue_month', { ascending: false })
       ])
@@ -82,6 +82,14 @@ export default function UserRevenue({ user, isAdminView }) {
         if (userTeam) {
           assignedTeams.push(userTeam)
         }
+      }
+      if (profileRes.data?.secondary_team_ids) {
+        profileRes.data.secondary_team_ids.forEach(secId => {
+          const userTeam = allTeamsRes.data?.find(t => t.id === secId)
+          if (userTeam && !assignedTeams.find(t => t.id === secId)) {
+            assignedTeams.push(userTeam)
+          }
+        })
       }
 
       const revData = revDataRes.data || []
@@ -400,12 +408,28 @@ export default function UserRevenue({ user, isAdminView }) {
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
                   <div style={{ position: 'relative' }}>
                     <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
-                    <div
-                      className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
-                    >
-                      {teams[0]?.name || 'No Team'}
-                    </div>
+                    {teams.length > 1 ? (
+                      <>
+                        <select
+                          value={selectedTeam}
+                          onChange={e => setSelectedTeam(e.target.value)}
+                          className="form-control"
+                          style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                        >
+                          {teams.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                      </>
+                    ) : (
+                      <div
+                        className="form-control"
+                        style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
+                      >
+                        {teams[0]?.name || 'No Team'}
+                      </div>
+                    )}
                   </div>
                 </div>
 

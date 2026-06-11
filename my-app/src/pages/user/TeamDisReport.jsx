@@ -77,7 +77,7 @@ export default function TeamDisReport({ user }) {
       const monthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
 
       const [profilesRes, revenuesRes, reportsRes, missingReportsRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('team_id', profile.team_id),
+        supabase.from('profiles').select('*'), // Fetch all, filter below
         supabase.from('monthly_revenues').select('*').eq('team_id', profile.team_id).eq('revenue_month', monthStr),
         supabase.from('dis_reports').select(`
           *,
@@ -87,11 +87,13 @@ export default function TeamDisReport({ user }) {
             email,
             team_id
           )
-        `).eq('report_date', selectedDate),
-        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate)
+        `).eq('report_date', selectedDate).eq('team_id', profile.team_id), // Filter reports by team
+        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate).eq('team_id', profile.team_id)
       ])
 
-      const profilesData = profilesRes.data || []
+      const profilesData = (profilesRes.data || []).filter(p => 
+        p.team_id === profile.team_id || (p.secondary_team_ids || []).includes(profile.team_id)
+      )
       const revenuesData = revenuesRes.data || []
       const allReportsData = reportsRes.data || []
       const allMissingData = missingReportsRes.data || []
