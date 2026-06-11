@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { normalizeMonth, formatRevenueMonth, MONTH_NAMES } from '../../utils/revenueUtils'
-import { Search, TrendingUp, Filter, ChevronDown, X } from 'lucide-react'
+import { Search, TrendingUp, Filter, ChevronDown, X, Edit2, Trash2 } from 'lucide-react'
 
 const SOURCE_OPTIONS = ['All', 'Instagram', 'Facebook', 'TikTok', 'Twitter', 'LinkedIn', 'Email Marketing', 'Organic Search', 'Referral', 'Website', 'Other', 'Unknown']
 
@@ -17,6 +17,13 @@ export default function RevenueHistory({ user }) {
   const [filterSource, setFilterSource] = useState('All')
   const [filterWeek, setFilterWeek] = useState('All')
   const [sortBy, setSortBy] = useState('date_desc') // date_desc | date_asc | amount_desc | amount_asc
+
+  // Edit/Delete state
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [editAmount, setEditAmount] = useState('')
+  const [editSource, setEditSource] = useState('Instagram')
+  const [editClient, setEditClient] = useState('')
+  const [editWeek, setEditWeek] = useState(1)
 
   useEffect(() => {
     async function fetchAll() {
@@ -110,6 +117,56 @@ export default function RevenueHistory({ user }) {
     setFilterSource('All')
     setFilterWeek('All')
     setSearchQuery('')
+  }
+
+  async function handleDelete(record) {
+    if (!window.confirm('Are you sure you want to delete this revenue entry?')) return
+    try {
+      const { error } = await supabase.from('monthly_revenues').delete().eq('id', record.id)
+      if (error) throw error
+      setRevenues(prev => prev.filter(r => r.id !== record.id))
+    } catch (err) {
+      alert('Failed to delete: ' + err.message)
+    }
+  }
+
+  function startEdit(record) {
+    setEditingRecord(record)
+    setEditAmount(String(record.amount || ''))
+    setEditSource(record.source || 'Instagram')
+    setEditClient(record.client_name === 'NONAME' ? '' : (record.client_name || ''))
+    setEditWeek(record.week_number || 1)
+  }
+
+  async function handleEditSave() {
+    if (editAmount === '' || isNaN(editAmount) || Number(editAmount) < 0) {
+      alert('Please enter a valid amount (0 or greater)')
+      return
+    }
+    try {
+      const { error } = await supabase
+        .from('monthly_revenues')
+        .update({
+          amount: parseFloat(editAmount),
+          source: editSource,
+          client_name: editClient || 'NONAME',
+          week_number: Number(editWeek)
+        })
+        .eq('id', editingRecord.id)
+      if (error) throw error
+      
+      setRevenues(prev => prev.map(r => r.id === editingRecord.id ? {
+        ...r,
+        amount: parseFloat(editAmount),
+        source: editSource,
+        client_name: editClient || 'NONAME',
+        week_number: Number(editWeek)
+      } : r))
+      
+      setEditingRecord(null)
+    } catch (err) {
+      alert('Failed to update: ' + err.message)
+    }
   }
 
   if (loading) {
@@ -311,8 +368,8 @@ export default function RevenueHistory({ user }) {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--apple-border)' }}>
-                    {['Month', 'Team', 'Week', 'Client', 'Source', 'Amount'].map(h => (
-                      <th key={h} style={{ padding: '12px 20px', textAlign: h === 'Amount' ? 'right' : 'left', fontSize: '0.72rem', fontWeight: '700', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
+                    {['Month', 'Team', 'Week', 'Client', 'Source', 'Amount', 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '12px 20px', textAlign: h === 'Amount' ? 'right' : h === 'Actions' ? 'center' : 'left', fontSize: '0.72rem', fontWeight: '700', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -360,6 +417,14 @@ export default function RevenueHistory({ user }) {
                         <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: '700', color: 'var(--apple-accent-green)', fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
                           ${Number(record.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                          <button onClick={() => startEdit(record)} style={{ background: 'none', border: 'none', color: 'var(--apple-accent-blue)', cursor: 'pointer', padding: '4px', marginRight: '8px', opacity: 0.8 }} title="Edit">
+                            <Edit2 size={16} />
+                          </button>
+                          <button onClick={() => handleDelete(record)} style={{ background: 'none', border: 'none', color: 'var(--apple-accent-red)', cursor: 'pointer', padding: '4px', opacity: 0.8 }} title="Delete">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
                       </tr>
                     )
                   })}
@@ -372,6 +437,7 @@ export default function RevenueHistory({ user }) {
                     <td style={{ padding: '14px 20px', textAlign: 'right', fontWeight: '800', color: 'var(--apple-accent-green)', fontSize: '1.05rem' }}>
                       ${filteredTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
+                    <td></td>
                   </tr>
                 </tfoot>
               </table>
@@ -399,8 +465,16 @@ export default function RevenueHistory({ user }) {
                           {record.source ? (record.source === 'UNKNOWN' ? 'Unknown' : record.source) : '—'}
                         </div>
                       </div>
-                      <div style={{ fontWeight: '800', color: 'var(--apple-accent-green)', fontSize: '1.05rem', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: '800', color: 'var(--apple-accent-green)', fontSize: '1.05rem', whiteSpace: 'nowrap', textAlign: 'right' }}>
                         ${Number(record.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button onClick={() => startEdit(record)} style={{ background: 'rgba(0,113,227,0.1)', border: '1px solid rgba(0,113,227,0.2)', borderRadius: '6px', color: 'var(--apple-accent-blue)', cursor: 'pointer', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                            <Edit2 size={12} /> Edit
+                          </button>
+                          <button onClick={() => handleDelete(record)} style={{ background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: '6px', color: 'var(--apple-accent-red)', cursor: 'pointer', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -417,6 +491,52 @@ export default function RevenueHistory({ user }) {
           </>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingRecord && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '20px'
+        }}>
+          <div className="apple-card" style={{ width: '100%', maxWidth: '400px', padding: '24px' }}>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', color: '#fff' }}>Edit Revenue Record</h3>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label className="apple-form-label">Amount (USD)</label>
+              <input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="apple-input" style={{ width: '100%' }} />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label className="apple-form-label">Client Name</label>
+              <input type="text" value={editClient} onChange={e => setEditClient(e.target.value)} placeholder="Leave blank for No Client" className="apple-input" style={{ width: '100%' }} />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label className="apple-form-label">Source</label>
+              <select value={editSource} onChange={e => setEditSource(e.target.value)} className="apple-input" style={{ width: '100%' }}>
+                {SOURCE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label className="apple-form-label">Week</label>
+              <select value={editWeek} onChange={e => setEditWeek(e.target.value)} className="apple-input" style={{ width: '100%' }}>
+                <option value={1}>Week 1</option>
+                <option value={2}>Week 2</option>
+                <option value={3}>Week 3</option>
+                <option value={4}>Week 4</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setEditingRecord(null)} className="apple-btn apple-btn-secondary" style={{ padding: '8px 16px', borderRadius: '8px' }}>Cancel</button>
+              <button onClick={handleEditSave} className="apple-btn apple-btn-primary" style={{ padding: '8px 16px', borderRadius: '8px' }}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

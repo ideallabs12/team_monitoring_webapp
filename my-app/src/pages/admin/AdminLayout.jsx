@@ -13,7 +13,9 @@ import {
   LogOut,
   BarChart2,
   Menu,
-  X
+  X,
+  Trophy,
+  Crown
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -23,6 +25,8 @@ const NAV_ITEMS = [
   { path: '/admin/dis',       label: 'DIS Reports', icon: FileText },
   { path: '/admin/revenue',   label: 'Revenue',     icon: DollarSign },
   { path: '/admin/analytics', label: 'Analytics',   icon: TrendingUp },
+  { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },
+  { path: '/admin/milestones', label: 'Milestones',  icon: Crown },
   { path: '/admin/auditlogs', label: 'Audit Logs',  icon: ClipboardList },
   { path: '/admin/settings',  label: 'Settings',    icon: Settings },
 ]

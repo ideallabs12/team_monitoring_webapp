@@ -1,30 +1,28 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import {
-  Users,
-  FileText,
-  AlertTriangle,
-  CheckCircle,
-  Calendar,
-  TrendingUp,
-  DollarSign,
-  Zap,
-  RefreshCw,
-  Search,
-  UsersRound,
-  Activity,
-  CheckCircle2,
-  AlertCircle
+import { 
+  Users, 
+  FileText, 
+  AlertTriangle, 
+  CheckCircle, 
+  Calendar, 
+  TrendingUp, 
+  DollarSign, 
+  Zap, 
+  RefreshCw, 
+  Search, 
+  UsersRound, 
+  Activity, 
+  CheckCircle2, 
+  AlertCircle 
 } from 'lucide-react'
 
 export default function TeamDisReport({ user }) {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [team, setTeam] = useState(null)
-  const [ledTeams, setLedTeams] = useState([])
-  const [selectedTeamId, setSelectedTeamId] = useState(null)
   const [accessDenied, setAccessDenied] = useState(false)
-
+  
   const [profiles, setProfiles] = useState([])
   const [revenues, setRevenues] = useState([])
   const [reports, setReports] = useState([])
@@ -44,38 +42,25 @@ export default function TeamDisReport({ user }) {
           .select('*')
           .eq('id', user.id)
           .single()
-
+        
         if (error) throw error
-
-        const isTeamLead = prof?.platform_role === 'teamlead' || Object.values(prof?.secondary_team_roles || {}).includes('teamlead')
-
-        if (!isTeamLead) {
+        
+        if (prof?.platform_role !== 'teamlead') {
           setAccessDenied(true)
           setLoading(false)
           return
         }
-
+        
         setProfile(prof)
-
-        const ledTeamIds = []
-        if (prof.platform_role === 'teamlead' && prof.team_id) ledTeamIds.push(prof.team_id)
-        if (prof.secondary_team_roles) {
-          Object.entries(prof.secondary_team_roles).forEach(([tId, role]) => {
-            if (role === 'teamlead') ledTeamIds.push(tId)
-          })
-        }
-
-        if (ledTeamIds.length > 0) {
-          const { data: tms } = await supabase
+        
+        if (prof.team_id) {
+          const { data: tm } = await supabase
             .from('teams')
             .select('*')
-            .in('id', ledTeamIds)
-
-          if (tms && tms.length > 0) {
-            setLedTeams(tms)
-            setTeam(tms[0])
-            setSelectedTeamId(tms[0].id)
-          }
+            .eq('id', prof.team_id)
+            .single()
+          
+          if (tm) setTeam(tm)
         }
       } catch (err) {
         console.error("Error loading team lead profile:", err)
@@ -86,14 +71,14 @@ export default function TeamDisReport({ user }) {
   }, [user])
 
   const loadData = async () => {
-    if (!selectedTeamId) return
+    if (!profile?.team_id) return
     setLoading(true)
     try {
       const monthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
 
       const [profilesRes, revenuesRes, reportsRes, missingReportsRes] = await Promise.all([
-        supabase.from('profiles').select('*'), // Fetch all, filter below
-        supabase.from('monthly_revenues').select('*').eq('team_id', selectedTeamId).eq('revenue_month', monthStr),
+        supabase.from('profiles').select('*').eq('team_id', profile.team_id),
+        supabase.from('monthly_revenues').select('*').eq('team_id', profile.team_id).eq('revenue_month', monthStr),
         supabase.from('dis_reports').select(`
           *,
           profiles (
@@ -102,13 +87,11 @@ export default function TeamDisReport({ user }) {
             email,
             team_id
           )
-        `).eq('report_date', selectedDate).eq('team_id', selectedTeamId), // Filter reports by team
-        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate).eq('team_id', selectedTeamId)
+        `).eq('report_date', selectedDate),
+        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate)
       ])
 
-      const profilesData = (profilesRes.data || []).filter(p =>
-        p.team_id === selectedTeamId || Object.keys(p.secondary_team_roles || {}).includes(selectedTeamId)
-      )
+      const profilesData = profilesRes.data || []
       const revenuesData = revenuesRes.data || []
       const allReportsData = reportsRes.data || []
       const allMissingData = missingReportsRes.data || []
@@ -136,10 +119,10 @@ export default function TeamDisReport({ user }) {
   }
 
   useEffect(() => {
-    if (selectedTeamId) {
+    if (profile?.team_id) {
       loadData()
     }
-  }, [selectedDate, selectedTeamId])
+  }, [selectedDate, profile])
 
   // Process data for the team
   const teamData = useMemo(() => {
@@ -239,29 +222,11 @@ export default function TeamDisReport({ user }) {
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-
+      
       {/* ===== HEADER SECTION ===== */}
       <div className="dis-header-section">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#fff' }}>Team DIS Report</h2>
-
-            {ledTeams.length > 1 && (
-              <select
-                value={selectedTeamId}
-                onChange={(e) => {
-                  setSelectedTeamId(e.target.value)
-                  setTeam(ledTeams.find(t => t.id === e.target.value))
-                }}
-                className="apple-form-control"
-                style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                {ledTeams.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
+          <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#fff' }}>Team DIS Report</h2>
           <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
             Track, search, and audit Daily Information Sheets submissions for <strong>{team?.name || 'Your Team'}</strong>.
           </p>
@@ -279,7 +244,7 @@ export default function TeamDisReport({ user }) {
 
       {/* ===== METRICS SUMMARY ROW ===== */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-
+        
         {/* MTD Revenue */}
         <div className="card dis-card-glass" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }} />
@@ -328,7 +293,7 @@ export default function TeamDisReport({ user }) {
       <div className="card dis-card-glass" style={{ marginBottom: '28px', padding: '20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', flex: 1 }}>
-
+            
             {/* Date Selection */}
             <div style={{ minWidth: '200px' }}>
               <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -368,14 +333,14 @@ export default function TeamDisReport({ user }) {
 
           <div style={{ alignSelf: 'flex-end', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div style={{ background: 'rgba(48, 213, 200, 0.06)', border: '1px solid rgba(48, 213, 200, 0.2)', borderRadius: '10px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{teamData.submittedCount}</strong> Submitted</span>
-              </div>
-              <div style={{ background: 'rgba(255, 69, 58, 0.06)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '10px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
-                <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{teamData.missing.length}</strong> Missing</span>
-              </div>
+                <div style={{ background: 'rgba(48, 213, 200, 0.06)', border: '1px solid rgba(48, 213, 200, 0.2)', borderRadius: '10px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                    <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{teamData.submittedCount}</strong> Submitted</span>
+                </div>
+                <div style={{ background: 'rgba(255, 69, 58, 0.06)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '10px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
+                    <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{teamData.missing.length}</strong> Missing</span>
+                </div>
             </div>
           </div>
         </div>
@@ -461,8 +426,8 @@ export default function TeamDisReport({ user }) {
         {filteredMissing.length > 0 ? (
           <div className="dis-grid-cols">
             {filteredMissing.map((item, idx) => (
-              <div
-                key={idx}
+              <div 
+                key={idx} 
                 className="dis-report-missed-card"
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>

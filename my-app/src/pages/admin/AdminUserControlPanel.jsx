@@ -17,7 +17,6 @@ export default function AdminUserControlPanel() {
   const [successMsg, setSuccessMsg] = useState('')
   
   const [newTeamId, setNewTeamId] = useState('')
-  const [newSecondaryTeamId, setNewSecondaryTeamId] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -169,64 +168,6 @@ export default function AdminUserControlPanel() {
       setUser({ ...user, team_id: null })
     } catch (err) {
       setErrorMsg(err.message || 'Failed to remove user from team.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Add Secondary Team
-  const handleAddSecondaryTeam = async (e) => {
-    e.preventDefault()
-    if (!newSecondaryTeamId) return
-
-    setSaving(true)
-    setErrorMsg('')
-    setSuccessMsg('')
-    
-    try {
-      const currentSecondary = user.secondary_team_roles || {}
-      if (currentSecondary[newSecondaryTeamId] || user.team_id === newSecondaryTeamId) {
-        throw new Error('User is already assigned to this team.')
-      }
-
-      const updatedSecondary = { ...currentSecondary, [newSecondaryTeamId]: 'member' }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ secondary_team_roles: updatedSecondary })
-        .eq('id', user.id)
-      if (error) throw error
-
-      setSuccessMsg('Secondary team added successfully!')
-      setNewSecondaryTeamId('')
-      setUser({ ...user, secondary_team_roles: updatedSecondary })
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to add secondary team.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Remove Secondary Team
-  const handleRemoveSecondaryTeam = async (teamIdToRemove) => {
-    setSaving(true)
-    setErrorMsg('')
-    setSuccessMsg('')
-    
-    try {
-      const currentSecondary = { ...(user.secondary_team_roles || {}) }
-      delete currentSecondary[teamIdToRemove]
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ secondary_team_roles: currentSecondary })
-        .eq('id', user.id)
-      if (error) throw error
-
-      setSuccessMsg('Secondary team removed successfully!')
-      setUser({ ...user, secondary_team_roles: currentSecondary })
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to remove secondary team.')
     } finally {
       setSaving(false)
     }
@@ -454,60 +395,7 @@ export default function AdminUserControlPanel() {
                 className="apple-btn apple-btn-primary"
                 style={{ width: '100%' }}
               >
-                {currentTeam ? 'Change Primary Team' : 'Assign to Primary Team'}
-              </button>
-            </form>
-          </div>
-
-          <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%', margin: '24px 0' }} />
-
-          <div>
-            <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserIcon size={18} style={{ color: '#0ea5e9' }} /> Secondary Teams
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-              {Object.keys(user.secondary_team_roles || {}).length > 0 ? (
-                Object.keys(user.secondary_team_roles).map(secTeamId => {
-                  const t = teams.find(team => team.id === secTeamId)
-                  if (!t) return null
-                  return (
-                    <div key={secTeamId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
-                      <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{t.name}</span>
-                      <button
-                        disabled={saving}
-                        onClick={() => handleRemoveSecondaryTeam(secTeamId)}
-                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <Trash2 size={14} /> Remove
-                      </button>
-                    </div>
-                  )
-                })
-              ) : (
-                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0', fontSize: '0.9rem' }}>No secondary teams assigned.</p>
-              )}
-            </div>
-
-            <form onSubmit={handleAddSecondaryTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <select
-                value={newSecondaryTeamId}
-                onChange={(e) => setNewSecondaryTeamId(e.target.value)}
-                required
-                className="apple-input"
-              >
-                <option value="" disabled>-- Select a Secondary Team --</option>
-                {teams.filter(t => t.id !== user.team_id && !Object.keys(user.secondary_team_roles || {}).includes(t.id)).map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={saving || !newSecondaryTeamId}
-                className="apple-btn"
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', borderColor: 'var(--apple-border)' }}
-              >
-                Add Secondary Team
+                {currentTeam ? 'Change Team Assignment' : 'Assign to Team'}
               </button>
             </form>
           </div>

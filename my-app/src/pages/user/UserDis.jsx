@@ -13,7 +13,6 @@ export default function UserDis() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [profile, setProfile] = useState(globalDisCache.profile)
   const [userTeams, setUserTeams] = useState(globalDisCache.userTeams || [])
-  const [selectedTeamId, setSelectedTeamId] = useState('')
 
 
   // Form states
@@ -22,7 +21,6 @@ export default function UserDis() {
   const [expectedRevenue, setExpectedRevenue] = useState('')
   const [mtdRevenue, setMtdRevenue] = useState(0)
   const [loadingMTD, setLoadingMTD] = useState(false)
-  const [existingReportId, setExistingReportId] = useState(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -46,13 +44,13 @@ export default function UserDis() {
   // Helper: Month-to-date revenue calculator (total across all teams)
   const fetchMonthToDateRevenue = async (userId, monthStr) => {
     if (!userId || !monthStr) return 0
-
+    
     const { data, error } = await supabase
       .from('monthly_revenues')
       .select('amount')
       .eq('user_id', userId)
       .eq('revenue_month', monthStr)
-
+      
     if (error) {
       console.error("Error fetching MTD revenue:", error)
       throw error
@@ -68,7 +66,7 @@ export default function UserDis() {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setCurrentUser(user)
-
+          
           // Use cached profile if we have it to avoid flash
           if (globalDisCache.userId === user.id && globalDisCache.profile) {
             setProfile(globalDisCache.profile)
@@ -111,38 +109,25 @@ export default function UserDis() {
     async function fetchTeams() {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('team_id, secondary_team_roles, platform_role')
+        .select('team_id, platform_role')
         .eq('id', currentUser.id)
         .single()
-
-      const teamIdsToFetch = []
-      if (profileData?.team_id) teamIdsToFetch.push(profileData.team_id)
-      if (profileData?.secondary_team_roles) {
-        teamIdsToFetch.push(...Object.keys(profileData.secondary_team_roles))
-      }
-
-      if (teamIdsToFetch.length > 0) {
-        const { data: teamsData } = await supabase
+      
+      if (profileData?.team_id) {
+        const { data: teamData } = await supabase
           .from('teams')
           .select('*')
-          .in('id', teamIdsToFetch)
-
-        if (teamsData && teamsData.length > 0) {
-          const loadedTeams = teamsData.map(t => ({
-            id: t.id,
-            name: t.name,
-            role: t.id === profileData.team_id
-              ? (profileData.platform_role === 'teamlead' ? 'lead' : 'member')
-              : (profileData.secondary_team_roles?.[t.id] === 'teamlead' ? 'lead' : 'member')
-          }))
-          // Sort primary team first
-          loadedTeams.sort((a, b) => a.id === profileData.team_id ? -1 : 1)
-
+          .eq('id', profileData.team_id)
+          .single()
+        
+        if (teamData) {
+          const loadedTeams = [{
+            id: teamData.id,
+            name: teamData.name,
+            role: profileData.platform_role === 'teamlead' ? 'lead' : 'member'
+          }]
           setUserTeams(loadedTeams)
           globalDisCache.userTeams = loadedTeams
-          if (!selectedTeamId) {
-            setSelectedTeamId(loadedTeams[0].id)
-          }
         }
       }
     }
@@ -151,34 +136,31 @@ export default function UserDis() {
 
 
 
-  // Load existing report for form on date & team change
+  // Load existing report for form on date change
   useEffect(() => {
-    if (!currentUser || !reportDate || !selectedTeamId) return
+    if (!currentUser || !reportDate) return
     async function loadExistingReport() {
       const { data, error } = await supabase
         .from('dis_reports')
         .select('*')
         .eq('user_id', currentUser.id)
-        .eq('team_id', selectedTeamId)
         .eq('report_date', reportDate)
         .maybeSingle()
-
+      
       if (data) {
         setPositiveLeads(String(data.positive_leads))
         setExpectedRevenue(String(data.expected_revenue))
-        setExistingReportId(data.id)
         setIsEditMode(true)
         setMessage({ type: '', text: '' })
       } else {
         setPositiveLeads('')
         setExpectedRevenue('')
-        setExistingReportId(null)
         setIsEditMode(false)
         setMessage({ type: '', text: '' })
       }
     }
     loadExistingReport()
-  }, [currentUser, reportDate, selectedTeamId])
+  }, [currentUser, reportDate])
 
   // Load MTD revenue on date change
   useEffect(() => {
@@ -215,7 +197,7 @@ export default function UserDis() {
       `)
       .eq('user_id', currentUser.id)
       .order('report_date', { ascending: false })
-
+      
     if (data) setHistory(data)
     setLoadingHistory(false)
   }
@@ -232,7 +214,7 @@ export default function UserDis() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!currentUser) return
-
+    
     setSubmitting(true)
     setMessage({ type: '', text: '' })
 
@@ -242,39 +224,26 @@ export default function UserDis() {
 
       const reportDataObj = {
         user_id: currentUser.id,
-        team_id: selectedTeamId,
+        team_id: userTeams.length > 0 ? userTeams[0].id : null,
         report_date: reportDate,
         positive_leads: parseInt(positiveLeads) || 0,
         revenue_generated: latestMtd, // Auto-filled from monthly_revenues
         expected_revenue: parseFloat(expectedRevenue) || 0
       }
+      
+      const { error } = await supabase
+        .from('dis_reports')
+        .upsert(reportDataObj, { onConflict: 'user_id,report_date' })
+        
+      if (error) throw error
 
-      if (isEditMode && existingReportId) {
-        const { error } = await supabase
-          .from('dis_reports')
-          .update(reportDataObj)
-          .eq('id', existingReportId)
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('dis_reports')
-          .insert([reportDataObj])
-        if (error) throw error
-      }
-
-      setMessage({
-        type: 'success',
-        text: isEditMode ? "DIS report updated successfully!" : "DIS report submitted successfully!"
+      setMessage({ 
+        type: 'success', 
+        text: isEditMode ? "DIS report updated successfully!" : "DIS report submitted successfully!" 
       })
-
-      // Load history immediately to update existing IDs if needed
-      if (!isEditMode) {
-        const { data } = await supabase.from('dis_reports').select('id').eq('user_id', currentUser.id).eq('team_id', selectedTeamId).eq('report_date', reportDate).maybeSingle()
-        if (data) {
-          setExistingReportId(data.id)
-          setIsEditMode(true)
-        }
-      }
+      
+      // Force trigger reload of existing report state
+      setIsEditMode(true)
     } catch (err) {
       setMessage({ type: 'error', text: err.message || "Failed to submit report." })
     } finally {
@@ -380,43 +349,16 @@ export default function UserDis() {
             </div>
           )}
 
-          {userTeams.length > 1 && (
-            <div style={{ marginBottom: '24px', display: 'flex', gap: '10px' }}>
-              {userTeams.map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setSelectedTeamId(t.id)}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '10px',
-                    border: '1px solid',
-                    borderColor: selectedTeamId === t.id ? 'var(--apple-accent-blue)' : 'var(--apple-border)',
-                    background: selectedTeamId === t.id ? 'rgba(0, 113, 227, 0.1)' : 'rgba(255,255,255,0.02)',
-                    color: selectedTeamId === t.id ? '#fff' : 'var(--apple-text-secondary)',
-                    fontWeight: selectedTeamId === t.id ? '600' : '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    textTransform: 'capitalize'
-                  }}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Auto-filled details */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '16px',
-              background: 'rgba(255,255,255,0.01)',
-              padding: '16px',
-              borderRadius: '12px',
-              border: '1px solid var(--apple-border)'
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '16px', 
+              background: 'rgba(255,255,255,0.01)', 
+              padding: '16px', 
+              borderRadius: '12px', 
+              border: '1px solid var(--apple-border)' 
             }} className="apple-two-col-grid">
               <div>
                 <label className="apple-form-label" style={{ marginBottom: '4px' }}>Reporter & Team</label>
@@ -424,7 +366,7 @@ export default function UserDis() {
                   {profile ? `${profile.first_name} ${profile.last_name}` : '...'}
                 </span>
                 <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '1px 6px', marginTop: '4px', textTransform: 'capitalize' }}>
-                  {userTeams.find(t => t.id === selectedTeamId)?.name || 'No Assigned Team'}
+                  {userTeams.map(t => t.name).join(', ') || 'No Assigned Team'}
                 </span>
               </div>
               <div>
@@ -581,10 +523,10 @@ export default function UserDis() {
                         setActiveTab('submit')
                       }}
                       className="apple-btn apple-btn-secondary"
-                      style={{
-                        width: '100%',
-                        padding: '10px !important',
-                        fontSize: '0.85rem',
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px !important', 
+                        fontSize: '0.85rem', 
                         marginTop: '4px',
                         borderRadius: '10px !important'
                       }}
