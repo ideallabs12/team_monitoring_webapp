@@ -1131,10 +1131,17 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .brand-logo-text {
   background: linear-gradient(to right, #ffffff, #86868b);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+  color: transparent;
+  display: inline-block;
 }
 [data-theme="light"] .brand-logo-text {
   background: linear-gradient(to right, #1d1d1f, #86868b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .apple-dropdown-menu {
