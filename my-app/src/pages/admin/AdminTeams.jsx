@@ -537,99 +537,142 @@ export default function AdminTeams() {
           </div>
         </div>
 
-        {/* Month Filter */}
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', alignItems: 'center' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Revenue Month
-            </label>
-            <select
-              value={selectedRevenueMonth}
-              onChange={e => setSelectedRevenueMonth(e.target.value)}
-              className="apple-form-control"
-              style={{ padding: '8px 16px !important', fontSize: '0.88rem !important', width: 'auto', borderRadius: '10px !important' }}
-            >
-              {monthOptions.map(m => (
-                <option key={m} value={m}>{formatRevenueMonth(m)}</option>
-              ))}
-            </select>
-          </div>
+        {/* Month + Year Filter — combined in one row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px',
+          marginBottom: '28px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: '14px',
+          padding: '14px 20px',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
+            Viewing revenue for
+          </span>
+          <select
+            value={selectedRevenueMonth.substring(5, 7)}
+            onChange={e => {
+              const year = selectedRevenueMonth.substring(0, 4)
+              setSelectedRevenueMonth(`${year}-${e.target.value}-01`)
+            }}
+            className="apple-form-control"
+            style={{ padding: '6px 14px', fontSize: '0.88rem', width: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+          >
+            {['01','02','03','04','05','06','07','08','09','10','11','12'].map((m, i) => (
+              <option key={m} value={m}>
+                {['January','February','March','April','May','June','July','August','September','October','November','December'][i]}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedRevenueMonth.substring(0, 4)}
+            onChange={e => {
+              const month = selectedRevenueMonth.substring(5, 7)
+              setSelectedRevenueMonth(`${e.target.value}-${month}-01`)
+            }}
+            className="apple-form-control"
+            style={{ padding: '6px 14px', fontSize: '0.88rem', width: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+          >
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Member list details */}
-        <div className="apple-card" style={{ padding: '24px !important', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>
-              Active Members ({activeProfiles.length})
+        {/* Member cards */}
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '700' }}>
+              Active Members
+              <span style={{ marginLeft: '8px', fontSize: '0.75rem', fontWeight: '500', color: 'var(--apple-text-secondary)' }}>({activeProfiles.length})</span>
             </h4>
-            <span style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)' }}>
-              Audit month: <strong style={{ color: 'var(--apple-accent-green)' }}>{formatRevenueMonth(selectedRevenueMonth)}</strong>
-            </span>
           </div>
 
           {activeProfiles.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              
-              {/* Table Header Row */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
-                gap: '12px',
-                padding: '0 0 12px 0',
-                fontSize: '0.78rem',
-                color: 'var(--apple-text-secondary)',
-                fontWeight: '600',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                borderBottom: '1px solid var(--apple-border)'
-              }}>
-                <div>Member Details</div>
-                <div style={{ textAlign: 'center' }}>Role</div>
-                <div style={{ textAlign: 'right' }}>Revenue</div>
-                <div style={{ textAlign: 'center' }}>Action</div>
-              </div>
-
-              {/* Rows */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
               {activeProfiles.map(profile => {
                 const monthRevenue = revenues
-                  .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
+                  .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+                const isLead = profile.platform_role === 'teamlead'
+                const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase()
 
                 return (
                   <div
                     key={profile.id}
+                    className="apple-card"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
-                      gap: '12px',
-                      alignItems: 'center',
-                      padding: '14px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      fontSize: '0.92rem'
+                      padding: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '14px',
+                      border: isLead ? '1px solid rgba(255,160,0,0.2)' : '1px solid rgba(255,255,255,0.07)',
+                      background: isLead ? 'rgba(255,160,0,0.03)' : 'rgba(255,255,255,0.02)',
+                      borderRadius: '16px',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: '600', color: '#fff' }}>{profile.first_name} {profile.last_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{profile.email}</div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <span className={profile.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'} style={{ padding: '2px 8px', fontSize: '0.68rem', textTransform: 'capitalize' }}>
-                        {profile.platform_role === 'teamlead' ? 'Lead' : 'Member'}
+                    {/* Top row: avatar + name/email + role badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+                        background: isLead
+                          ? 'linear-gradient(135deg, rgba(255,160,0,0.25), rgba(255,100,0,0.15))'
+                          : 'linear-gradient(135deg, rgba(0,113,227,0.25), rgba(48,213,200,0.15))',
+                        border: isLead ? '1px solid rgba(255,160,0,0.3)' : '1px solid rgba(0,113,227,0.25)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1rem', fontWeight: '700',
+                        color: isLead ? '#ffa000' : 'var(--apple-accent-blue)'
+                      }}>
+                        {initials || '?'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {profile.first_name} {profile.last_name}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                          {profile.email}
+                        </div>
+                      </div>
+                      <span className={isLead ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
+                        style={{ fontSize: '0.65rem', padding: '2px 8px', flexShrink: 0 }}>
+                        {isLead ? 'Lead' : 'Member'}
                       </span>
                     </div>
 
-                    <div style={{ textAlign: 'right', fontWeight: '700', color: monthRevenue > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }}>
-                      ${monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    {/* Revenue row */}
+                    <div style={{
+                      borderTop: '1px solid rgba(255,255,255,0.05)',
+                      paddingTop: '12px',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>Revenue</div>
+                        <div style={{
+                          fontSize: '1.15rem', fontWeight: '700',
+                          color: monthRevenue > 0 ? 'var(--apple-accent-green)' : 'rgba(255,255,255,0.2)'
+                        }}>
+                          ${monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
                       <button
                         onClick={() => setViewingProfileUser(profile)}
-                        className="apple-btn apple-btn-secondary"
-                        style={{ padding: '6px 12px !important', fontSize: '0.78rem', borderRadius: '10px !important' }}
+                        style={{
+                          padding: '7px 16px',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(255,255,255,0.06)',
+                          color: '#fff',
+                          fontSize: '0.78rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
                       >
-                        Profile
+                        View Profile →
                       </button>
                     </div>
                   </div>
@@ -637,18 +680,17 @@ export default function AdminTeams() {
               })}
             </div>
           ) : (
-            <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
               No active members in this team.
-            </p>
+            </div>
           )}
         </div>
 
-        {/* Historical Members List (Only shown if they have revenue in this month) */}
+        {/* Historical Members (only those with revenue this month) */}
         {(() => {
-          // Calculate revenue for historical members and only keep those with > 0
           const historicalWithRevenue = historicalProfilesUnfiltered.map(profile => {
             const monthRevenue = revenues
-              .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === selectedRevenueMonth)
+              .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
               .reduce((sum, r) => sum + Number(r.amount || 0), 0)
             return { ...profile, monthRevenue }
           }).filter(p => p.monthRevenue > 0)
@@ -656,71 +698,69 @@ export default function AdminTeams() {
           if (historicalWithRevenue.length === 0) return null
 
           return (
-            <div className="apple-card" style={{ padding: '24px !important', background: 'rgba(255, 255, 255, 0.02) !important', borderStyle: 'dashed' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>
-                  Historical Members ({historicalWithRevenue.length})
-                </h4>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', opacity: 0.85 }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
-                  gap: '12px',
-                  padding: '0 0 12px 0',
-                  fontSize: '0.78rem',
-                  color: 'var(--apple-text-secondary)',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  borderBottom: '1px solid var(--apple-border)'
-                }}>
-                  <div>Member Details</div>
-                  <div style={{ textAlign: 'center' }}>Status</div>
-                  <div style={{ textAlign: 'right' }}>Revenue</div>
-                  <div style={{ textAlign: 'center' }}>Action</div>
-                </div>
-
-                {historicalWithRevenue.map(profile => (
-                  <div
-                    key={profile.id}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(180px, 1.2fr) 110px 120px 100px',
-                      gap: '12px',
-                      alignItems: 'center',
-                      padding: '14px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      fontSize: '0.92rem'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '600', color: 'var(--apple-text-secondary)' }}>{profile.first_name} {profile.last_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{profile.email}</div>
+            <div style={{ marginTop: '28px' }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--apple-text-secondary)', fontWeight: '700' }}>
+                Historical Members
+                <span style={{ marginLeft: '8px', fontSize: '0.75rem', fontWeight: '500' }}>({historicalWithRevenue.length})</span>
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px', opacity: 0.8 }}>
+                {historicalWithRevenue.map(profile => {
+                  const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase()
+                  return (
+                    <div
+                      key={profile.id}
+                      style={{
+                        padding: '20px',
+                        display: 'flex', flexDirection: 'column', gap: '14px',
+                        border: '1px dashed rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.015)',
+                        borderRadius: '16px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '1rem', fontWeight: '700', color: 'var(--apple-text-secondary)'
+                        }}>
+                          {initials || '?'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: '700', color: 'var(--apple-text-secondary)', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {profile.first_name} {profile.last_name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px', opacity: 0.7 }}>
+                            {profile.email}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '5px', background: 'rgba(255,255,255,0.08)', color: 'var(--apple-text-secondary)', flexShrink: 0 }}>
+                          {profile.is_deactivated ? 'Former' : 'Transferred'}
+                        </span>
+                      </div>
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>Revenue</div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--apple-text-secondary)' }}>
+                            ${profile.monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setViewingProfileUser(profile)}
+                          style={{
+                            padding: '7px 16px', borderRadius: '10px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            background: 'transparent', color: 'var(--apple-text-secondary)',
+                            fontSize: '0.78rem', fontWeight: '600', cursor: 'pointer', opacity: 0.8
+                          }}
+                        >
+                          View Profile →
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <span className="apple-badge" style={{ padding: '2px 8px', fontSize: '0.68rem', background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
-                        {profile.is_deactivated ? 'Former' : 'Transferred'}
-                      </span>
-                    </div>
-
-                    <div style={{ textAlign: 'right', fontWeight: '700', color: 'var(--apple-text-secondary)' }}>
-                      ${profile.monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <button
-                        onClick={() => setViewingProfileUser(profile)}
-                        className="apple-btn apple-btn-secondary"
-                        style={{ padding: '6px 12px !important', fontSize: '0.78rem', borderRadius: '10px !important', opacity: 0.7 }}
-                      >
-                        Profile
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )
