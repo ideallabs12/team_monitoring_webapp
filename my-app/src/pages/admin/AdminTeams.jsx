@@ -798,6 +798,14 @@ export default function AdminTeams() {
             )
             const teamThisMonthTotal = teamThisMonthRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
 
+            // Sum last 6 months revenue (inclusive of this month)
+            const last6MonthsList = getLastNMonths(6)
+            const last6MonthsSet = new Set(last6MonthsList)
+            const teamLast6MonthsRevenues = revenues.filter(
+              r => r.team_id === team.id && last6MonthsSet.has(normalizeMonth(r.revenue_month))
+            )
+            const teamLast6MonthsTotal = teamLast6MonthsRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+
             return (
               <div
                 key={team.id}
@@ -823,12 +831,23 @@ export default function AdminTeams() {
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--apple-border)', paddingTop: '14px', marginTop: 'auto' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                    <TrendingUp size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> This Month Revenue
+                <div style={{ borderTop: '1px solid var(--apple-border)', paddingTop: '14px', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                      <TrendingUp size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> This Month Revenue
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: '800', color: teamThisMonthTotal > 0 ? 'var(--apple-accent-green)' : '#fff' }}>
+                      ${teamThisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '800', color: teamThisMonthTotal > 0 ? 'var(--apple-accent-green)' : '#fff' }}>
-                    ${teamThisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+                  <div style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                      <Activity size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Last 6 Months Total
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: '800', color: teamLast6MonthsTotal > 0 ? 'var(--apple-accent-blue)' : '#fff' }}>
+                      ${teamLast6MonthsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                 </div>
               </div>
