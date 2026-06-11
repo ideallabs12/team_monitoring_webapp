@@ -22,7 +22,6 @@ export default function AdminRevenue() {
   // Period filter now lives inside the "Expected vs Actual" section
   const [periodFilter, setPeriodFilter] = useState(1)
   const [averagePeriod, setAveragePeriod] = useState(6)
-  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(true)
   const [selectedTeamId, setSelectedTeamId] = useState('')
 
   useEffect(() => {
@@ -76,6 +75,7 @@ export default function AdminRevenue() {
   const allTimeTotal = sumRevenues(nonAdminRevenues)
 
   const averagePeriodOptions = [
+    { label: '1M', value: 1 },
     { label: '2M', value: 2 },
     { label: '3M', value: 3 },
     { label: '6M', value: 6 },
@@ -84,25 +84,24 @@ export default function AdminRevenue() {
   ]
 
   const teamAverages = useMemo(() => {
-    const filtered = includeCurrentMonth 
-      ? filterRevenuesByPeriod(nonAdminRevenues, averagePeriod)
-      : filterRevenuesByCompletedPeriod(nonAdminRevenues, averagePeriod)
-
+    const filtered = filterRevenuesByCompletedPeriod(nonAdminRevenues, averagePeriod)
     return teams.map(team => {
       const teamRevs = filtered.filter(r => r.team_id === team.id)
       const sum = sumRevenues(teamRevs)
-      
-      // Like Excel's AVERAGE(), only divide by the months that actually have data
-      const uniqueMonths = new Set(teamRevs.map(r => normalizeMonth(r.revenue_month))).size
-      const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
-      
+      let average = 0
+      if (averagePeriod > 0) {
+        average = sum / averagePeriod
+      } else {
+        const uniqueMonths = new Set(teamRevs.map(r => normalizeMonth(r.revenue_month))).size
+        average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+      }
       return {
         teamId: team.id,
         teamName: team.name,
         average: Number(average.toFixed(2))
       }
     }).sort((a, b) => b.average - a.average)
-  }, [nonAdminRevenues, teams, averagePeriod, includeCurrentMonth])
+  }, [nonAdminRevenues, teams, averagePeriod])
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#f43f5e']
 
@@ -114,7 +113,13 @@ export default function AdminRevenue() {
 
   const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
 
+  const topContributors = nonAdminProfiles.map(profile => {
+    const allTimeSum = sumRevenues(nonAdminRevenues.filter(r => r.user_id === profile.id))
+    return { ...profile, allTimeTotal: allTimeSum }
+  }).filter(m => m.allTimeTotal > 0)
+    .sort((a, b) => b.allTimeTotal - a.allTimeTotal)
 
+  const highestMember = topContributors.length > 0 ? topContributors[0] : null
 
   // Period-based month set — for the Expected vs Actual section
   const monthSet = useMemo(() => {
@@ -187,6 +192,35 @@ export default function AdminRevenue() {
           <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#4ade80' }}>
             ${allTimeTotal.toFixed(2)}
           </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Performing Team</h3>
+          {highestTeam ? (
+            <div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fff' }}>{highestTeam.name}</div>
+              <div style={{ color: '#60a5fa', fontWeight: 'bold', marginTop: '4px' }}>${highestTeam.allTimeTotal.toFixed(2)}</div>
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-secondary)' }}>No revenue data</div>
+          )}
+        </div>
+
+        <div className="card">
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Top Individual Contributor</h3>
+          {highestMember ? (
+            <div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>
+                {highestMember.first_name} {highestMember.last_name}
+                {highestMember.is_deactivated && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px', fontWeight: 'normal' }}>(Former)</span>}
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#a78bfa', marginTop: '4px' }}>
+                ${highestMember.allTimeTotal.toFixed(2)}
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-secondary)' }}>No revenue data</div>
+          )}
         </div>
       </div>
 
@@ -336,39 +370,26 @@ export default function AdminRevenue() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-            {/* Toggle for Current Month */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={includeCurrentMonth}
-                onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#3b82f6', cursor: 'pointer' }}
-              />
-              Include Current Month
-            </label>
-
-            <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '3px' }}>
-              {averagePeriodOptions.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setAveragePeriod(opt.value)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: averagePeriod === opt.value ? '#3b82f6' : 'transparent',
-                    color: averagePeriod === opt.value ? '#fff' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '3px' }}>
+            {averagePeriodOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setAveragePeriod(opt.value)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  border: 'none',
+                  background: averagePeriod === opt.value ? '#3b82f6' : 'transparent',
+                  color: averagePeriod === opt.value ? '#fff' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 

@@ -11,12 +11,9 @@ import UserTeam from './pages/user/UserTeam'
 import UserRevenue from './pages/user/UserRevenue'
 import UserHistoricalRevenue from './pages/user/UserHistoricalRevenue'
 import RevenueHistory from './pages/user/RevenueHistory'
-import Leaderboard from './pages/user/Leaderboard'
-import Milestones from './pages/user/Milestones'
 import UserDis from './pages/user/UserDis'
 import TeamAnalytics from './pages/user/TeamAnalytics'
 import TeamManagement from './pages/user/TeamManagement'
-import TeamDisReport from './pages/user/TeamDisReport'
 import CompleteProfile from './pages/CompleteProfile'
 import ProfileSettings from './pages/ProfileSettings'
 import ForgotPassword from './pages/ForgotPassword'
@@ -232,11 +229,9 @@ function App() {
           <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/historical-revenue" element={hasProfile && !isAdmin ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue-history" element={hasProfile && !isAdmin ? <RevenueHistory user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/leaderboard" element={hasProfile && !isAdmin ? <Leaderboard user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-dis-report" element={hasProfile && !isAdmin ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
@@ -250,8 +245,6 @@ function App() {
           <Route path="revenue" element={<AdminRevenue />} />
           <Route path="dis" element={<AdminDis />} />
           <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="milestones" element={<Milestones user={user} />} />
-          <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

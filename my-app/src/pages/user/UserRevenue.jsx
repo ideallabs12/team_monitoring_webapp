@@ -985,8 +985,8 @@ export default function UserRevenue({ user, isAdminView }) {
 
             {/* ===== REVENUE HISTORY LINK ===== */}
             <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
-              <Link 
-                to="/revenue-history" 
+              <Link
+                to="/revenue-history"
                 className="apple-btn apple-btn-secondary"
                 style={{ padding: '12px 24px', fontSize: '0.95rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
               >

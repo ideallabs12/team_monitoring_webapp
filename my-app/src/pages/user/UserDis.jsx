@@ -46,13 +46,13 @@ export default function UserDis() {
   // Helper: Month-to-date revenue calculator (total across all teams)
   const fetchMonthToDateRevenue = async (userId, monthStr) => {
     if (!userId || !monthStr) return 0
-    
+
     const { data, error } = await supabase
       .from('monthly_revenues')
       .select('amount')
       .eq('user_id', userId)
       .eq('revenue_month', monthStr)
-      
+
     if (error) {
       console.error("Error fetching MTD revenue:", error)
       throw error
@@ -68,7 +68,7 @@ export default function UserDis() {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setCurrentUser(user)
-          
+
           // Use cached profile if we have it to avoid flash
           if (globalDisCache.userId === user.id && globalDisCache.profile) {
             setProfile(globalDisCache.profile)
@@ -114,7 +114,7 @@ export default function UserDis() {
         .select('team_id, secondary_team_roles, platform_role')
         .eq('id', currentUser.id)
         .single()
-      
+
       const teamIdsToFetch = []
       if (profileData?.team_id) teamIdsToFetch.push(profileData.team_id)
       if (profileData?.secondary_team_roles) {
@@ -126,18 +126,18 @@ export default function UserDis() {
           .from('teams')
           .select('*')
           .in('id', teamIdsToFetch)
-        
+
         if (teamsData && teamsData.length > 0) {
           const loadedTeams = teamsData.map(t => ({
             id: t.id,
             name: t.name,
-            role: t.id === profileData.team_id 
+            role: t.id === profileData.team_id
               ? (profileData.platform_role === 'teamlead' ? 'lead' : 'member')
               : (profileData.secondary_team_roles?.[t.id] === 'teamlead' ? 'lead' : 'member')
           }))
           // Sort primary team first
           loadedTeams.sort((a, b) => a.id === profileData.team_id ? -1 : 1)
-          
+
           setUserTeams(loadedTeams)
           globalDisCache.userTeams = loadedTeams
           if (!selectedTeamId) {
@@ -162,7 +162,7 @@ export default function UserDis() {
         .eq('team_id', selectedTeamId)
         .eq('report_date', reportDate)
         .maybeSingle()
-      
+
       if (data) {
         setPositiveLeads(String(data.positive_leads))
         setExpectedRevenue(String(data.expected_revenue))
@@ -215,7 +215,7 @@ export default function UserDis() {
       `)
       .eq('user_id', currentUser.id)
       .order('report_date', { ascending: false })
-      
+
     if (data) setHistory(data)
     setLoadingHistory(false)
   }
@@ -232,7 +232,7 @@ export default function UserDis() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!currentUser) return
-    
+
     setSubmitting(true)
     setMessage({ type: '', text: '' })
 
@@ -248,7 +248,7 @@ export default function UserDis() {
         revenue_generated: latestMtd, // Auto-filled from monthly_revenues
         expected_revenue: parseFloat(expectedRevenue) || 0
       }
-      
+
       if (isEditMode && existingReportId) {
         const { error } = await supabase
           .from('dis_reports')
@@ -262,11 +262,11 @@ export default function UserDis() {
         if (error) throw error
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: isEditMode ? "DIS report updated successfully!" : "DIS report submitted successfully!" 
+      setMessage({
+        type: 'success',
+        text: isEditMode ? "DIS report updated successfully!" : "DIS report submitted successfully!"
       })
-      
+
       // Load history immediately to update existing IDs if needed
       if (!isEditMode) {
         const { data } = await supabase.from('dis_reports').select('id').eq('user_id', currentUser.id).eq('team_id', selectedTeamId).eq('report_date', reportDate).maybeSingle()
@@ -409,14 +409,14 @@ export default function UserDis() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Auto-filled details */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '1fr 1fr', 
-              gap: '16px', 
-              background: 'rgba(255,255,255,0.01)', 
-              padding: '16px', 
-              borderRadius: '12px', 
-              border: '1px solid var(--apple-border)' 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px',
+              background: 'rgba(255,255,255,0.01)',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid var(--apple-border)'
             }} className="apple-two-col-grid">
               <div>
                 <label className="apple-form-label" style={{ marginBottom: '4px' }}>Reporter & Team</label>
@@ -581,10 +581,10 @@ export default function UserDis() {
                         setActiveTab('submit')
                       }}
                       className="apple-btn apple-btn-secondary"
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px !important', 
-                        fontSize: '0.85rem', 
+                      style={{
+                        width: '100%',
+                        padding: '10px !important',
+                        fontSize: '0.85rem',
                         marginTop: '4px',
                         borderRadius: '10px !important'
                       }}

@@ -1,25 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import {
-  getLastNMonths,
-  normalizeMonth,
-  toRevenueMonthString,
-  getAvailableYears,
-  MONTH_NAMES,
-} from '../../utils/revenueUtils'
 
 const COLORS = [
-  '#3b82f6', '#10b981', '#f59e0b', '#ec4899',
-  '#8b5cf6', '#06b6d4', '#f43f5e', '#a855f7',
-  '#14b8a6', '#f97316'
-]
-
-const PRESET_OPTIONS = [
-  { label: 'This Month', value: 1 },
-  { label: '2M', value: 2 },
-  { label: '3M', value: 3 },
-  { label: '6M', value: 6 },
-  { label: '12M', value: 12 },
+  '#3b82f6', // blue
+  '#10b981', // green
+  '#f59e0b', // amber
+  '#ec4899', // pink
+  '#8b5cf6', // purple
+  '#06b6d4', // cyan
+  '#f43f5e', // rose
+  '#a855f7', // purple-500
+  '#14b8a6', // teal
+  '#f97316'  // orange
 ]
 
 const renderCustomLabel = (props) => {
@@ -30,31 +22,51 @@ const renderCustomLabel = (props) => {
   const radius = outerRadius + 22
   const x = cx + radius * Math.cos(-midAngle * RADIAN)
   const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
+  
   const labelText = `${name}: $${value.toLocaleString()}`
   const cardWidth = Math.max(140, labelText.length * 8.6 + 42)
   const cardHeight = 32
-
+  
   const rx = x > cx ? x + 8 : x - cardWidth - 8
   const ry = y - cardHeight / 2
 
   return (
     <g>
+      {/* Card Background */}
       <rect
-        x={rx} y={ry}
-        width={cardWidth} height={cardHeight}
-        rx={6} ry={6}
+        x={rx}
+        y={ry}
+        width={cardWidth}
+        height={cardHeight}
+        rx={6}
+        ry={6}
         fill="rgba(15, 23, 42, 0.95)"
         stroke={fill}
         strokeWidth={1.8}
-        style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))' }}
+        style={{
+          filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))'
+        }}
       />
-      <rect x={rx + 10} y={y - 5} width={10} height={10} rx={3} fill={fill} />
+      {/* Color Indicator Dot */}
+      <rect
+        x={rx + 10}
+        y={y - 5}
+        width={10}
+        height={10}
+        rx={3}
+        fill={fill}
+      />
+      {/* Card Text */}
       <text
-        x={rx + 28} y={y}
+        x={rx + 28}
+        y={y}
         fill="#f1f5f9"
         dominantBaseline="central"
-        style={{ fontSize: '0.78rem', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}
+        style={{
+          fontSize: '0.78rem',
+          fontWeight: '600',
+          fontFamily: 'Inter, sans-serif'
+        }}
       >
         <tspan fill="#f1f5f9" fontWeight="bold">{name}</tspan>
         <tspan fill="#94a3b8">: </tspan>
@@ -64,180 +76,45 @@ const renderCustomLabel = (props) => {
   )
 }
 
-export default function RevenueTrendChart({ revenues = [], teams = [] }) {
-  const [revDistPeriod, setRevDistPeriod] = useState(1)
-  const [revDistMode, setRevDistMode] = useState('preset') // 'preset' | 'custom'
-  const [revDistYear, setRevDistYear] = useState(new Date().getFullYear())
-  const [revDistMonth, setRevDistMonth] = useState(new Date().getMonth())
-
-  // Compute active months based on mode
-  const activeMonths = useMemo(() => {
-    if (revDistMode === 'custom') {
-      return [toRevenueMonthString(revDistYear, revDistMonth)]
-    }
-    return getLastNMonths(revDistPeriod).reverse()
-  }, [revDistMode, revDistPeriod, revDistYear, revDistMonth])
-
-  const activeMonthSet = useMemo(() => new Set(activeMonths), [activeMonths])
-
-  // Compute total per team for the selected period (totals only, no averages)
+export default function RevenueTrendChart({ data, teams }) {
   const pieData = useMemo(() => {
-    if (!revenues.length || !teams.length) return []
+    if (!data || data.length === 0 || !teams || teams.length === 0) return []
 
     const teamTotals = {}
-    teams.forEach(t => { teamTotals[t.id] = { name: t.name, value: 0 } })
+    teams.forEach(t => { teamTotals[t.name] = 0 })
 
-    revenues.forEach(r => {
-      const monthKey = normalizeMonth(r.revenue_month)
-      if (activeMonthSet.has(monthKey) && teamTotals[r.team_id]) {
-        teamTotals[r.team_id].value += Number(r.amount || 0)
-      }
+    data.forEach(row => {
+      teams.forEach(t => {
+        teamTotals[t.name] = (teamTotals[t.name] || 0) + Number(row[t.name] || 0)
+      })
     })
 
-    return Object.values(teamTotals)
-      .filter(t => t.value > 0)
+    return Object.entries(teamTotals)
+      .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-  }, [revenues, teams, activeMonthSet])
+  }, [data, teams])
 
-  const grandTotal = useMemo(() => pieData.reduce((s, d) => s + d.value, 0), [pieData])
-
-  const handlePresetClick = (value) => {
-    setRevDistMode('preset')
-    setRevDistPeriod(value)
-  }
-
-  const handleYearChange = (y) => {
-    setRevDistMode('custom')
-    setRevDistYear(Number(y))
-  }
-
-  const handleMonthChange = (m) => {
-    setRevDistMode('custom')
-    setRevDistMonth(Number(m))
-  }
-
-  const isCustomActive = revDistMode === 'custom'
+  const grandTotal = useMemo(
+    () => pieData.reduce((sum, d) => sum + d.value, 0),
+    [pieData]
+  )
 
   return (
     <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
-
-      {/* ── HEADER + FILTER ROW ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '22px' }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Revenue Distribution</h3>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-            Total team revenue share for the selected period.
-          </p>
-        </div>
-
-        {/* Filter controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-
-          {/* Preset pills */}
-          <div style={{
-            display: 'flex', gap: '3px',
-            background: 'rgba(255,255,255,0.03)',
-            border: `1px solid ${!isCustomActive ? 'rgba(59,130,246,0.4)' : 'var(--border-color)'}`,
-            borderRadius: '20px',
-            padding: '3px',
-            transition: 'border-color 0.2s',
-          }}>
-            {PRESET_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => handlePresetClick(opt.value)}
-                style={{
-                  padding: '5px 11px',
-                  borderRadius: '16px',
-                  border: 'none',
-                  background: !isCustomActive && revDistPeriod === opt.value
-                    ? 'linear-gradient(135deg, #3b82f6, #2563eb)'
-                    : 'transparent',
-                  color: !isCustomActive && revDistPeriod === opt.value ? '#fff' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontSize: '0.76rem',
-                  fontWeight: '600',
-                  transition: 'all 0.18s ease',
-                  boxShadow: !isCustomActive && revDistPeriod === opt.value ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Separator */}
-          <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.9rem', userSelect: 'none' }}>|</span>
-
-          {/* Custom Year picker */}
-          <select
-            value={revDistYear}
-            onChange={e => handleYearChange(e.target.value)}
-            style={{
-              padding: '5px 26px 5px 10px',
-              fontSize: '0.76rem',
-              borderRadius: '8px',
-              background: isCustomActive ? 'rgba(59,130,246,0.12)' : 'rgba(15,23,42,0.6)',
-              color: isCustomActive ? '#93c5fd' : '#64748b',
-              border: `1px solid ${isCustomActive ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              cursor: 'pointer',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 7px center',
-              transition: 'all 0.2s',
-              fontWeight: isCustomActive ? '600' : '400',
-            }}
-          >
-            {getAvailableYears().map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-
-          {/* Custom Month picker */}
-          <select
-            value={revDistMonth}
-            onChange={e => handleMonthChange(e.target.value)}
-            style={{
-              padding: '5px 26px 5px 10px',
-              fontSize: '0.76rem',
-              borderRadius: '8px',
-              background: isCustomActive ? 'rgba(59,130,246,0.12)' : 'rgba(15,23,42,0.6)',
-              color: isCustomActive ? '#93c5fd' : '#64748b',
-              border: `1px solid ${isCustomActive ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              cursor: 'pointer',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 7px center',
-              transition: 'all 0.2s',
-              fontWeight: isCustomActive ? '600' : '400',
-            }}
-          >
-            {MONTH_NAMES.map((name, idx) => <option key={idx} value={idx}>{name}</option>)}
-          </select>
-        </div>
+      <div style={{ marginBottom: '20px' }}>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Revenue Distribution</h3>
+        <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          Team revenue share for the selected period.
+        </p>
       </div>
 
-      {/* ── CHART AREA ── */}
       {grandTotal === 0 ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: 350,
-          color: 'var(--text-secondary)',
-          fontSize: '0.9rem',
-          gap: '8px',
-          background: 'rgba(255,255,255,0.01)',
-          borderRadius: '10px',
-          border: '1px dashed rgba(255,255,255,0.06)',
-        }}>
-          <span style={{ fontSize: '1.8rem' }}>📊</span>
-          <span>No revenue data available for this period.</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 350, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          No revenue data available for this period.
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-          {/* Pie Chart */}
+          {/* Pie Chart — no hover interactions */}
           <div style={{ flex: '1 1 350px', height: 350, minWidth: '300px' }}>
             <ResponsiveContainer>
               <PieChart>
@@ -255,9 +132,9 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                   stroke="rgba(0,0,0,0.3)"
                   strokeWidth={1}
                   label={renderCustomLabel}
-                  labelLine={{ stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1 }}
+                  labelLine={{ stroke: 'rgba(255, 255, 255, 0.15)', strokeWidth: 1 }}
                 >
-                  {pieData.map((_, index) => (
+                  {pieData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
@@ -269,57 +146,61 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
             </ResponsiveContainer>
           </div>
 
-          {/* Breakdown list */}
+          {/* Legend / Breakdown List */}
           <div style={{ flex: '0 1 260px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {/* Grand total */}
+            {/* Grand total header */}
             <div style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
               padding: '12px 14px',
-              marginBottom: '4px',
+              marginBottom: '4px'
             }}>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Total Revenue
-              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Revenue</div>
               <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#fff', marginTop: '2px' }}>
                 ${grandTotal.toLocaleString()}
               </div>
-              <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
-                {isCustomActive
-                  ? `${MONTH_NAMES[revDistMonth]} ${revDistYear}`
-                  : revDistPeriod === 1 ? 'This Month' : `Last ${revDistPeriod} Months`}
-              </div>
             </div>
 
-            {/* Team rows */}
+            {/* Team items */}
             {pieData.map((item, idx) => {
               const pct = grandTotal > 0 ? ((item.value / grandTotal) * 100).toFixed(1) : 0
               return (
-                <div key={item.name} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  cursor: 'default',
-                }}>
+                <div
+                  key={item.name}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    background: 'transparent',
+                    border: '1px solid transparent',
+                    cursor: 'default'
+                  }}
+                >
                   <span style={{
-                    width: '10px', height: '10px', borderRadius: '3px',
-                    background: COLORS[idx % COLORS.length], flexShrink: 0,
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '3px',
+                    background: COLORS[idx % COLORS.length],
+                    flexShrink: 0
                   }} />
                   <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: '400', color: '#94a3b8' }}>
                     {item.name}
                   </span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#cbd5e1' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#cbd5e1' }}>
                     ${item.value.toLocaleString()}
                   </span>
                   <span style={{
-                    fontSize: '0.68rem', fontWeight: '600',
+                    fontSize: '0.68rem',
+                    fontWeight: '600',
                     color: COLORS[idx % COLORS.length],
                     background: `${COLORS[idx % COLORS.length]}18`,
-                    padding: '2px 6px', borderRadius: '4px',
-                    minWidth: '38px', textAlign: 'center',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    minWidth: '38px',
+                    textAlign: 'center'
                   }}>
                     {pct}%
                   </span>

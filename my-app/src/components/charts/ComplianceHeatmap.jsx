@@ -365,7 +365,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
         <div style={{ background: 'rgba(15, 23, 42, 0.2)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(255,255,255,0.03)' }}>
           <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>Needs Attention (Missed 3+ Consecutive Days)</h4>
           <p style={{ margin: '0 0 16px 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Active team members who haven't reported recently.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '160px', overflowY: 'auto', paddingRight: '4px' }}>
             {missingStreaks.map(usr => (
               <div key={usr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px' }}>
                 <div>

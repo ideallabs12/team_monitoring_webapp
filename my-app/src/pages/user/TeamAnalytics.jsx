@@ -24,7 +24,7 @@ import {
   Pie, 
   Cell 
 } from 'recharts'
-import { getLastNMonths, formatRevenueMonthShort, sumEffectiveTargets } from '../../utils/revenueUtils'
+import { getLastNMonths, formatRevenueMonthShort } from '../../utils/revenueUtils'
 
 const CHART_COLORS = [
   '#0071e3', // Apple Blue
@@ -47,7 +47,6 @@ export default function TeamAnalytics({ user }) {
   const [teamMembers, setTeamMembers] = useState([])
   const [revenues, setRevenues] = useState([])
   const [disReports, setDisReports] = useState([])
-  const [targets, setTargets] = useState([])
   
   // User selections
   const [timeframe, setTimeframe] = useState('3m') // 'this_month', '2m', '3m', '6m', '12m', 'all_time'
@@ -138,15 +137,6 @@ export default function TeamAnalytics({ user }) {
           setDisReports([])
         }
         
-        // 4. Fetch Monthly Targets for the team
-        const { data: targetData, error: targetError } = await supabase
-          .from('monthly_targets')
-          .select('*')
-          .eq('team_id', profile.team_id)
-          
-        if (targetError) throw targetError
-        setTargets(targetData || [])
-        
       } catch (err) {
         console.error("Error fetching team analytics data:", err)
       } finally {
@@ -167,16 +157,19 @@ export default function TeamAnalytics({ user }) {
     const actualRevenues = revenues.filter(r => r.revenue_month === currentMonth)
     const totalActual = actualRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
     
-    // Expected Revenue (from monthly targets assigned by team lead)
-    const memberIds = teamMembers.map(m => m.id)
-    const totalExpected = sumEffectiveTargets(targets, memberIds, profile?.team_id, currentMonth)
+    // Expected Revenue (from daily DIS reports in the current month)
+    const memberUserIds = new Set(teamMembers.map(m => m.id))
+    const currentMonthReports = disReports.filter(r => {
+      return memberUserIds.has(r.user_id) && r.report_date.startsWith(currentMonth.substring(0, 7))
+    })
+    const totalExpected = currentMonthReports.reduce((sum, r) => sum + Number(r.expected_revenue || 0), 0)
     
     return {
       totalActual,
       totalExpected,
       monthLabel: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     }
-  }, [revenues, targets, teamMembers, profile?.team_id])
+  }, [revenues, disReports, teamMembers])
 
   // 2. Trend Line Data based on selected timeframe
   const trendData = useMemo(() => {
@@ -374,7 +367,7 @@ export default function TeamAnalytics({ user }) {
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Calendar size={14} style={{ color: '#0071e3' }} />
-            <span>Assigned monthly targets for {currentMonthStats.monthLabel}</span>
+            <span>DIS daily forecasts for {currentMonthStats.monthLabel}</span>
           </div>
         </div>
       </div>
