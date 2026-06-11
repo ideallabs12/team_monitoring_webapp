@@ -93,7 +93,7 @@ export default function Leaderboard({ user }) {
 
   return (
     <div className="apple-page-container" style={{ animation: 'fadeIn 0.4s ease-out' }}>
-      <div className="apple-page-header">
+      <div className="apple-page-header" style={{ marginBottom: '28px' }}>
         <h1 className="apple-page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Trophy size={36} color="#f59e0b" style={{ filter: 'drop-shadow(0 0 12px rgba(245,158,11,0.4))' }} />
           Leaderboard

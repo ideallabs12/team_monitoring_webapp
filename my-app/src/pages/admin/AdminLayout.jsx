@@ -15,8 +15,11 @@ import {
   Menu,
   X,
   Trophy,
-  Crown
+  Crown,
+  Sun,
+  Moon
 } from 'lucide-react'
+import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
 
 const NAV_ITEMS = [
   { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
@@ -36,7 +39,7 @@ function RestrictedAccessView() {
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '60vh' }}>
       <div className="card" style={{ maxWidth: '480px', textAlign: 'center', padding: '40px', background: 'var(--card-bg)' }}>
         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🚫</div>
-        <h2 style={{ marginBottom: '12px', color: '#fff' }}>Access Restricted</h2>
+        <h2 style={{ marginBottom: '12px', color: 'var(--apple-text-primary)' }}>Access Restricted</h2>
         <p style={{ color: 'var(--text-secondary)', lineHeight: '1.5' }}>
           Your account is currently deactivated or pending approval. Please contact your system administrator to request access to the platform.
         </p>
@@ -50,6 +53,22 @@ export default function AdminLayout({ user, isDeactivated }) {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [theme, setTheme] = useState(getSystemTheme)
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setTheme(getSystemTheme())
+    }
+    window.addEventListener('theme-change', handleThemeChange)
+    // Apply initial theme
+    document.documentElement.setAttribute('data-theme', theme)
+    return () => window.removeEventListener('theme-change', handleThemeChange)
+  }, [theme])
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setSystemTheme(nextTheme)
+  }
 
   useEffect(() => {
     if (!user?.id) return
@@ -80,11 +99,33 @@ export default function AdminLayout({ user, isDeactivated }) {
   const SidebarContent = () => (
     <div className="admin-sidebar">
       {/* ── Brand ── */}
-      <div className="admin-sidebar-brand">
-        <div className="admin-sidebar-brand-icon">
-          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
+      <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="admin-sidebar-brand-icon">
+            <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
+          </div>
+          <span className="admin-sidebar-brand-name">All-Hands</span>
         </div>
-        <span className="admin-sidebar-brand-name">All-Hands</span>
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--apple-text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '6px',
+            borderRadius: '50%',
+            transition: 'background 0.2s, color 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
       </div>
 
       {/* ── Navigation ── */}
@@ -146,16 +187,36 @@ export default function AdminLayout({ user, isDeactivated }) {
       {/* ── Main Content ── */}
       <div className="admin-main">
         {/* Mobile top bar */}
-        <div className="admin-mobile-topbar">
-          <button
-            className="admin-mobile-menu-btn"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-          <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
-            All-Hands Admin
+        <div className="admin-mobile-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button
+              className="admin-mobile-menu-btn"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+            <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
+              All-Hands Admin
+            </div>
           </div>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--apple-text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '50%',
+              marginRight: '8px'
+            }}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
         </div>
 
         <main className="admin-content">

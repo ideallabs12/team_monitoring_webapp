@@ -1021,6 +1021,159 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   --apple-ease: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+[data-theme="light"] {
+  --apple-bg: #f5f5f7;
+  --apple-card: #ffffff;
+  --apple-card-hover: #eaeaea;
+  --apple-border: rgba(0, 0, 0, 0.08);
+  --apple-border-strong: rgba(0, 0, 0, 0.16);
+  --apple-text-primary: #1d1d1f;
+  --apple-text-secondary: #86868b;
+  --apple-accent: #0071e3;
+  --apple-accent-green: #1d9d92;
+  --apple-accent-green-solid: #24b13a;
+  --apple-accent-orange: #ff9500;
+  --apple-accent-red: #ff3b30;
+  --apple-accent-blue: #0071e3;
+  --apple-blur-bg: rgba(255, 255, 255, 0.82);
+
+  --bg-color: #f5f5f7;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --primary: #0071e3;
+  --primary-hover: #0077ed;
+}
+
+/* Light Mode Premium Overrides */
+[data-theme="light"] .apple-btn-primary {
+  background: var(--apple-text-primary) !important;
+  color: var(--apple-card) !important;
+}
+[data-theme="light"] .apple-btn-primary:hover {
+  background: #323236 !important;
+}
+[data-theme="light"] .apple-btn-secondary {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: var(--apple-text-primary) !important;
+  border: 1px solid var(--apple-border) !important;
+}
+[data-theme="light"] .apple-btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-color: var(--apple-border-strong) !important;
+}
+[data-theme="light"] .apple-mobile-menu-drawer {
+  background: var(--apple-bg);
+}
+[data-theme="light"] .admin-sidebar-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .admin-sidebar-link.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .admin-sidebar-profile {
+  background: rgba(0, 0, 0, 0.02);
+}
+[data-theme="light"] .admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .admin-page-title,
+[data-theme="light"] .admin-coming-soon-card h2 {
+  color: var(--apple-text-primary);
+}
+[data-theme="light"] .apple-form-control option,
+[data-theme="light"] .apple-input option {
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+[data-theme="light"] .apple-glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+}
+[data-theme="light"] .apple-hamburger-btn span {
+  background: var(--apple-text-primary);
+}
+[data-theme="light"] .form-control {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] .form-control:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+}
+
+/* Inline styles overrides for light mode */
+[data-theme="light"] [style*="color: rgb(255, 255, 255)"],
+[data-theme="light"] [style*="color:rgb(255, 255, 255)"],
+[data-theme="light"] [style*="color: #fff"],
+[data-theme="light"] [style*="color:#fff"],
+[data-theme="light"] [style*="color: #ffffff"],
+[data-theme="light"] [style*="color:#ffffff"] {
+  color: var(--apple-text-primary) !important;
+}
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.03)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.03)"],
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.02)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.02)"],
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.01)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.01)"] {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] [style*="border-bottom: 1px solid rgba(255, 255, 255, 0.05)"],
+[data-theme="light"] [style*="border-bottom:1px solid rgba(255,255,255,0.05)"] {
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Brand Text & Dropdowns support */
+.brand-logo-text {
+  background: linear-gradient(to right, #ffffff, #86868b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+[data-theme="light"] .brand-logo-text {
+  background: linear-gradient(to right, #1d1d1f, #86868b);
+}
+
+.apple-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  min-width: 230px;
+  background: rgba(18, 18, 20, 0.97);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--apple-border);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  z-index: 200;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+}
+[data-theme="light"] .apple-dropdown-menu {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.apple-dropdown-caret {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: rgba(18, 18, 20, 0.97);
+  border: 1px solid var(--apple-border);
+  border-right: none;
+  border-bottom: none;
+  transform: translateX(-50%) rotate(45deg);
+}
+[data-theme="light"] .apple-dropdown-caret {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+
 /* Theme Wrapper Context */
 .apple-theme-wrapper {
   background-color: var(--apple-bg) !important;

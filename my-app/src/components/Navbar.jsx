@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Sun, Moon } from 'lucide-react'
+import { getSystemTheme, setSystemTheme } from '../utils/themeHelper'
 
 export default function Navbar({ user }) {
   const navigate = useNavigate()
@@ -12,6 +13,22 @@ export default function Navbar({ user }) {
   const othersRef = useRef(null)
   const [teamHubOpen, setTeamHubOpen] = useState(false)
   const teamHubRef = useRef(null)
+  const [theme, setTheme] = useState(getSystemTheme)
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setTheme(getSystemTheme())
+    }
+    window.addEventListener('theme-change', handleThemeChange)
+    // Apply initial theme
+    document.documentElement.setAttribute('data-theme', theme)
+    return () => window.removeEventListener('theme-change', handleThemeChange)
+  }, [theme])
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setSystemTheme(nextTheme)
+  }
 
   useEffect(() => {
     if (user) {
@@ -82,7 +99,7 @@ export default function Navbar({ user }) {
   ]
 
   const linkStyle = (active) => ({
-    color: active ? '#ffffff' : 'var(--apple-text-secondary)',
+    color: active ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
     fontWeight: '500',
     fontSize: '0.92rem',
     transition: 'color 0.25s var(--apple-ease)',
@@ -105,16 +122,38 @@ export default function Navbar({ user }) {
         display: 'flex', height: '64px', alignItems: 'center',
         justifyContent: 'space-between', maxWidth: '1200px', margin: '0 auto', width: '100%'
       }}>
-        {/* Brand */}
-        <Link to="/home" style={{
-          fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px',
-          fontSize: '1.25rem', letterSpacing: '-0.02em', color: '#ffffff', textDecoration: 'none'
-        }}>
-          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '28px', height: '28px' }} />
-          <span style={{ background: 'linear-gradient(to right, #ffffff, #86868b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            All-Hands
-          </span>
-        </Link>
+        {/* Brand & Theme Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Link to="/home" style={{
+            fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px',
+            fontSize: '1.25rem', letterSpacing: '-0.02em', color: 'var(--apple-text-primary)', textDecoration: 'none'
+          }}>
+            <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '28px', height: '28px' }} />
+            <span className="brand-logo-text">
+              All-Hands
+            </span>
+          </Link>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--apple-text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '50%',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        </div>
 
         {user && (
           <>
@@ -147,32 +186,12 @@ export default function Navbar({ user }) {
                     {isTeamHubActive && activeBar}
                   </button>
 
-                  <div style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    left: '50%',
-                    minWidth: '230px',
-                    background: 'rgba(18,18,20,0.97)',
-                    backdropFilter: 'blur(24px)',
-                    WebkitBackdropFilter: 'blur(24px)',
-                    border: '1px solid var(--apple-border)',
-                    borderRadius: '14px',
-                    padding: '8px',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+                  <div className="apple-dropdown-menu" style={{
                     opacity: teamHubOpen ? 1 : 0,
                     visibility: teamHubOpen ? 'visible' : 'hidden',
-                    transform: teamHubOpen ? 'translateX(-50%) translateY(0px)' : 'translateX(-50%) translateY(-8px)',
-                    transition: 'opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease',
-                    zIndex: 200
+                    transform: teamHubOpen ? 'translateX(-50%) translateY(0px)' : 'translateX(-50%) translateY(-8px)'
                   }}>
-                    <div style={{
-                      position: 'absolute', top: '-5px', left: '50%',
-                      width: '10px', height: '10px',
-                      background: 'rgba(18,18,20,0.97)',
-                      border: '1px solid var(--apple-border)',
-                      borderRight: 'none', borderBottom: 'none',
-                      transform: 'translateX(-50%) rotate(45deg)'
-                    }} />
+                    <div className="apple-dropdown-caret" />
 
                     <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '6px 12px 6px' }}>
                       Team Hub
@@ -191,7 +210,7 @@ export default function Navbar({ user }) {
                         onMouseEnter={e => { if (!isActive(link.to)) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
                         onMouseLeave={e => { if (!isActive(link.to)) e.currentTarget.style.background = isActive(link.to) ? 'rgba(0,113,227,0.12)' : 'transparent' }}
                       >
-                        <div style={{ fontSize: '0.88rem', fontWeight: '600', color: isActive(link.to) ? 'var(--apple-accent-blue)' : '#fff' }}>
+                        <div style={{ fontSize: '0.88rem', fontWeight: '600', color: isActive(link.to) ? 'var(--apple-accent-blue)' : 'var(--apple-text-primary)' }}>
                           {link.label}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>
@@ -224,33 +243,13 @@ export default function Navbar({ user }) {
                 </button>
 
                 {/* Dropdown panel */}
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  left: '50%',
-                  minWidth: '230px',
-                  background: 'rgba(18,18,20,0.97)',
-                  backdropFilter: 'blur(24px)',
-                  WebkitBackdropFilter: 'blur(24px)',
-                  border: '1px solid var(--apple-border)',
-                  borderRadius: '14px',
-                  padding: '8px',
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+                <div className="apple-dropdown-menu" style={{
                   opacity: othersOpen ? 1 : 0,
                   visibility: othersOpen ? 'visible' : 'hidden',
-                  transform: othersOpen ? 'translateX(-50%) translateY(0px)' : 'translateX(-50%) translateY(-8px)',
-                  transition: 'opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease',
-                  zIndex: 200
+                  transform: othersOpen ? 'translateX(-50%) translateY(0px)' : 'translateX(-50%) translateY(-8px)'
                 }}>
                   {/* Caret */}
-                  <div style={{
-                    position: 'absolute', top: '-5px', left: '50%',
-                    width: '10px', height: '10px',
-                    background: 'rgba(18,18,20,0.97)',
-                    border: '1px solid var(--apple-border)',
-                    borderRight: 'none', borderBottom: 'none',
-                    transform: 'translateX(-50%) rotate(45deg)'
-                  }} />
+                  <div className="apple-dropdown-caret" />
 
                   <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '6px 12px 6px' }}>
                     Others
@@ -269,7 +268,7 @@ export default function Navbar({ user }) {
                       onMouseEnter={e => { if (!isActive(link.to)) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
                       onMouseLeave={e => { if (!isActive(link.to)) e.currentTarget.style.background = isActive(link.to) ? 'rgba(0,113,227,0.12)' : 'transparent' }}
                     >
-                      <div style={{ fontSize: '0.88rem', fontWeight: '600', color: isActive(link.to) ? 'var(--apple-accent-blue)' : '#fff' }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: '600', color: isActive(link.to) ? 'var(--apple-accent-blue)' : 'var(--apple-text-primary)' }}>
                         {link.label}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>
@@ -308,7 +307,7 @@ export default function Navbar({ user }) {
                     key={link.to}
                     to={link.to}
                     className="apple-drawer-link"
-                    style={{ color: isActive(link.to) ? '#ffffff' : 'var(--apple-text-secondary)', transitionDelay: `${idx * 0.05}s` }}
+                    style={{ color: isActive(link.to) ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)', transitionDelay: `${idx * 0.05}s` }}
                   >
                     {link.label}
                   </Link>
@@ -324,7 +323,7 @@ export default function Navbar({ user }) {
                         key={link.to}
                         to={link.to}
                         className="apple-drawer-link"
-                        style={{ color: isActive(link.to) ? '#ffffff' : 'var(--apple-text-secondary)', transitionDelay: `${(navLinks.length + idx) * 0.05}s` }}
+                        style={{ color: isActive(link.to) ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)', transitionDelay: `${(navLinks.length + idx) * 0.05}s` }}
                       >
                         {link.label}
                       </Link>
@@ -342,7 +341,7 @@ export default function Navbar({ user }) {
                       key={link.to}
                       to={link.to}
                       className="apple-drawer-link"
-                      style={{ color: isActive(link.to) ? '#ffffff' : 'var(--apple-text-secondary)', transitionDelay: `${(navLinks.length + idx) * 0.05}s` }}
+                      style={{ color: isActive(link.to) ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)', transitionDelay: `${(navLinks.length + idx) * 0.05}s` }}
                     >
                       {link.label}
                     </Link>
