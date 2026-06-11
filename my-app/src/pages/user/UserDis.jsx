@@ -203,10 +203,43 @@ export default function UserDis() {
   }
 
   useEffect(() => {
+    setMessage({ type: '', text: '' })
     if (activeTab === 'history') {
       fetchHistory()
     }
   }, [activeTab])
+
+  const handleDeleteReport = async (reportId, reportDateVal) => {
+    if (!window.confirm("Are you sure you want to delete this DIS report? This action cannot be undone.")) {
+      return
+    }
+    
+    setMessage({ type: '', text: '' })
+    
+    try {
+      const { error } = await supabase
+        .from('dis_reports')
+        .delete()
+        .eq('id', reportId)
+        .eq('user_id', currentUser.id)
+        
+      if (error) throw error
+      
+      setMessage({ type: 'success', text: 'DIS report deleted successfully!' })
+      
+      // If the deleted report is the one currently loaded/editing in the form, reset it
+      if (reportDate === reportDateVal) {
+        setPositiveLeads('')
+        setExpectedRevenue('')
+        setIsEditMode(false)
+      }
+      
+      await fetchHistory()
+    } catch (err) {
+      console.error("Error deleting report:", err)
+      setMessage({ type: 'error', text: err.message || "Failed to delete report." })
+    }
+  }
 
 
 
@@ -438,6 +471,20 @@ export default function UserDis() {
       {activeTab === 'history' && (
         <div className="apple-card">
           <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>DIS Submission History</h3>
+          {message.text && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '10px',
+              marginBottom: '20px',
+              background: message.type === 'success' ? 'rgba(48, 213, 200, 0.08)' : 'rgba(255, 69, 58, 0.08)',
+              border: `1px solid ${message.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)'}`,
+              color: message.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)',
+              fontSize: '0.88rem',
+              fontWeight: '500'
+            }}>
+              {message.text}
+            </div>
+          )}
           {loadingHistory ? (
             <div style={{ color: 'var(--apple-text-secondary)' }}>Loading history...</div>
           ) : history.length > 0 ? (
@@ -474,16 +521,25 @@ export default function UserDis() {
                           ${Number(row.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => {
-                              setReportDate(row.report_date)
-                              setActiveTab('submit')
-                            }}
-                            className="apple-btn apple-btn-secondary"
-                            style={{ padding: '6px 14px !important', fontSize: '0.8rem', borderRadius: '12px !important' }}
-                          >
-                            ✏️ Edit
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => {
+                                setReportDate(row.report_date)
+                                setActiveTab('submit')
+                              }}
+                              className="apple-btn apple-btn-secondary"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '12px' }}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReport(row.id, row.report_date)}
+                              className="apple-btn apple-btn-danger"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '12px' }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -517,22 +573,35 @@ export default function UserDis() {
                         <span style={{ fontWeight: '700', color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toFixed(2)}</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setReportDate(row.report_date)
-                        setActiveTab('submit')
-                      }}
-                      className="apple-btn apple-btn-secondary"
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px !important', 
-                        fontSize: '0.85rem', 
-                        marginTop: '4px',
-                        borderRadius: '10px !important'
-                      }}
-                    >
-                      ✏️ Edit Report
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <button
+                        onClick={() => {
+                          setReportDate(row.report_date)
+                          setActiveTab('submit')
+                        }}
+                        className="apple-btn apple-btn-secondary"
+                        style={{ 
+                          flex: 1,
+                          padding: '10px', 
+                          fontSize: '0.85rem', 
+                          borderRadius: '10px'
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReport(row.id, row.report_date)}
+                        className="apple-btn apple-btn-danger"
+                        style={{ 
+                          flex: 1,
+                          padding: '10px', 
+                          fontSize: '0.85rem', 
+                          borderRadius: '10px'
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
