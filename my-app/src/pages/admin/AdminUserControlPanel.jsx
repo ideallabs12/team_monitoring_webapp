@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
-import { Shield, Key, AlertTriangle, Activity, Trash2, ArrowLeft, User as UserIcon } from 'lucide-react'
+import { Shield, Key, Activity, ArrowLeft, User as UserIcon, Plus, Check } from 'lucide-react'
 
 export default function AdminUserControlPanel() {
   const { id } = useParams()
@@ -16,10 +16,10 @@ export default function AdminUserControlPanel() {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   
-  const [newTeamId, setNewTeamId] = useState('')
-  const [secondaryTeamRoles, setSecondaryTeamRoles] = useState({})
-  const [newSecondaryTeamId, setNewSecondaryTeamId] = useState('')
-  const [newSecondaryRole, setNewSecondaryRole] = useState('user')
+  // New unified team settings
+  const [teamSettings, setTeamSettings] = useState({})
+  const [selectedTeamId, setSelectedTeamId] = useState('')
+  const [newTeamIdToAdd, setNewTeamIdToAdd] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -37,8 +37,14 @@ export default function AdminUserControlPanel() {
         setTeams(teamsRes.data || [])
         setRevenues(revRes.data || [])
         setDisReports(disRes.data || [])
-        setNewTeamId(profileRes.data.team_id || '')
-        setSecondaryTeamRoles(profileRes.data.secondary_team_roles || {})
+        
+        const settings = profileRes.data.team_settings || {}
+        setTeamSettings(settings)
+        
+        const assignedIds = Object.keys(settings)
+        if (assignedIds.length > 0) {
+          setSelectedTeamId(assignedIds[0])
+        }
       } catch (err) {
         console.error('Error loading user data:', err)
         setErrorMsg('Failed to load user profile.')
@@ -49,7 +55,7 @@ export default function AdminUserControlPanel() {
     loadData()
   }, [id])
 
-  // Update Platform Role
+  // Update Platform Role (Global)
   const handleUpdatePlatformRole = async (newRole) => {
     setSaving(true)
     setErrorMsg('')
@@ -65,28 +71,6 @@ export default function AdminUserControlPanel() {
       setUser({ ...user, platform_role: newRole })
     } catch (err) {
       setErrorMsg(err.message || 'Failed to update platform role.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Toggle Access Flags
-  const handleToggleAccess = async (field, currentStatus) => {
-    setSaving(true)
-    setErrorMsg('')
-    setSuccessMsg('')
-    const nextStatus = !currentStatus
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ [field]: nextStatus })
-        .eq('id', user.id)
-      if (error) throw error
-
-      setSuccessMsg(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : 'DIS Reporting'} to ${nextStatus ? 'ON' : 'OFF'}`)
-      setUser({ ...user, [field]: nextStatus })
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to update access status.')
     } finally {
       setSaving(false)
     }
@@ -132,66 +116,70 @@ export default function AdminUserControlPanel() {
     }
   }
 
-  // Update User's Team Assignment (Primary & Secondary)
-  const handleUpdateTeams = async (e) => {
-    e.preventDefault()
+  // Update Team Settings in DB
+  const saveTeamSettingsToDb = async (newSettings) => {
     setSaving(true)
     setErrorMsg('')
     setSuccessMsg('')
-
     try {
+      // Also maintain team_id for backward compatibility if needed, using the first assigned team as primary
+      const assignedIds = Object.keys(newSettings)
+      const primaryTeamId = assignedIds.length > 0 ? assignedIds[0] : null
+
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          team_id: newTeamId || null,
-          secondary_team_roles: secondaryTeamRoles
+          team_settings: newSettings,
+          team_id: primaryTeamId
         })
         .eq('id', user.id)
       if (error) throw error
 
-      setSuccessMsg('Team assignments updated successfully!')
-      setUser({ ...user, team_id: newTeamId || null, secondary_team_roles: secondaryTeamRoles })
+      setSuccessMsg('Team assignments and permissions updated successfully!')
+      setTeamSettings(newSettings)
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to update team assignments.')
+      setErrorMsg(err.message || 'Failed to update team settings.')
+      // Revert local state on error
+      setTeamSettings(user.team_settings || {})
     } finally {
       setSaving(false)
     }
   }
 
-  const handleAddSecondaryTeam = () => {
-    if (!newSecondaryTeamId) return
-    const updatedRoles = { ...secondaryTeamRoles, [newSecondaryTeamId]: newSecondaryRole }
-    setSecondaryTeamRoles(updatedRoles)
-    setNewSecondaryTeamId('')
-    setNewSecondaryRole('user')
-  }
-
-  const handleRemoveSecondaryTeam = (teamId) => {
-    const updatedRoles = { ...secondaryTeamRoles }
-    delete updatedRoles[teamId]
-    setSecondaryTeamRoles(updatedRoles)
-  }
-
-  // Remove User from Primary Team
-  const handleRemoveFromPrimaryTeam = async () => {
-    setSaving(true)
-    setErrorMsg('')
-    setSuccessMsg('')
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ team_id: null })
-        .eq('id', user.id)
-      if (error) throw error
-
-      setSuccessMsg('User removed from primary team successfully!')
-      setNewTeamId('')
-      setUser({ ...user, team_id: null })
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to remove user from primary team.')
-    } finally {
-      setSaving(false)
+  const handleAddTeam = async () => {
+    if (!newTeamIdToAdd) return
+    const newSettings = { 
+      ...teamSettings, 
+      [newTeamIdToAdd]: { role: 'member', has_revenue: true, has_dis: true } 
     }
+    await saveTeamSettingsToDb(newSettings)
+    setSelectedTeamId(newTeamIdToAdd)
+    setNewTeamIdToAdd('')
+  }
+
+  const handleRemoveTeam = async (teamIdToRemove) => {
+    const newSettings = { ...teamSettings }
+    delete newSettings[teamIdToRemove]
+    
+    await saveTeamSettingsToDb(newSettings)
+    
+    if (selectedTeamId === teamIdToRemove) {
+      const remainingIds = Object.keys(newSettings)
+      setSelectedTeamId(remainingIds.length > 0 ? remainingIds[0] : '')
+    }
+  }
+
+  const handleUpdateTeamPermission = async (teamId, field, value) => {
+    const newSettings = {
+      ...teamSettings,
+      [teamId]: {
+        ...teamSettings[teamId],
+        [field]: value
+      }
+    }
+    // Optimistic UI update
+    setTeamSettings(newSettings)
+    await saveTeamSettingsToDb(newSettings)
   }
 
   // Compile Dynamic Activity Logs
@@ -220,17 +208,6 @@ export default function AdminUserControlPanel() {
       })
     }
 
-    if (user.team_id) {
-      const team = teams.find(t => t.id === user.team_id)
-      activities.push({
-        id: `team-assigned`,
-        type: 'team',
-        date: new Date(user.created_at),
-        description: `Assigned to team "${team ? team.name : 'Unknown'}"`,
-        icon: '👥'
-      })
-    }
-
     return activities.sort((a, b) => b.date - a.date)
   }, [user, revenues, disReports, teams])
 
@@ -238,10 +215,7 @@ export default function AdminUserControlPanel() {
   if (!user) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>User not found.</div>
 
   const isDeactivated = !!user.is_deactivated
-  const currentTeam = user.team_id ? teams.find(t => t.id === user.team_id) : null
-  const currentSecondaryTeams = user.secondary_team_roles 
-    ? teams.filter(t => Object.keys(user.secondary_team_roles).includes(t.id)) 
-    : []
+  const assignedTeamIds = Object.keys(teamSettings)
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -278,83 +252,213 @@ export default function AdminUserControlPanel() {
       {/* Grid Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         
-        {/* Card 1: Role & Access */}
-        <div className="apple-card" style={{ padding: '24px' }}>
+        {/* Card 1: Team Assignments & Permissions */}
+        <div className="apple-card" style={{ padding: '24px', gridColumn: '1 / -1' }}>
           <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Shield size={18} style={{ color: '#818cf8' }} /> Access Controls
+            <Shield size={18} style={{ color: '#818cf8' }} /> Team Permissions
           </h3>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Platform Role</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => handleUpdatePlatformRole('user')}
-                disabled={saving || user.platform_role === 'user'}
-                className="apple-btn"
-                style={{
-                  flex: 1,
-                  background: user.platform_role === 'user' ? '#818cf8' : 'rgba(255,255,255,0.05)',
-                  color: user.platform_role === 'user' ? '#0f172a' : '#94a3b8',
-                  borderColor: user.platform_role === 'user' ? '#818cf8' : 'var(--apple-border)'
-                }}
-              >
-                User Role
-              </button>
-              <button
-                onClick={() => handleUpdatePlatformRole('teamlead')}
-                disabled={saving || user.platform_role === 'teamlead'}
-                className="apple-btn"
-                style={{
-                  flex: 1,
-                  background: user.platform_role === 'teamlead' ? '#eab308' : 'rgba(255,255,255,0.05)',
-                  color: user.platform_role === 'teamlead' ? '#0f172a' : '#94a3b8',
-                  borderColor: user.platform_role === 'teamlead' ? '#eab308' : 'var(--apple-border)'
-                }}
-              >
-                Team Lead
-              </button>
-            </div>
-          </div>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+            {/* Left side: Team Selector */}
+            <div style={{ flex: '1', minWidth: '250px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Assigned Teams</label>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                {assignedTeamIds.length === 0 ? (
+                  <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--apple-border)', color: 'var(--apple-text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                    No teams assigned.
+                  </div>
+                ) : (
+                  assignedTeamIds.map(tId => {
+                    const t = teams.find(x => x.id === tId)
+                    const isSelected = selectedTeamId === tId
+                    return (
+                      <div 
+                        key={tId} 
+                        onClick={() => setSelectedTeamId(tId)}
+                        style={{ 
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                          padding: '12px 16px', 
+                          background: isSelected ? 'rgba(0, 113, 227, 0.1)' : 'rgba(255,255,255,0.02)', 
+                          borderRadius: '12px', 
+                          border: isSelected ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '0.95rem', color: isSelected ? '#fff' : '#e2e8f0', fontWeight: isSelected ? '600' : '500' }}>
+                            {t?.name}
+                          </span>
+                          <span className={teamSettings[tId].role === 'teamlead' ? "apple-badge apple-badge-orange" : "apple-badge apple-badge-blue"} style={{ fontSize: '0.65rem', padding: '2px 6px', textTransform: 'capitalize' }}>
+                            {teamSettings[tId].role}
+                          </span>
+                        </div>
+                        {isSelected && <Check size={16} color="var(--apple-accent-blue)" />}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '600', textTransform: 'uppercase' }}>Feature Access</label>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Revenue Logging</span>
-              <button
-                onClick={() => handleToggleAccess('has_revenue_logging', user.has_revenue_logging)}
-                disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.has_revenue_logging ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                }}
-              >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.has_revenue_logging ? '23px' : '3px', transition: 'left 0.3s' }} />
-              </button>
+              {/* Add Team Dropdown */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select 
+                  value={newTeamIdToAdd} 
+                  onChange={e => setNewTeamIdToAdd(e.target.value)}
+                  className="apple-input"
+                  style={{ flex: 1 }}
+                >
+                  <option value="">-- Add Team --</option>
+                  {teams.filter(t => !teamSettings[t.id]).map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <button 
+                  onClick={handleAddTeam} 
+                  disabled={!newTeamIdToAdd || saving} 
+                  className="apple-btn apple-btn-primary" 
+                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={16} /> Add
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>DIS Reporting</span>
-              <button
-                onClick={() => handleToggleAccess('has_dis_reporting', user.has_dis_reporting)}
-                disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.has_dis_reporting ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                }}
-              >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.has_dis_reporting ? '23px' : '3px', transition: 'left 0.3s' }} />
-              </button>
+
+            {/* Right side: Team Specific Settings */}
+            <div style={{ flex: '2', minWidth: '300px', background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '16px', border: '1px solid var(--apple-border)' }}>
+              {selectedTeamId && teamSettings[selectedTeamId] ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4 style={{ margin: 0, color: '#fff', fontSize: '1.1rem' }}>{teams.find(t => t.id === selectedTeamId)?.name} Settings</h4>
+                    <button 
+                      onClick={() => handleRemoveTeam(selectedTeamId)}
+                      disabled={saving}
+                      style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500' }}
+                    >
+                      Remove from Team
+                    </button>
+                  </div>
+
+                  {/* Role Selection */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Team Role</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleUpdateTeamPermission(selectedTeamId, 'role', 'member')}
+                        disabled={saving || teamSettings[selectedTeamId].role === 'member'}
+                        className="apple-btn"
+                        style={{
+                          flex: 1,
+                          background: teamSettings[selectedTeamId].role === 'member' ? '#818cf8' : 'rgba(255,255,255,0.05)',
+                          color: teamSettings[selectedTeamId].role === 'member' ? '#0f172a' : '#94a3b8',
+                          borderColor: teamSettings[selectedTeamId].role === 'member' ? '#818cf8' : 'var(--apple-border)'
+                        }}
+                      >
+                        Member
+                      </button>
+                      <button
+                        onClick={() => handleUpdateTeamPermission(selectedTeamId, 'role', 'teamlead')}
+                        disabled={saving || teamSettings[selectedTeamId].role === 'teamlead'}
+                        className="apple-btn"
+                        style={{
+                          flex: 1,
+                          background: teamSettings[selectedTeamId].role === 'teamlead' ? '#eab308' : 'rgba(255,255,255,0.05)',
+                          color: teamSettings[selectedTeamId].role === 'teamlead' ? '#0f172a' : '#94a3b8',
+                          borderColor: teamSettings[selectedTeamId].role === 'teamlead' ? '#eab308' : 'var(--apple-border)'
+                        }}
+                      >
+                        Team Lead
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Feature Access Toggles */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '600', textTransform: 'uppercase' }}>Feature Access</label>
+                    
+                    {/* Revenue Toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Revenue Logging</span>
+                      <button
+                        onClick={() => handleUpdateTeamPermission(selectedTeamId, 'has_revenue', !teamSettings[selectedTeamId].has_revenue)}
+                        disabled={saving}
+                        style={{
+                          width: '44px', height: '24px', borderRadius: '12px',
+                          background: teamSettings[selectedTeamId].has_revenue ? '#4ade80' : '#475569',
+                          border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                        }}
+                      >
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: teamSettings[selectedTeamId].has_revenue ? '23px' : '3px', transition: 'left 0.3s' }} />
+                      </button>
+                    </div>
+
+                    {/* DIS Toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>DIS Reporting</span>
+                      <button
+                        onClick={() => handleUpdateTeamPermission(selectedTeamId, 'has_dis', !teamSettings[selectedTeamId].has_dis)}
+                        disabled={saving}
+                        style={{
+                          width: '44px', height: '24px', borderRadius: '12px',
+                          background: teamSettings[selectedTeamId].has_dis ? '#4ade80' : '#475569',
+                          border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                        }}
+                      >
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: teamSettings[selectedTeamId].has_dis ? '23px' : '3px', transition: 'left 0.3s' }} />
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
+                  Select a team to configure its settings.
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Card 2: Security & Organization */}
+        {/* Card 2: Security & Global Settings */}
         <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
             <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Key size={18} style={{ color: '#10b981' }} /> Security
+              <Key size={18} style={{ color: '#10b981' }} /> Security & Platform Access
             </h3>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Global Role</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => handleUpdatePlatformRole('user')}
+                  disabled={saving || user.platform_role === 'user'}
+                  className="apple-btn"
+                  style={{
+                    flex: 1,
+                    background: user.platform_role === 'user' ? '#818cf8' : 'rgba(255,255,255,0.05)',
+                    color: user.platform_role === 'user' ? '#0f172a' : '#94a3b8',
+                    borderColor: user.platform_role === 'user' ? '#818cf8' : 'var(--apple-border)'
+                  }}
+                >
+                  Standard User
+                </button>
+                <button
+                  onClick={() => handleUpdatePlatformRole('admin')}
+                  disabled={saving || user.platform_role === 'admin'}
+                  className="apple-btn"
+                  style={{
+                    flex: 1,
+                    background: user.platform_role === 'admin' ? '#ef4444' : 'rgba(255,255,255,0.05)',
+                    color: user.platform_role === 'admin' ? '#fff' : '#94a3b8',
+                    borderColor: user.platform_role === 'admin' ? '#ef4444' : 'var(--apple-border)'
+                  }}
+                >
+                  Admin
+                </button>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button
                 onClick={() => handleToggleDeactivation(isDeactivated)}
@@ -379,129 +483,10 @@ export default function AdminUserControlPanel() {
               </button>
             </div>
           </div>
-
-          <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%' }} />
-
-          <div>
-            <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserIcon size={18} style={{ color: '#f59e0b' }} /> Team Assignment
-            </h3>
-            
-            {/* Primary Team Info */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>Primary Team</label>
-              {currentTeam ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,160,0,0.05)', border: '1px solid rgba(255,160,0,0.2)', borderRadius: '12px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '600' }}>{currentTeam.name}</span>
-                  <button
-                    disabled={saving}
-                    onClick={handleRemoveFromPrimaryTeam}
-                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Trash2 size={14} /> Remove
-                  </button>
-                </div>
-              ) : (
-                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 12px 0', fontSize: '0.9rem' }}>No primary team assigned.</p>
-              )}
-            </div>
-
-            {/* Secondary Teams Info */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase' }}>Secondary Teams</label>
-              {currentSecondaryTeams.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {currentSecondaryTeams.map(t => (
-                    <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>{t.name}</span>
-                        <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px', textTransform: 'capitalize' }}>
-                          {user.secondary_team_roles[t.id]}
-                        </span>
-                      </div>
-                      {/* Removing directly from state requires clicking Save below, or we could auto-save. For now, we update the state and the user must click Save */}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.85rem' }}>No secondary teams assigned.</p>
-              )}
-            </div>
-
-            <form onSubmit={handleUpdateTeams} style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '500' }}>Set Primary Team</label>
-                <select
-                  value={newTeamId}
-                  onChange={(e) => setNewTeamId(e.target.value)}
-                  className="apple-input"
-                  style={{ width: '100%', marginBottom: '12px' }}
-                >
-                  <option value="">-- None --</option>
-                  {teams.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Edit Secondary Teams</label>
-                
-                {/* List current secondary teams with remove button */}
-                {Object.keys(secondaryTeamRoles).length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                    {Object.entries(secondaryTeamRoles).map(([tId, role]) => {
-                      const t = teams.find(x => x.id === tId)
-                      return (
-                        <div key={tId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                          <span style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>{t?.name} ({role})</span>
-                          <button type="button" onClick={() => handleRemoveSecondaryTeam(tId)} style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Add new secondary team */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <select 
-                    value={newSecondaryTeamId} 
-                    onChange={e => setNewSecondaryTeamId(e.target.value)}
-                    className="apple-input"
-                    style={{ flex: 1 }}
-                  >
-                    <option value="">-- Add Team --</option>
-                    {teams.filter(t => t.id !== newTeamId && !secondaryTeamRoles[t.id]).map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={newSecondaryRole}
-                    onChange={e => setNewSecondaryRole(e.target.value)}
-                    className="apple-input"
-                    style={{ width: '110px' }}
-                  >
-                    <option value="user">Member</option>
-                    <option value="teamlead">Lead</option>
-                  </select>
-                  <button type="button" onClick={handleAddSecondaryTeam} disabled={!newSecondaryTeamId} className="apple-btn apple-btn-secondary" style={{ padding: '8px 12px' }}>Add</button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="apple-btn apple-btn-primary"
-                style={{ width: '100%', marginTop: '8px' }}
-              >
-                Save Team Assignments
-              </button>
-            </form>
-          </div>
         </div>
 
         {/* Card 3: Activity Timeline */}
-        <div className="apple-card" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+        <div className="apple-card" style={{ padding: '24px' }}>
           <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Activity size={18} style={{ color: '#38bdf8' }} /> Activity Timeline
           </h3>

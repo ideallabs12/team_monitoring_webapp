@@ -340,10 +340,13 @@ export default function AdminTeams() {
   // ==========================================
   if (activeTeam) {
     const activeProfiles = profiles
-      .filter(p => (p.team_id === activeTeam.id || Object.keys(p.secondary_team_roles || {}).includes(activeTeam.id)) && p.platform_role !== 'admin' && !p.is_deactivated)
+      .filter(p => {
+        const settings = p.team_settings || {}
+        return settings[activeTeam.id] && p.platform_role !== 'admin' && !p.is_deactivated
+      })
       .sort((a, b) => {
-        const aIsLead = a.team_id === activeTeam.id ? a.platform_role === 'teamlead' : (a.secondary_team_roles || {})[activeTeam.id] === 'teamlead'
-        const bIsLead = b.team_id === activeTeam.id ? b.platform_role === 'teamlead' : (b.secondary_team_roles || {})[activeTeam.id] === 'teamlead'
+        const aIsLead = a.team_settings?.[activeTeam.id]?.role === 'teamlead'
+        const bIsLead = b.team_settings?.[activeTeam.id]?.role === 'teamlead'
         if (aIsLead && !bIsLead) return -1
         if (!aIsLead && bIsLead) return 1
         return 0
@@ -620,7 +623,7 @@ export default function AdminTeams() {
                 const monthRevenue = revenues
                   .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0)
-                const isLead = profile.team_id === activeTeam.id ? profile.platform_role === 'teamlead' : (profile.secondary_team_roles || {})[activeTeam.id] === 'teamlead'
+                const isLead = profile.team_settings?.[activeTeam.id]?.role === 'teamlead'
                 const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase()
 
                 return (
