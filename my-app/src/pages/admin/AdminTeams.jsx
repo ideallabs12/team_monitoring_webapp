@@ -77,6 +77,20 @@ export default function AdminTeams() {
       setLoading(false)
     }
     loadData()
+
+    // Real-time subscription: keep revenues fresh
+    const sub = supabase
+      .channel('admin-teams-revenues')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, async () => {
+        const { data } = await supabase.from('monthly_revenues').select('*')
+        if (data) {
+          setRevenues(data)
+          adminTeamsCache = { ...adminTeamsCache, revenues: data }
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [])
 
   // Load DIS Reports for user profile dynamically
@@ -405,7 +419,9 @@ export default function AdminTeams() {
                       fontWeight: '700',
                       color: d.total > 0 ? '#fff' : 'rgba(255,255,255,0.2)'
                     }}>
-                      {d.total > 0 ? `$${d.total >= 1000 ? (d.total / 1000).toFixed(1) + 'k' : d.total.toFixed(0)}` : '—'}
+                      {d.total > 0
+                        ? `$${d.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : '—'}
                     </div>
                   </div>
                 )
@@ -429,7 +445,12 @@ export default function AdminTeams() {
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Best Month</div>
                 <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--apple-accent-green)' }}>
-                  {teamTrendData.length > 0 ? (() => { const best = teamTrendData.reduce((a,b) => b.total > a.total ? b : a); return best.total > 0 ? `${best.month} ($${best.total >= 1000 ? (best.total/1000).toFixed(1)+'k' : best.total.toFixed(0)})` : '—' })() : '—'}
+                  {teamTrendData.length > 0 ? (() => {
+                    const best = teamTrendData.reduce((a, b) => b.total > a.total ? b : a)
+                    return best.total > 0
+                      ? `${best.month} ($${best.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` 
+                      : '—'
+                  })() : '—'}
                 </div>
               </div>
             </div>
@@ -466,8 +487,8 @@ export default function AdminTeams() {
               </div>
             </div>
 
-            <div style={{ flex: 1, minHeight: '240px' }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ height: '260px' }}>
+              <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={teamTrendFiltered} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="teamTrendGrad" x1="0" y1="0" x2="0" y2="1">
@@ -484,13 +505,17 @@ export default function AdminTeams() {
                     dy={10}
                   />
                   <YAxis 
-                    tickFormatter={(val) => `$${val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val}`}
-                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
+                    tickFormatter={(val) => `$${val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0)}`}
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
                     axisLine={false} 
                     tickLine={false}
-                    dx={-10}
+                    dx={-4}
+                    width={60}
                   />
-                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Tooltip
+                    content={<ChartTooltip />}
+                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  />
                   {teamMonthlyAvg > 0 && (
                     <ReferenceLine 
                       y={teamMonthlyAvg} 
