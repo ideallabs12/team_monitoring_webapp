@@ -10,7 +10,7 @@ import {
   formatRevenueMonthShort
 } from '../../utils/revenueUtils'
 import UserRevenue from '../user/UserRevenue'
-import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText, Activity } from 'lucide-react'
+import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText, Activity, Copy } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 
 let adminTeamsCache = { loaded: false, teams: [], profiles: [], revenues: [] }
@@ -1117,6 +1117,37 @@ export default function AdminTeams() {
   // ==========================================
   // VIEW 3: TEAMS CARD SUMMARY VIEW (Default view)
   // ==========================================
+
+  const handleCopyData = async () => {
+    try {
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      
+      let reportText = '';
+      let totalAllTeams = 0;
+
+      teams.forEach(team => {
+        // Calculate all-time revenue for this team
+        const teamRevs = revenues.filter(r => r.team_id === team.id);
+        const teamTotal = teamRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        
+        totalAllTeams += teamTotal;
+
+        reportText += `Team Name : ${team.name}\n`;
+        reportText += `Revenue till ${dateStr} : $${teamTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n\n`;
+      });
+
+      reportText += `Total\n`;
+      reportText += `Total revenue from all teams till ${dateStr} : $${totalAllTeams.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      await navigator.clipboard.writeText(reportText);
+      alert('Data copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      alert('Failed to copy data.');
+    }
+  };
+
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
       {/* Header */}
@@ -1129,8 +1160,22 @@ export default function AdminTeams() {
           </p>
         </div>
 
-        {/* Previous Data Toggle & Timeframe Selector */}
+        {/* Previous Data Toggle, Timeframe Selector & Copy Data */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleCopyData}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 14px', borderRadius: '8px',
+              background: 'var(--apple-accent-blue)', color: '#fff',
+              border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Copy size={14} />
+            Copy Data
+          </button>
+          
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Previous Months Data</span>
             <button 
