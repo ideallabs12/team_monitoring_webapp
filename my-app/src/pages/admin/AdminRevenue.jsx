@@ -39,12 +39,15 @@ function ChartTooltip({ active, payload, label }) {
       boxShadow: '0 8px 30px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)'
     }}>
       <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600' }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color || '#fff', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
-          <span>{p.name}</span>
-          <span style={{ fontWeight: '700' }}>{fmtFull(p.value)}</span>
-        </div>
-      ))}
+      {payload.map((p, i) => {
+        const color = p.color && p.color.startsWith('url') ? 'var(--apple-accent-blue)' : (p.color || '#fff');
+        return (
+          <div key={i} style={{ color, display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+            <span>{p.name}</span>
+            <span style={{ fontWeight: '700' }}>{fmtFull(p.value)}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -56,9 +59,9 @@ export default function AdminRevenue() {
   const [revenues, setRevenues] = useState(adminRevCache.revenues)
   const [targets, setTargets] = useState(adminRevCache.targets)
 
-  // Period filter now lives inside the "Expected vs Actual" section
   const [periodFilter, setPeriodFilter] = useState(1)
   const [averagePeriod, setAveragePeriod] = useState(6)
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState(0)
   const [includeCurrentMonth, setIncludeCurrentMonth] = useState(true)
   const [selectedTeamId, setSelectedTeamId] = useState('')
 
@@ -112,6 +115,15 @@ export default function AdminRevenue() {
   // Use all-time revenues for top-level cards
   const allTimeTotal = sumRevenues(nonAdminRevenues)
 
+  const currentMonthStr = useMemo(() => {
+    const d = new Date()
+    return toRevenueMonthString(d.getFullYear(), d.getMonth())
+  }, [])
+  
+  const currentMonthTotal = useMemo(() => {
+    return sumRevenues(nonAdminRevenues.filter(r => normalizeMonth(r.revenue_month) === currentMonthStr))
+  }, [nonAdminRevenues, currentMonthStr])
+
   const averagePeriodOptions = [
     { label: '2M', value: 2 },
     { label: '3M', value: 3 },
@@ -142,13 +154,28 @@ export default function AdminRevenue() {
 
   const COLORS = ['#0071e3', '#30d5c8', '#ff9f0a', '#af52de', '#ff2d55', '#ffcc00', '#5ac8fa']
 
-  // All-time team leaderboard
-  const teamRevenues = teams.map(team => {
-    const allTimeSum = sumRevenues(nonAdminRevenues.filter(r => r.team_id === team.id))
-    return { ...team, allTimeTotal: allTimeSum }
-  }).sort((a, b) => b.allTimeTotal - a.allTimeTotal)
+  // Dynamic team leaderboard
+  const leaderboardPeriodOptions = [
+    { label: '1M', value: 1 },
+    { label: '2M', value: 2 },
+    { label: '3M', value: 3 },
+    { label: '6M', value: 6 },
+    { label: '12M', value: 12 },
+    { label: 'All Time', value: 0 },
+  ]
 
-  const highestTeam = teamRevenues.length > 0 && teamRevenues[0].allTimeTotal > 0 ? teamRevenues[0] : null
+  const teamRevenues = useMemo(() => {
+    const filteredRevenues = leaderboardPeriod > 0 
+      ? filterRevenuesByPeriod(nonAdminRevenues, leaderboardPeriod) 
+      : nonAdminRevenues
+      
+    return teams.map(team => {
+      const periodSum = sumRevenues(filteredRevenues.filter(r => r.team_id === team.id))
+      return { ...team, totalRevenue: periodSum }
+    }).sort((a, b) => b.totalRevenue - a.totalRevenue)
+  }, [teams, nonAdminRevenues, leaderboardPeriod])
+
+  const highestTeam = teamRevenues.length > 0 && teamRevenues[0].totalRevenue > 0 ? teamRevenues[0] : null
 
   // Last 12 months combined company-wide revenue trend data (Actual vs Target)
   const company12MonthTrend = useMemo(() => {
@@ -259,11 +286,37 @@ export default function AdminRevenue() {
       {/* ===== SPECIAL TOP STATS GRID ===== */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
         gap: '24px', 
         marginBottom: '28px' 
-      }} className="apple-two-col-grid">
+      }}>
         
+        {/* Special This Month Revenue Card */}
+        <div className="apple-card" style={{ 
+          background: 'linear-gradient(135deg, rgba(255, 159, 10, 0.15) 0%, rgba(255, 45, 85, 0.1) 100%)',
+          border: '1px solid rgba(255, 159, 10, 0.3)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          padding: '24px 28px',
+          borderRadius: '20px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
+          backdropFilter: 'blur(20px)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <span className="apple-badge apple-badge-orange" style={{ marginBottom: '12px', fontSize: '0.75rem' }}>
+            🔥 THIS MONTH
+          </span>
+          <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.82rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            Current Month Revenue
+          </div>
+          <div style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: '800', color: 'var(--apple-accent-orange)', letterSpacing: '-0.02em' }}>
+            ${currentMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+
         {/* Special All Time Revenue Card */}
         <div className="apple-card" style={{ 
           background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(0, 113, 227, 0.1) 100%)',
@@ -648,14 +701,33 @@ export default function AdminRevenue() {
 
       {/* ===== TEAM LEADERBOARD (all-time) ===== */}
       <div className="apple-card" style={{ marginBottom: '40px' }}>
-        <h3 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
-          Team Leaderboard
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px', flexWrap: 'wrap', gap: '16px' }}>
+          <h3 className="apple-title-small" style={{ margin: 0 }}>
+            Team Leaderboard
+          </h3>
+
+          <div className="apple-pill-tabs" style={{ padding: '3px' }}>
+            {leaderboardPeriodOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setLeaderboardPeriod(opt.value)}
+                className={`apple-pill-tab ${leaderboardPeriod === opt.value ? 'active' : ''}`}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {teamRevenues.map((team, index) => {
-            const maxRev = highestTeam?.allTimeTotal || 1
-            const percentage = Math.max(5, (team.allTimeTotal / maxRev) * 100)
+            const maxRev = highestTeam?.totalRevenue || 1
+            const percentage = Math.max(5, (team.totalRevenue / maxRev) * 100)
 
             return (
               <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '40px 180px 1fr 120px', alignItems: 'center', gap: '16px' }} className="apple-leaderboard-row">
@@ -676,7 +748,7 @@ export default function AdminRevenue() {
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: '700', color: '#ffffff' }}>
-                    ${team.allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${team.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
