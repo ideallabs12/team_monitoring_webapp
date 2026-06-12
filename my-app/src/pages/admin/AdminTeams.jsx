@@ -957,7 +957,7 @@ export default function AdminTeams() {
                     width: '44px',
                     height: '24px',
                     borderRadius: '12px',
-                    background: breakdownAllTime ? 'var(--apple-accent-blue)' : 'rgba(255,255,255,0.15)',
+                    background: breakdownAllTime ? 'var(--apple-accent-blue)' : 'var(--apple-border)',
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'background 0.3s'
@@ -968,6 +968,7 @@ export default function AdminTeams() {
                     height: '18px',
                     borderRadius: '50%',
                     background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                     position: 'absolute',
                     top: '3px',
                     left: breakdownAllTime ? '23px' : '3px',
@@ -1127,8 +1128,8 @@ export default function AdminTeams() {
       let totalAllTeams = 0;
 
       teams.forEach(team => {
-        // Calculate all-time revenue for this team
-        const teamRevs = revenues.filter(r => r.team_id === team.id);
+        // Calculate ONLY this month revenue for this team
+        const teamRevs = revenues.filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr);
         const teamTotal = teamRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0);
         
         totalAllTeams += teamTotal;
@@ -1186,7 +1187,7 @@ export default function AdminTeams() {
                 width: '44px',
                 height: '24px',
                 borderRadius: '12px',
-                background: showPastData ? 'var(--apple-accent-blue)' : 'rgba(255,255,255,0.15)',
+                background: showPastData ? 'var(--apple-accent-blue)' : 'var(--apple-border)',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'background 0.3s'
@@ -1197,6 +1198,7 @@ export default function AdminTeams() {
                 height: '18px',
                 borderRadius: '50%',
                 background: '#ffffff',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 position: 'absolute',
                 top: '3px',
                 left: showPastData ? '23px' : '3px',
