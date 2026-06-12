@@ -719,31 +719,34 @@ export default function UserRevenue({ user, isAdminView }) {
                     Monthly Breakdown (Combined)
                   </div>
 
-                  {/* Swipeable responsive month strip */}
-                  <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                      {breakdownMonths.map(monthStr => {
-                        const amt = combinedMonthMap[monthStr] || 0
-                        const monthIdx = Number(monthStr.split('-')[1]) - 1
-                        return (
-                          <div key={monthStr} style={{
-                            flex: '1 0 68px',
-                            background: amt > 0 ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.015)',
-                            border: `1px solid ${amt > 0 ? 'rgba(0, 113, 227, 0.2)' : 'var(--apple-border)'}`,
-                            borderRadius: '8px',
-                            padding: '8px 4px',
-                            textAlign: 'center'
-                          }}>
-                            <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                              {MONTH_NAMES[monthIdx].substring(0, 3)}
-                            </div>
-                            <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? '#ffffff' : 'rgba(255,255,255,0.1)' }}>
-                              ${amt > 0 ? amt.toFixed(0) : 0}
-                            </div>
+                  {/* Grid layout of months wrapping into multiple rows */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))', 
+                    gap: '8px', 
+                    width: '100%'
+                  }}>
+                    {breakdownMonths.map(monthStr => {
+                      const amt = combinedMonthMap[monthStr] || 0
+                      const monthIdx = Number(monthStr.split('-')[1]) - 1
+                      const yearStr = monthStr.split('-')[0]
+                      return (
+                        <div key={monthStr} style={{
+                          background: amt > 0 ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.015)',
+                          border: `1px solid ${amt > 0 ? 'rgba(0, 113, 227, 0.2)' : 'var(--apple-border)'}`,
+                          borderRadius: '8px',
+                          padding: '8px 4px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
+                            {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
                           </div>
-                        )
-                      })}
-                    </div>
+                          <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? '#ffffff' : 'rgba(255,255,255,0.1)' }}>
+                            ${amt > 0 ? amt.toFixed(0) : 0}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )
@@ -797,31 +800,34 @@ export default function UserRevenue({ user, isAdminView }) {
                     </span>
                   </div>
 
-                  {/* Swipeable responsive month strip */}
-                  <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-                    <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-                      {breakdownMonths.map(monthStr => {
-                        const amt = teamMonthMap[monthStr] || 0
-                        const monthIdx = Number(monthStr.split('-')[1]) - 1
-                        return (
-                          <div key={monthStr} style={{
-                            flex: '1 0 65px',
-                            background: amt > 0 ? 'rgba(48, 213, 200, 0.06)' : 'rgba(255,255,255,0.015)',
-                            border: `1px solid ${amt > 0 ? 'rgba(48, 213, 200, 0.15)' : 'var(--apple-border)'}`,
-                            borderRadius: '6px',
-                            padding: '6px 2px',
-                            textAlign: 'center'
-                          }}>
-                            <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                              {MONTH_NAMES[monthIdx].substring(0, 3)}
-                            </div>
-                            <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(255,255,255,0.1)' }}>
-                              ${amt > 0 ? amt.toFixed(0) : 0}
-                            </div>
+                  {/* Grid layout of months wrapping into multiple rows */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', 
+                    gap: '6px', 
+                    width: '100%' 
+                  }}>
+                    {breakdownMonths.map(monthStr => {
+                      const amt = teamMonthMap[monthStr] || 0
+                      const monthIdx = Number(monthStr.split('-')[1]) - 1
+                      const yearStr = monthStr.split('-')[0]
+                      return (
+                        <div key={monthStr} style={{
+                          background: amt > 0 ? 'rgba(48, 213, 200, 0.06)' : 'rgba(255,255,255,0.015)',
+                          border: `1px solid ${amt > 0 ? 'rgba(48, 213, 200, 0.15)' : 'var(--apple-border)'}`,
+                          borderRadius: '6px',
+                          padding: '6px 2px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
+                            {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
                           </div>
-                        )
-                      })}
-                    </div>
+                          <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(255,255,255,0.1)' }}>
+                            ${amt > 0 ? amt.toFixed(0) : 0}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )
