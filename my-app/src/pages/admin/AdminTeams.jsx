@@ -63,6 +63,9 @@ export default function AdminTeams() {
 
   const [breakdownPeriod, setBreakdownPeriod] = useState(6) // default: 6 months
 
+  // Teams Overview states
+  const [showPastData, setShowPastData] = useState(false)
+  const [pastDataPeriod, setPastDataPeriod] = useState(6) // 2, 3, 4, 6
   useEffect(() => {
     async function loadData() {
       const [teamsRes, profilesRes, revRes] = await Promise.all([
@@ -1117,12 +1120,98 @@ export default function AdminTeams() {
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
       {/* Header */}
-      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }}>
-        <div className="apple-kicker">Platform Organization</div>
-        <h1 className="apple-title-large">Manage Teams</h1>
-        <p className="apple-lead">
-          View organizational team cards, analyze member sizes, and track current month contributions.
-        </p>
+      <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <div className="apple-kicker">Platform Organization</div>
+          <h1 className="apple-title-large">Manage Teams</h1>
+          <p className="apple-lead" style={{ marginBottom: 0 }}>
+            View organizational team cards, analyze member sizes, and track current month contributions.
+          </p>
+        </div>
+
+        {/* Previous Data Toggle & Timeframe Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Previous Months Data</span>
+            <button 
+              type="button"
+              onClick={() => setShowPastData(!showPastData)}
+              style={{
+                position: 'relative',
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: showPastData ? 'var(--apple-accent-blue)' : 'rgba(255,255,255,0.15)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background 0.3s'
+              }}
+            >
+              <div style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                position: 'absolute',
+                top: '3px',
+                left: showPastData ? '23px' : '3px',
+                transition: 'left 0.25s var(--apple-ease)'
+              }} />
+            </button>
+          </div>
+
+          {showPastData && (
+            <div style={{ display: 'flex', position: 'relative', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              {(() => {
+                const options = [
+                  { label: '2M', value: 2 },
+                  { label: '3M', value: 3 },
+                  { label: '4M', value: 4 },
+                  { label: '6M', value: 6 }
+                ];
+                const activeIndex = options.findIndex(o => o.value === pastDataPeriod);
+                return (
+                  <>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 4, bottom: 4, left: 4,
+                        width: `calc((100% - 8px) / ${options.length})`,
+                        background: 'rgba(0, 113, 227, 0.25)',
+                        borderRadius: '999px',
+                        transform: `translateX(${activeIndex * 100}%)`,
+                        transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)'
+                      }}
+                    />
+                    {options.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setPastDataPeriod(opt.value)}
+                        style={{
+                          position: 'relative',
+                          zIndex: 1,
+                          padding: '4px 14px',
+                          borderRadius: '999px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.78rem',
+                          fontWeight: '600',
+                          background: 'transparent',
+                          color: pastDataPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)',
+                          transition: 'color 0.2s',
+                          flex: 1,
+                          minWidth: '50px'
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </>
+                )
+              })()}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Grid of Team Cards */}
@@ -1140,13 +1229,13 @@ export default function AdminTeams() {
             )
             const teamThisMonthTotal = teamThisMonthRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
 
-            // Sum last 6 months revenue (inclusive of this month)
-            const last6MonthsList = getLastNMonths(6)
-            const last6MonthsSet = new Set(last6MonthsList)
-            const teamLast6MonthsRevenues = revenues.filter(
-              r => r.team_id === team.id && last6MonthsSet.has(normalizeMonth(r.revenue_month))
+            // Sum last X months revenue (inclusive of this month) if showPastData is true
+            const lastXMonthsList = showPastData ? getLastNMonths(pastDataPeriod) : []
+            const lastXMonthsSet = new Set(lastXMonthsList)
+            const teamLastXMonthsRevenues = revenues.filter(
+              r => r.team_id === team.id && lastXMonthsSet.has(normalizeMonth(r.revenue_month))
             )
-            const teamLast6MonthsTotal = teamLast6MonthsRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+            const teamLastXMonthsTotal = teamLastXMonthsRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
 
             return (
               <div
@@ -1183,14 +1272,16 @@ export default function AdminTeams() {
                     </div>
                   </div>
 
-                  <div style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                      <Activity size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Last 6 Months Total
+                  {showPastData && (
+                    <div style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                        <Activity size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Last {pastDataPeriod} Months Total
+                      </div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '800', color: teamLastXMonthsTotal > 0 ? 'var(--apple-accent-blue)' : '#fff' }}>
+                        ${teamLastXMonthsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: '800', color: teamLast6MonthsTotal > 0 ? 'var(--apple-accent-blue)' : '#fff' }}>
-                      ${teamLast6MonthsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )
