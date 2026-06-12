@@ -131,6 +131,22 @@ export default function UserRevenue({ user, isAdminView }) {
   // Generate the last 12 months for the breakdown grid
   const last12Months = useMemo(() => getLastNMonths(12), [])
 
+  const [breakdownPeriod, setBreakdownPeriod] = useState(6) // default: 6 months
+
+  const breakdownMonths = useMemo(() => {
+    if (breakdownPeriod > 0) {
+      return getLastNMonths(breakdownPeriod)
+    } else {
+      // All time: collect unique months from revenues, sorted descending
+      const uniqueMonths = [...new Set(revenues.map(r => normalizeMonth(r.revenue_month)))]
+      const sorted = uniqueMonths.sort((a, b) => b.localeCompare(a))
+      if (sorted.length === 0) {
+        return getLastNMonths(12)
+      }
+      return sorted
+    }
+  }, [revenues, breakdownPeriod])
+
   const selectedHistoryMonth = useMemo(() => toRevenueMonthString(historyYear, historyMonth), [historyYear, historyMonth])
 
   const selectedMonthRevenues = useMemo(() => {
@@ -638,16 +654,43 @@ export default function UserRevenue({ user, isAdminView }) {
 
       {/* ===== MY TEAMS BREAKDOWN ===== */}
       <div className="apple-card" style={{ marginBottom: '32px' }}>
-        <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>My Teams Breakdown</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <h3 className="apple-title-small" style={{ margin: 0 }}>My Teams Breakdown</h3>
+          
+          <div className="apple-pill-tabs" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '4px' }}>
+            {[
+              { label: '3M', value: 3 },
+              { label: '6M', value: 6 },
+              { label: '12M', value: 12 },
+              { label: '24M', value: 24 },
+              { label: 'All Time', value: 0 }
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setBreakdownPeriod(opt.value)}
+                className={`apple-pill-tab ${breakdownPeriod === opt.value ? 'active' : ''}`}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.8rem',
+                  borderRadius: '12px'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {uniqueTeamIds.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
             {/* Combined Section (Multi-team users) */}
             {uniqueTeamIds.length > 1 && (() => {
-              const combinedAllTime = sumRevenues(revenues)
+              const combinedRevs = filterRevenuesByPeriod(revenues, breakdownPeriod)
+              const combinedPeriodTotal = sumRevenues(combinedRevs)
               const combinedMonthMap = {}
-              for (const r of revenues) {
+              for (const r of combinedRevs) {
                 const mStr = normalizeMonth(r.revenue_month)
                 combinedMonthMap[mStr] = (combinedMonthMap[mStr] || 0) + Number(r.amount)
               }
@@ -668,7 +711,7 @@ export default function UserRevenue({ user, isAdminView }) {
                       </span>
                     </div>
                     <span style={{ fontWeight: '800', color: 'var(--apple-accent-blue)', fontSize: '1.15rem' }}>
-                      ${combinedAllTime.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      ${combinedPeriodTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                   </div>
 
@@ -678,12 +721,13 @@ export default function UserRevenue({ user, isAdminView }) {
 
                   {/* Swipeable responsive month strip */}
                   <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-                    <div style={{ display: 'flex', gap: '8px', minWidth: '450px' }}>
-                      {last12Months.slice(0, 6).map(monthStr => {
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                      {breakdownMonths.map(monthStr => {
                         const amt = combinedMonthMap[monthStr] || 0
+                        const monthIdx = Number(monthStr.split('-')[1]) - 1
                         return (
                           <div key={monthStr} style={{
-                            flex: 1,
+                            flex: '1 0 68px',
                             background: amt > 0 ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.015)',
                             border: `1px solid ${amt > 0 ? 'rgba(0, 113, 227, 0.2)' : 'var(--apple-border)'}`,
                             borderRadius: '8px',
@@ -691,7 +735,7 @@ export default function UserRevenue({ user, isAdminView }) {
                             textAlign: 'center'
                           }}>
                             <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                              {MONTH_NAMES[new Date(monthStr).getMonth()].substring(0, 3)}
+                              {MONTH_NAMES[monthIdx].substring(0, 3)}
                             </div>
                             <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? '#ffffff' : 'rgba(255,255,255,0.1)' }}>
                               ${amt > 0 ? amt.toFixed(0) : 0}
@@ -715,10 +759,11 @@ export default function UserRevenue({ user, isAdminView }) {
               const teamRole = isUserTeam ? 'member' : 'former member'
 
               const teamRevs = revenues.filter(r => r.team_id === teamId)
-              const teamAllTime = sumRevenues(teamRevs)
+              const teamPeriodRevs = filterRevenuesByPeriod(teamRevs, breakdownPeriod)
+              const teamPeriodTotal = sumRevenues(teamPeriodRevs)
 
               const teamMonthMap = {}
-              for (const r of teamRevs) {
+              for (const r of teamPeriodRevs) {
                 teamMonthMap[normalizeMonth(r.revenue_month)] = (teamMonthMap[normalizeMonth(r.revenue_month)] || 0) + Number(r.amount)
               }
 
@@ -748,18 +793,19 @@ export default function UserRevenue({ user, isAdminView }) {
                       </span>
                     </div>
                     <span style={{ fontWeight: '700', color: '#ffffff', fontSize: '1rem' }}>
-                      ${teamAllTime.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      ${teamPeriodTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                   </div>
 
                   {/* Swipeable responsive month strip */}
                   <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-                    <div style={{ display: 'flex', gap: '6px', minWidth: '450px' }}>
-                      {last12Months.slice(0, 6).map(monthStr => {
+                    <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                      {breakdownMonths.map(monthStr => {
                         const amt = teamMonthMap[monthStr] || 0
+                        const monthIdx = Number(monthStr.split('-')[1]) - 1
                         return (
                           <div key={monthStr} style={{
-                            flex: 1,
+                            flex: '1 0 65px',
                             background: amt > 0 ? 'rgba(48, 213, 200, 0.06)' : 'rgba(255,255,255,0.015)',
                             border: `1px solid ${amt > 0 ? 'rgba(48, 213, 200, 0.15)' : 'var(--apple-border)'}`,
                             borderRadius: '6px',
@@ -767,7 +813,7 @@ export default function UserRevenue({ user, isAdminView }) {
                             textAlign: 'center'
                           }}>
                             <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
-                              {MONTH_NAMES[new Date(monthStr).getMonth()].substring(0, 3)}
+                              {MONTH_NAMES[monthIdx].substring(0, 3)}
                             </div>
                             <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(255,255,255,0.1)' }}>
                               ${amt > 0 ? amt.toFixed(0) : 0}
