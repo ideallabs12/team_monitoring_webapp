@@ -77,23 +77,24 @@ export function calculateMilestones(revenues, profiles, teams, disReports = []) 
     }
   })
 
-  // 4. All-time highest revenue team lead in one month (team total led by that lead)
-  // Group team leads by team_id
-  const teamLeadMap = {}
-  teamLeadProfiles.forEach(p => {
-    if (p.team_id) {
-      teamLeadMap[p.team_id] = p
-    }
+  // 4. All-time highest revenue team lead in one month
+  // Group by (user_id, month) where user is team lead
+  const leadMonthRev = {}
+  revenues.forEach(r => {
+    if (!teamLeadIds.has(r.user_id)) return
+    const month = normalizeMonth(r.revenue_month)
+    const key = `${r.user_id}_${month}`
+    leadMonthRev[key] = (leadMonthRev[key] || 0) + Number(r.amount || 0)
   })
 
   let maxLeadInMonth = { amount: 0, userName: 'N/A', teamName: 'N/A', month: 'N/A' }
-  Object.entries(teamMonthRev).forEach(([key, amount]) => {
-    const [teamId, month] = key.split('_')
-    const leadProfile = teamLeadMap[teamId]
-    if (leadProfile && amount > maxLeadInMonth.amount) {
-      const userName = `${leadProfile.first_name} ${leadProfile.last_name}`.trim() || 'Unknown'
-      const teamName = teamMap[teamId] || 'Unknown Team'
-      maxLeadInMonth = { amount, userName, teamName, month, userId: leadProfile.id }
+  Object.entries(leadMonthRev).forEach(([key, amount]) => {
+    const [userId, month] = key.split('_')
+    if (amount > maxLeadInMonth.amount) {
+      const profile = profileMap[userId]
+      const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'Unknown'
+      const teamName = profile && profile.team_id ? teamMap[profile.team_id] : 'No Team'
+      maxLeadInMonth = { amount, userName, teamName, month, userId }
     }
   })
 

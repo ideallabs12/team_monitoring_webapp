@@ -678,8 +678,8 @@ export default function UserRevenue({ user, isAdminView }) {
 
                   {/* Swipeable responsive month strip */}
                   <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-                    <div style={{ display: 'flex', gap: '8px', minWidth: '850px' }}>
-                      {last12Months.map(monthStr => {
+                    <div style={{ display: 'flex', gap: '8px', minWidth: '450px' }}>
+                      {last12Months.slice(0, 6).map(monthStr => {
                         const amt = combinedMonthMap[monthStr] || 0
                         return (
                           <div key={monthStr} style={{
@@ -754,8 +754,8 @@ export default function UserRevenue({ user, isAdminView }) {
 
                   {/* Swipeable responsive month strip */}
                   <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-                    <div style={{ display: 'flex', gap: '6px', minWidth: '850px' }}>
-                      {last12Months.map(monthStr => {
+                    <div style={{ display: 'flex', gap: '6px', minWidth: '450px' }}>
+                      {last12Months.slice(0, 6).map(monthStr => {
                         const amt = teamMonthMap[monthStr] || 0
                         return (
                           <div key={monthStr} style={{
