@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { ChevronDown, Sun, Moon } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { getSystemTheme, setSystemTheme } from '../utils/themeHelper'
+import ThemeSwitch from './ThemeSwitch'
 
 export default function Navbar({ user }) {
   const navigate = useNavigate()
@@ -133,26 +134,7 @@ export default function Navbar({ user }) {
               All-Hands
             </span>
           </Link>
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--apple-text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '6px',
-              borderRadius: '50%',
-              transition: 'background 0.2s, color 0.2s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
         </div>
 
         {user && (

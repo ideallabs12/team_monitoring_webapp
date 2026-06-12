@@ -15,11 +15,10 @@ import {
   Menu,
   X,
   Trophy,
-  Crown,
-  Sun,
-  Moon
+  Crown
 } from 'lucide-react'
 import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
+import ThemeSwitch from '../../components/ThemeSwitch'
 
 const NAV_ITEMS = [
   { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
@@ -113,26 +112,7 @@ export default function AdminLayout({ user, isDeactivated }) {
           </div>
           <span className="admin-sidebar-brand-name">All-Hands</span>
         </div>
-        <button
-          onClick={toggleTheme}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--apple-text-secondary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            borderRadius: '50%',
-            transition: 'background 0.2s, color 0.2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-        >
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
+        <ThemeSwitch theme={theme} toggleTheme={toggleTheme} disabled={user?.email !== 'signatureglobalconferences@gmail.com'} />
       </div>
 
       {/* ── Navigation ── */}
@@ -206,24 +186,9 @@ export default function AdminLayout({ user, isDeactivated }) {
               All-Hands Admin
             </div>
           </div>
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--apple-text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '6px',
-              borderRadius: '50%',
-              marginRight: '8px'
-            }}
-            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <div style={{ marginRight: '8px' }}>
+            <ThemeSwitch theme={theme} toggleTheme={toggleTheme} disabled={user?.email !== 'signatureglobalconferences@gmail.com'} />
+          </div>
         </div>
 
         <main className="admin-content">
