@@ -137,13 +137,39 @@ export default function UserRevenue({ user, isAdminView }) {
     if (breakdownPeriod > 0) {
       return getLastNMonths(breakdownPeriod)
     } else {
-      // All time: collect unique months from revenues, sorted descending
-      const uniqueMonths = [...new Set(revenues.map(r => normalizeMonth(r.revenue_month)))]
-      const sorted = uniqueMonths.sort((a, b) => b.localeCompare(a))
-      if (sorted.length === 0) {
-        return getLastNMonths(12)
+      // All time: generate all months from the current month going back to the earliest month in revenues
+      const now = new Date()
+      const currentMonthStr = toRevenueMonthString(now.getFullYear(), now.getMonth())
+      
+      if (revenues.length === 0) {
+        return [currentMonthStr]
       }
-      return sorted
+      
+      // Find the earliest month in revenues
+      let earliestMonthStr = currentMonthStr
+      for (const r of revenues) {
+        const rMonth = normalizeMonth(r.revenue_month)
+        if (rMonth && rMonth < earliestMonthStr) {
+          earliestMonthStr = rMonth
+        }
+      }
+      
+      // Generate all months from currentMonthStr back to earliestMonthStr
+      const months = []
+      const [earliestY, earliestM] = earliestMonthStr.split('-').map(Number)
+      
+      let tempDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      const earliestDate = new Date(earliestY, earliestM - 1, 1)
+      
+      // Safety check to prevent infinite loops
+      let loopCount = 0
+      while (tempDate >= earliestDate && loopCount < 500) {
+        months.push(toRevenueMonthString(tempDate.getFullYear(), tempDate.getMonth()))
+        tempDate.setMonth(tempDate.getMonth() - 1)
+        loopCount++
+      }
+      
+      return months
     }
   }, [revenues, breakdownPeriod])
 
@@ -741,7 +767,7 @@ export default function UserRevenue({ user, isAdminView }) {
                           <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
                             {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
                           </div>
-                          <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? '#ffffff' : 'rgba(255,255,255,0.1)' }}>
+                          <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? 'var(--apple-accent-blue)' : 'rgba(120, 120, 128, 0.5)' }}>
                             ${amt > 0 ? amt.toFixed(0) : 0}
                           </div>
                         </div>
@@ -822,7 +848,7 @@ export default function UserRevenue({ user, isAdminView }) {
                           <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
                             {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
                           </div>
-                          <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(255,255,255,0.1)' }}>
+                          <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(120, 120, 128, 0.5)' }}>
                             ${amt > 0 ? amt.toFixed(0) : 0}
                           </div>
                         </div>
