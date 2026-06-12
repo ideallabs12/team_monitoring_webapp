@@ -698,13 +698,12 @@ export default function UserRevenue({ user, isAdminView }) {
                   <div
                     style={{
                       position: 'absolute',
-                      top: 4, bottom: 4,
-                      left: `calc(4px + ${activeIndex * (100 / options.length)}%)`,
-                      width: `calc(${100 / options.length}% - 8px)`,
-                      background: 'var(--apple-accent-blue)',
+                      top: 4, bottom: 4, left: 4,
+                      width: `calc((100% - 8px) / ${options.length})`,
+                      background: 'rgba(0, 113, 227, 0.12)',
                       borderRadius: '999px',
-                      transition: 'left 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                      boxShadow: '0 2px 8px rgba(0, 113, 227, 0.3)'
+                      transform: `translateX(${activeIndex * 100}%)`,
+                      transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)'
                     }}
                   />
                   {options.map(opt => (
@@ -718,7 +717,7 @@ export default function UserRevenue({ user, isAdminView }) {
                         padding: '6px 18px',
                         fontSize: '0.82rem',
                         fontWeight: breakdownPeriod === opt.value ? '700' : '600',
-                        color: breakdownPeriod === opt.value ? '#fff' : 'var(--text-secondary)',
+                        color: breakdownPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--text-secondary)',
                         background: 'transparent',
                         border: 'none',
                         cursor: 'pointer',

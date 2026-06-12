@@ -724,13 +724,12 @@ export default function AdminTeams() {
                         <div
                           style={{
                             position: 'absolute',
-                            top: 4, bottom: 4,
-                            left: `calc(4px + ${activeIndex * (100 / options.length)}%)`,
-                            width: `calc(${100 / options.length}% - 8px)`,
-                            background: 'var(--apple-accent-blue)',
+                            top: 4, bottom: 4, left: 4,
+                            width: `calc((100% - 8px) / ${options.length})`,
+                            background: 'rgba(0, 113, 227, 0.12)',
                             borderRadius: '999px',
-                            transition: 'left 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                            boxShadow: '0 2px 8px rgba(0, 113, 227, 0.3)'
+                            transform: `translateX(${activeIndex * 100}%)`,
+                            transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)'
                           }}
                         />
                         {options.map(opt => (
@@ -744,7 +743,7 @@ export default function AdminTeams() {
                               padding: '6px 18px',
                               fontSize: '0.82rem',
                               fontWeight: breakdownPeriod === opt.value ? '700' : '600',
-                              color: breakdownPeriod === opt.value ? '#fff' : 'var(--text-secondary)',
+                              color: breakdownPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--text-secondary)',
                               background: 'transparent',
                               border: 'none',
                               cursor: 'pointer',
@@ -798,7 +797,7 @@ export default function AdminTeams() {
                     gap: '8px'
                   }}>
                     <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {d.month} {d.key.split('-')[0]}
+                      {d.month.split(' ')[0]} {d.key.split('-')[0]}
                       {isCurrentMonth && (
                         <span style={{ marginLeft: '4px', fontSize: '0.6rem', background: 'rgba(0,113,227,0.2)', color: 'var(--apple-accent-blue)', padding: '1px 4px', borderRadius: '3px' }}>MTD</span>
                       )}
