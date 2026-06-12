@@ -124,67 +124,69 @@ export default function AdminDis() {
   const teamData = useMemo(() => {
     const nonAdminIds = new Set(profiles.map(p => p.id))
 
-    return teams.map(team => {
-      const teamMems = profiles.filter(p => p.team_id === team.id && nonAdminIds.has(p.id))
-      const teamMemberIds = new Set(teamMems.map(m => m.id))
+    return teams
+      .map(team => {
+        const teamMems = profiles.filter(p => p.team_id === team.id && nonAdminIds.has(p.id) && p.has_dis_reporting !== false)
+        const teamMemberIds = new Set(teamMems.map(m => m.id))
 
-      const teamReps = reports.filter(r => {
-        const isCurrentMember = teamMemberIds.has(r.user_id)
-        if (isCurrentMember) return true
-        const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
-        const hasHistRev = revenues.some(
-          rv => rv.user_id === r.user_id &&
-                rv.team_id === team.id &&
-                rv.revenue_month === monthStr
-        )
-        return hasHistRev
-      })
-
-      const teamUserLatestRevenue = {}
-      let teamTotalLeads = 0
-      let teamTotalExpected = 0
-
-      for (const r of teamReps) {
-        teamTotalLeads += Number(r.positive_leads)
-        teamTotalExpected += Number(r.expected_revenue)
-        if (teamUserLatestRevenue[r.user_id] === undefined) {
+        const teamReps = reports.filter(r => {
+          const isCurrentMember = teamMemberIds.has(r.user_id)
+          if (isCurrentMember) return true
           const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
-          const revRecord = revenues.find(
+          const hasHistRev = revenues.some(
             rv => rv.user_id === r.user_id &&
                   rv.team_id === team.id &&
                   rv.revenue_month === monthStr
           )
-          teamUserLatestRevenue[r.user_id] = revRecord ? Number(revRecord.amount) : 0
+          return hasHistRev
+        })
+
+        const teamUserLatestRevenue = {}
+        let teamTotalLeads = 0
+        let teamTotalExpected = 0
+
+        for (const r of teamReps) {
+          teamTotalLeads += Number(r.positive_leads)
+          teamTotalExpected += Number(r.expected_revenue)
+          if (teamUserLatestRevenue[r.user_id] === undefined) {
+            const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
+            const revRecord = revenues.find(
+              rv => rv.user_id === r.user_id &&
+                    rv.team_id === team.id &&
+                    rv.revenue_month === monthStr
+            )
+            teamUserLatestRevenue[r.user_id] = revRecord ? Number(revRecord.amount) : 0
+          }
         }
-      }
 
-      const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
+        const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
 
-      // Missing users: active members who haven't submitted, with team info
-      const missing = teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
+        // Missing users: active members who haven't submitted, with team info
+        const missing = teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
+          return {
+            id: m.id,
+            name: `${m.first_name} ${m.last_name}`,
+            email: m.email,
+            teamName: team.name
+          }
+        })
+
+        const submittedCount = teamMems.length - missing.length
+        const progress = teamMems.length > 0 ? Math.round((submittedCount / teamMems.length) * 100) : 0
+
         return {
-          id: m.id,
-          name: `${m.first_name} ${m.last_name}`,
-          email: m.email,
-          teamName: team.name
+          ...team,
+          membersCount: teamMems.length,
+          submissions: teamReps,
+          missing,
+          submittedCount,
+          progress,
+          totalRevenue: teamTotalRevenue,
+          totalLeads: teamTotalLeads,
+          totalExpected: teamTotalExpected
         }
       })
-
-      const submittedCount = teamMems.length - missing.length
-      const progress = teamMems.length > 0 ? Math.round((submittedCount / teamMems.length) * 100) : 0
-
-      return {
-        ...team,
-        membersCount: teamMems.length,
-        submissions: teamReps,
-        missing,
-        submittedCount,
-        progress,
-        totalRevenue: teamTotalRevenue,
-        totalLeads: teamTotalLeads,
-        totalExpected: teamTotalExpected
-      }
-    })
+      .filter(t => t.membersCount > 0)
   }, [teams, profiles, reports, submittedToday, revenues])
 
   // Derived data for current view
@@ -199,8 +201,9 @@ export default function AdminDis() {
 
   // Compute global submissions/missed statistics for "All Teams"
   const globalStats = useMemo(() => {
-    const totalMembers = profiles.length
-    const submittedCount = profiles.filter(m => submittedToday.has(m.id)).length
+    const activeProfiles = profiles.filter(p => p.has_dis_reporting !== false)
+    const totalMembers = activeProfiles.length
+    const submittedCount = activeProfiles.filter(m => submittedToday.has(m.id)).length
     const missedCount = totalMembers - submittedCount
     const progress = totalMembers > 0 ? Math.round((submittedCount / totalMembers) * 100) : 0
     return { totalMembers, submittedCount, missedCount, progress }
@@ -250,6 +253,35 @@ export default function AdminDis() {
       totalExpected: activeTeam.totalExpected
     }
   }, [isAllTeams, globalSummary, activeTeam])
+
+  const handleCopyMissingReports = () => {
+    const grouped = {}
+    filteredMissing.forEach(m => {
+      const tName = m.teamName || 'Unassigned'
+      if (!grouped[tName]) grouped[tName] = []
+      grouped[tName].push(m.name)
+    })
+
+    const lines = []
+    Object.entries(grouped).forEach(([teamName, members]) => {
+      lines.push(teamName)
+      members.forEach(name => {
+        lines.push(`- ${name}`)
+      })
+      lines.push('') // Spacer line
+    })
+
+    const textToCopy = lines.join('\n').trim()
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+          alert('Missing DIS reports copied to clipboard!')
+        })
+        .catch(err => {
+          console.error('Failed to copy: ', err)
+        })
+    }
+  }
 
   if (loading && !adminDisCache.loaded) {
     return (
@@ -562,12 +594,23 @@ export default function AdminDis() {
 
       {/* ===== MISSING DIS REPORTS SECTION (SECOND) ===== */}
       <div style={{ marginBottom: '60px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <AlertCircle size={18} style={{ color: 'var(--apple-accent-red)' }} />
-          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Missing DIS Reports</h3>
-          <span className="apple-badge apple-badge-red" style={{ fontSize: '0.75rem' }}>
-            {filteredMissing.length}
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertCircle size={18} style={{ color: 'var(--apple-accent-red)' }} />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Missing DIS Reports</h3>
+            <span className="apple-badge apple-badge-red" style={{ fontSize: '0.75rem' }}>
+              {filteredMissing.length}
+            </span>
+          </div>
+          {filteredMissing.length > 0 && (
+            <button
+              onClick={handleCopyMissingReports}
+              className="apple-btn apple-btn-secondary"
+              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              📋 Copy Missing Reports
+            </button>
+          )}
         </div>
 
         {filteredMissing.length > 0 ? (
