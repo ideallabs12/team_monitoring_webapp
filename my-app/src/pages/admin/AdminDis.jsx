@@ -388,6 +388,13 @@ export default function AdminDis() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
+                onClick={(e) => {
+                  try {
+                    e.target.showPicker();
+                  } catch (err) {
+                    console.log("showPicker not supported", err);
+                  }
+                }}
                 max={new Date().toISOString().split('T')[0]}
                 className="apple-form-control has-icon"
               />

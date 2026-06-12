@@ -420,6 +420,13 @@ export default function UserDis() {
                 type="date"
                 value={reportDate}
                 onChange={(e) => setReportDate(e.target.value)}
+                onClick={(e) => {
+                  try {
+                    e.target.showPicker();
+                  } catch (err) {
+                    console.log("showPicker not supported", err);
+                  }
+                }}
                 max={new Date().toISOString().split('T')[0]}
                 required
                 className="apple-form-control"
