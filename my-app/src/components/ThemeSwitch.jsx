@@ -4,7 +4,7 @@ export default function ThemeSwitch({ theme, toggleTheme, disabled }) {
   const isDark = theme === 'dark'
 
   return (
-    <label className="theme-switch" title={disabled ? "Theme switching restricted" : `Switch to ${isDark ? 'Light' : 'Dark'} Mode`} style={{ display: 'inline-block', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
+    <label className="theme-switch" style={{ display: 'inline-block', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
       <input 
         type="checkbox" 
         className="theme-switch__checkbox" 
