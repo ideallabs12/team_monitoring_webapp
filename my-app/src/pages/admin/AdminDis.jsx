@@ -304,15 +304,26 @@ export default function AdminDis() {
             Track, search, and audit Daily Information Sheets submissions.
           </p>
         </div>
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="apple-btn apple-btn-secondary"
-          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-anim' : ''} style={{ marginRight: '6px' }} />
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {filteredMissing.length > 0 && (
+            <button
+              onClick={handleCopyMissingReports}
+              className="apple-btn apple-btn-secondary"
+              style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              📋 Copy Missing Reports
+            </button>
+          )}
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="apple-btn apple-btn-secondary"
+            style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-anim' : ''} style={{ marginRight: '6px' }} />
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* ===== METRICS SUMMARY ROW ===== */}
@@ -602,15 +613,6 @@ export default function AdminDis() {
               {filteredMissing.length}
             </span>
           </div>
-          {filteredMissing.length > 0 && (
-            <button
-              onClick={handleCopyMissingReports}
-              className="apple-btn apple-btn-secondary"
-              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              📋 Copy Missing Reports
-            </button>
-          )}
         </div>
 
         {filteredMissing.length > 0 ? (
