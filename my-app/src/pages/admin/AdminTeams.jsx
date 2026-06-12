@@ -61,6 +61,8 @@ export default function AdminTeams() {
   const [breakdownYear, setBreakdownYear] = useState(new Date().getFullYear())
   const [breakdownMonth, setBreakdownMonth] = useState(new Date().getMonth())
 
+  const [breakdownPeriod, setBreakdownPeriod] = useState(6) // default: 6 months
+
   useEffect(() => {
     async function loadData() {
       const [teamsRes, profilesRes, revRes] = await Promise.all([
@@ -168,6 +170,71 @@ export default function AdminTeams() {
   const teamMaxMonthRevenue = useMemo(() => {
     return Math.max(...teamTrendData.map(d => d.total), 1)
   }, [teamTrendData])
+
+  const breakdownMonths = useMemo(() => {
+    if (breakdownPeriod > 0) {
+      return getLastNMonths(breakdownPeriod).reverse() // oldest to newest
+    } else {
+      // All time: generate all months from earliest logged revenue for this team to the current month, sorted oldest to newest
+      const now = new Date()
+      const currentMonthStr = toRevenueMonthString(now.getFullYear(), now.getMonth())
+      
+      if (!activeTeam || revenues.length === 0) {
+        return [currentMonthStr]
+      }
+      
+      const teamRevs = revenues.filter(r => r.team_id === activeTeam.id)
+      if (teamRevs.length === 0) {
+        return [currentMonthStr]
+      }
+      
+      // Find earliest month in team revenues
+      let earliestMonthStr = currentMonthStr
+      for (const r of teamRevs) {
+        const rMonth = normalizeMonth(r.revenue_month)
+        if (rMonth && rMonth < earliestMonthStr) {
+          earliestMonthStr = rMonth
+        }
+      }
+      
+      const months = []
+      const [earliestY, earliestM] = earliestMonthStr.split('-').map(Number)
+      
+      let tempDate = new Date(earliestY, earliestM - 1, 1)
+      const currentDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      
+      let loopCount = 0
+      while (tempDate <= currentDate && loopCount < 500) {
+        months.push(toRevenueMonthString(tempDate.getFullYear(), tempDate.getMonth()))
+        tempDate.setMonth(tempDate.getMonth() + 1)
+        loopCount++
+      }
+      
+      return months
+    }
+  }, [revenues, activeTeam, breakdownPeriod])
+
+  const breakdownTrendData = useMemo(() => {
+    if (!activeTeam) return []
+    return breakdownMonths.map(m => {
+      const total = revenues
+        .filter(r => r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === m)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+      return { month: formatRevenueMonthShort(m), total, key: m }
+    })
+  }, [revenues, activeTeam, breakdownMonths])
+
+  const breakdownPeriodTotal = useMemo(() => {
+    return breakdownTrendData.reduce((sum, d) => sum + d.total, 0)
+  }, [breakdownTrendData])
+
+  const breakdownMonthlyAvg = useMemo(() => {
+    return breakdownMonths.length > 0 ? breakdownPeriodTotal / breakdownMonths.length : 0
+  }, [breakdownPeriodTotal, breakdownMonths])
+
+  const breakdownMaxMonthRevenue = useMemo(() => {
+    return Math.max(...breakdownTrendData.map(d => d.total), 1)
+  }, [breakdownTrendData])
 
   // Calculations for Team Performance Breakdown
   const teamProfiles = useMemo(() => {
@@ -399,180 +466,8 @@ export default function AdminTeams() {
             {activeTeam.name}
           </h2>
           <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', margin: '4px 0 0 0' }}>
-            Review role hierarchy, 12-month performance, and member revenue contributions.
+            Review role hierarchy, performance breakdowns, and member revenue contributions.
           </p>
-        </div>
-
-        {/* --- TEAM PERFORMANCE SUMMARY & TREND --- */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
-
-          {/* 12-Month Breakdown Grid */}
-          <div className="apple-card" style={{ padding: '24px !important' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Monthly Revenue</div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Last 12 Months Breakdown</h3>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>12-Month Total</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-accent-blue)', letterSpacing: '-0.02em' }}>
-                  ${team12MonthTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </div>
-              </div>
-            </div>
-
-            {/* Month grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
-              {teamTrendData.map((d, i) => {
-                const pct = teamMaxMonthRevenue > 0 ? (d.total / teamMaxMonthRevenue) * 100 : 0
-                const isCurrentMonth = i === teamTrendData.length - 1
-                return (
-                  <div key={d.key} style={{
-                    background: isCurrentMonth ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${isCurrentMonth ? 'rgba(0, 113, 227, 0.25)' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: '10px',
-                    padding: '12px 10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {d.month}
-                      {isCurrentMonth && (
-                        <span style={{ marginLeft: '4px', fontSize: '0.6rem', background: 'rgba(0,113,227,0.2)', color: 'var(--apple-accent-blue)', padding: '1px 4px', borderRadius: '3px' }}>MTD</span>
-                      )}
-                    </div>
-                    {/* Mini progress bar */}
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${pct}%`,
-                        background: d.total > 0 ? 'var(--apple-accent-blue)' : 'transparent',
-                        borderRadius: '2px',
-                        transition: 'width 0.5s ease'
-                      }} />
-                    </div>
-                    <div style={{
-                      fontSize: '0.88rem',
-                      fontWeight: '700',
-                      color: d.total > 0 ? '#fff' : 'rgba(255,255,255,0.2)'
-                    }}>
-                      {d.total > 0
-                        ? `$${d.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : '—'}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Summary row */}
-            <div style={{ display: 'flex', gap: '24px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Monthly Average</div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#fff' }}>
-                  ${teamMonthlyAvg.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Active Members</div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Users size={14} color="var(--apple-text-secondary)" /> {activeProfiles.length}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Best Month</div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--apple-accent-green)' }}>
-                  {teamTrendData.length > 0 ? (() => {
-                    const best = teamTrendData.reduce((a, b) => b.total > a.total ? b : a)
-                    return best.total > 0
-                      ? `${best.month} ($${best.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` 
-                      : '—'
-                  })() : '—'}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trend Line Card */}
-          <div className="apple-card" style={{ padding: '24px !important', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Activity size={18} color="var(--apple-text-secondary)" />
-                <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>Performance Trend</h3>
-              </div>
-              {/* Period filter pills */}
-              <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '4px' }}>
-                {[{ label: '2M', value: 2 }, { label: '3M', value: 3 }, { label: '6M', value: 6 }, { label: '12M', value: 12 }].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setTrendPeriod(opt.value)}
-                    style={{
-                      padding: '5px 14px',
-                      borderRadius: '7px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '0.78rem',
-                      fontWeight: '600',
-                      transition: 'all 0.15s ease',
-                      background: trendPeriod === opt.value ? 'var(--apple-accent-blue)' : 'transparent',
-                      color: trendPeriod === opt.value ? '#fff' : 'var(--apple-text-secondary)',
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ height: '260px' }}>
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={teamTrendFiltered} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="teamTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
-                    axisLine={false} 
-                    tickLine={false}
-                    dy={10}
-                  />
-                  <YAxis 
-                    tickFormatter={(val) => `$${val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0)}`}
-                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
-                    axisLine={false} 
-                    tickLine={false}
-                    dx={-4}
-                    width={60}
-                  />
-                  <Tooltip
-                    content={<ChartTooltip />}
-                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  />
-                  {teamMonthlyAvg > 0 && (
-                    <ReferenceLine 
-                      y={teamMonthlyAvg} 
-                      stroke="rgba(255,255,255,0.15)" 
-                      strokeDasharray="4 4"
-                    />
-                  )}
-                  <Area 
-                    type="monotone" 
-                    dataKey="total" 
-                    stroke="var(--apple-accent-blue)" 
-                    strokeWidth={3}
-                    fill="url(#teamTrendGrad)" 
-                    activeDot={{ r: 6, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
         </div>
 
         {/* Month + Year Filter — combined in one row */}
@@ -619,7 +514,7 @@ export default function AdminTeams() {
         </div>
 
         {/* Member cards */}
-        <div style={{ marginBottom: '8px' }}>
+        <div style={{ marginBottom: '28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '700' }}>
               Active Members
@@ -736,7 +631,7 @@ export default function AdminTeams() {
           if (historicalWithRevenue.length === 0) return null
 
           return (
-            <div style={{ marginTop: '28px' }}>
+            <div style={{ marginBottom: '28px' }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--apple-text-secondary)', fontWeight: '700' }}>
                 Historical Members
                 <span style={{ marginLeft: '8px', fontSize: '0.75rem', fontWeight: '500' }}>({historicalWithRevenue.length})</span>
@@ -803,6 +698,210 @@ export default function AdminTeams() {
             </div>
           )
         })()}
+
+        {/* --- TEAM PERFORMANCE SUMMARY & TREND --- */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '32px' }}>
+
+          {/* Monthly Revenue Breakdown Grid */}
+          <div className="apple-card" style={{ padding: '24px !important' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Monthly Revenue</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Team Revenue Breakdown</h3>
+                  
+                  {/* Timeframe pill tabs */}
+                  <div className="apple-pill-tabs" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '4px' }}>
+                    {[
+                      { label: '3M', value: 3 },
+                      { label: '6M', value: 6 },
+                      { label: '12M', value: 12 },
+                      { label: '24M', value: 24 },
+                      { label: 'All Time', value: 0 }
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setBreakdownPeriod(opt.value)}
+                        className={`apple-pill-tab ${breakdownPeriod === opt.value ? 'active' : ''}`}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '0.8rem',
+                          borderRadius: '12px'
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>
+                  {breakdownPeriod === 0 ? 'All Time' : `${breakdownPeriod}-Month`} Total
+                </div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-accent-blue)', letterSpacing: '-0.02em' }}>
+                  ${breakdownPeriodTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </div>
+              </div>
+            </div>
+
+            {/* Month grid wrapping into multiple rows */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))', 
+              gap: '10px',
+              width: '100%'
+            }}>
+              {breakdownTrendData.map((d) => {
+                const pct = breakdownMaxMonthRevenue > 0 ? (d.total / breakdownMaxMonthRevenue) * 100 : 0
+                const isCurrentMonth = d.key === currentMonthStr
+                return (
+                  <div key={d.key} style={{
+                    background: isCurrentMonth ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isCurrentMonth ? 'rgba(0, 113, 227, 0.25)' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: '10px',
+                    padding: '12px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {d.month} {d.key.split('-')[0]}
+                      {isCurrentMonth && (
+                        <span style={{ marginLeft: '4px', fontSize: '0.6rem', background: 'rgba(0,113,227,0.2)', color: 'var(--apple-accent-blue)', padding: '1px 4px', borderRadius: '3px' }}>MTD</span>
+                      )}
+                    </div>
+                    {/* Mini progress bar */}
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${pct}%`,
+                        background: d.total > 0 ? 'var(--apple-accent-blue)' : 'transparent',
+                        borderRadius: '2px',
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                    <div style={{
+                      fontSize: '0.88rem',
+                      fontWeight: '700',
+                      color: d.total > 0 ? '#fff' : 'rgba(120, 120, 128, 0.5)'
+                    }}>
+                      ${d.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Summary row */}
+            <div style={{ display: 'flex', gap: '24px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Monthly Average</div>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#fff' }}>
+                  ${breakdownMonthlyAvg.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Active Members</div>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Users size={14} color="var(--apple-text-secondary)" /> {activeProfiles.length}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>Best Month</div>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--apple-accent-green)' }}>
+                  {breakdownTrendData.length > 0 ? (() => {
+                    const best = breakdownTrendData.reduce((a, b) => b.total > a.total ? b : a, { total: -1 })
+                    return best.total > 0
+                      ? `${best.month} ${best.key.split('-')[0]} ($${best.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` 
+                      : '—'
+                  })() : '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trend Line Card */}
+          <div className="apple-card" style={{ padding: '24px !important', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} color="var(--apple-text-secondary)" />
+                <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>Performance Trend</h3>
+              </div>
+              {/* Period filter pills */}
+              <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '4px' }}>
+                {[{ label: '2M', value: 2 }, { label: '3M', value: 3 }, { label: '6M', value: 6 }, { label: '12M', value: 12 }].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTrendPeriod(opt.value)}
+                    style={{
+                      padding: '5px 14px',
+                      borderRadius: '7px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.78rem',
+                      fontWeight: '600',
+                      transition: 'all 0.15s ease',
+                      background: trendPeriod === opt.value ? 'var(--apple-accent-blue)' : 'transparent',
+                      color: trendPeriod === opt.value ? '#fff' : 'var(--apple-text-secondary)',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ height: '260px' }}>
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={teamTrendFiltered} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="teamTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--apple-accent-blue)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--apple-accent-blue)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 11 }}
+                    axisLine={false} 
+                    tickLine={false}
+                    dy={10}
+                  />
+                  <YAxis 
+                    tickFormatter={(val) => `$${val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0)}`}
+                    tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
+                    axisLine={false} 
+                    tickLine={false}
+                    dx={-4}
+                    width={60}
+                  />
+                  <Tooltip
+                    content={<ChartTooltip />}
+                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  />
+                  {teamMonthlyAvg > 0 && (
+                    <ReferenceLine 
+                      y={teamMonthlyAvg} 
+                      stroke="rgba(255,255,255,0.15)" 
+                      strokeDasharray="4 4"
+                    />
+                  )}
+                  <Area 
+                    type="monotone" 
+                    dataKey="total" 
+                    stroke="var(--apple-accent-blue)" 
+                    strokeWidth={3}
+                    fill="url(#teamTrendGrad)" 
+                    activeDot={{ r: 6, fill: '#fff', stroke: 'var(--apple-accent-blue)', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
 
         {/* ===== TEAM PERFORMANCE BREAKDOWN SECTION ===== */}
         <div className="apple-card" style={{ marginTop: '28px', padding: '24px !important' }}>

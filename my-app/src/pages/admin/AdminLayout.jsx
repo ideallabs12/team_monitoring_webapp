@@ -60,12 +60,19 @@ export default function AdminLayout({ user, isDeactivated }) {
       setTheme(getSystemTheme())
     }
     window.addEventListener('theme-change', handleThemeChange)
-    // Apply initial theme
-    document.documentElement.setAttribute('data-theme', theme)
+    
+    // Light mode only works for signatureglobalconferences@gmail.com in admins
+    const isAllowedAdmin = user?.email === 'signatureglobalconferences@gmail.com'
+    const activeTheme = isAllowedAdmin ? theme : 'dark'
+    document.documentElement.setAttribute('data-theme', activeTheme)
+    
     return () => window.removeEventListener('theme-change', handleThemeChange)
-  }, [theme])
+  }, [theme, user])
 
   const toggleTheme = () => {
+    if (user?.email !== 'signatureglobalconferences@gmail.com') {
+      return
+    }
     const nextTheme = theme === 'dark' ? 'light' : 'dark'
     setSystemTheme(nextTheme)
   }
