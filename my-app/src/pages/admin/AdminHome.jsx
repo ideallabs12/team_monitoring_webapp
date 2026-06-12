@@ -80,7 +80,7 @@ function TickerTape({ items }) {
   return (
     <div style={{
       overflow: 'hidden',
-      background: 'rgba(22, 22, 23, 0.85)',
+      background: 'var(--apple-card)',
       borderBottom: '1px solid var(--apple-border)',
       padding: '10px 0',
       whiteSpace: 'nowrap',
