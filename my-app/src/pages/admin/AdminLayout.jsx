@@ -105,14 +105,11 @@ export default function AdminLayout({ user, isDeactivated }) {
   const SidebarContent = () => (
     <div className="admin-sidebar">
       {/* ── Brand ── */}
-      <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="admin-sidebar-brand-icon">
-            <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
-          </div>
-          <span className="admin-sidebar-brand-name">All-Hands</span>
+      <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+        <div className="admin-sidebar-brand-icon">
+          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
         </div>
-        <ThemeSwitch theme={theme} toggleTheme={toggleTheme} disabled={user?.email !== 'signatureglobalconferences@gmail.com'} />
+        <span className="admin-sidebar-brand-name">All-Hands</span>
       </div>
 
       {/* ── Navigation ── */}
