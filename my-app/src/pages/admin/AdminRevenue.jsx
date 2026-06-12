@@ -15,7 +15,8 @@ import {
   getLastNMonths,
   getEffectiveTargetAmount,
   TIME_PERIOD_OPTIONS,
-  formatRevenueMonthShort
+  formatRevenueMonthShort,
+  toRevenueMonthString
 } from '../../utils/revenueUtils'
 
 let adminRevCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
