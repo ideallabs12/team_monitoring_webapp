@@ -457,7 +457,7 @@ export default function AdminAnalytics() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--text-secondary)' }}>
                 <th style={{ padding: '10px 8px', width: '40px' }}>Rank</th>
                 <th style={{ padding: '10px 8px' }}>Name</th>
                 <th style={{ padding: '10px 8px' }}>Team</th>
@@ -489,7 +489,7 @@ export default function AdminAnalytics() {
                       <span style={{
                         fontSize: '0.65rem', fontWeight: '700',
                         padding: '2px 7px', borderRadius: '4px',
-                        background: usr.status === 'Rising' ? 'rgba(52,211,153,0.12)' : usr.status === 'Declining' ? 'rgba(248,113,113,0.12)' : 'rgba(255,255,255,0.05)',
+                        background: usr.status === 'Rising' ? 'rgba(52,211,153,0.12)' : usr.status === 'Declining' ? 'rgba(248,113,113,0.12)' : 'var(--apple-bg-secondary)',
                         color: usr.status === 'Rising' ? '#34d399' : usr.status === 'Declining' ? '#f87171' : 'var(--text-secondary)',
                       }}>
                         {usr.status}
@@ -610,7 +610,7 @@ export default function AdminAnalytics() {
         <div style={{ display: 'grid', gridTemplateColumns: analyticsIsAllTime ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
           {/* Weekly Analytics */}
           {!analyticsIsAllTime && (
-            <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Weekly Breakdown</h4>
               {weeklyData.length > 0 ? (
                 <div style={{ height: 250, width: '100%' }}>
@@ -618,8 +618,9 @@ export default function AdminAnalytics() {
                     <BarChart data={weeklyData}>
                       <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
                       <RechartsTooltip
-                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                        contentStyle={{ background: '#1e293b', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                        cursor={{ fill: 'var(--apple-bg-secondary)' }}
+                        contentStyle={{ background: 'var(--apple-card-bg)', border: '1px solid var(--apple-border)', borderRadius: '8px', color: 'var(--apple-text-primary)' }}
+                        itemStyle={{ color: 'var(--apple-text-primary)' }}
                         formatter={(val) => `$${Number(val).toFixed(2)}`}
                       />
                       <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
@@ -627,7 +628,7 @@ export default function AdminAnalytics() {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'var(--apple-bg)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
                   Weekly data not available for this period.
                 </div>
               )}
@@ -635,7 +636,7 @@ export default function AdminAnalytics() {
           )}
 
           {/* Source Breakdown */}
-          <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
+          <div style={{ background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
             <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Source Breakdown</h4>
             {sourceData.length > 0 ? (
               <div style={{ height: 250, width: '100%' }}>
@@ -654,7 +655,8 @@ export default function AdminAnalytics() {
                       })}
                     </Pie>
                     <RechartsTooltip
-                      contentStyle={{ background: '#1e293b', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                      contentStyle={{ background: 'var(--apple-card-bg)', border: '1px solid var(--apple-border)', borderRadius: '8px', color: 'var(--apple-text-primary)' }}
+                      itemStyle={{ color: 'var(--apple-text-primary)' }}
                       formatter={(val) => `$${Number(val).toFixed(2)}`}
                     />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }} />
@@ -662,7 +664,7 @@ export default function AdminAnalytics() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic', background: 'var(--apple-bg)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
                 Source data not available for this period.
               </div>
             )}

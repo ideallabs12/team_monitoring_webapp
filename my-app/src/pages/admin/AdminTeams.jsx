@@ -470,6 +470,9 @@ export default function AdminTeams() {
           </p>
         </div>
 
+        {/* --- MEMBERS SECTION WRAPPER --- */}
+        <div className="apple-card" style={{ padding: '24px', marginBottom: '32px' }}>
+        
         {/* Month + Year Filter — combined in one row */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px',
@@ -698,53 +701,81 @@ export default function AdminTeams() {
             </div>
           )
         })()}
+        </div> {/* END MEMBERS SECTION WRAPPER */}
 
         {/* --- TEAM PERFORMANCE SUMMARY & TREND --- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '32px' }}>
 
           {/* Monthly Revenue Breakdown Grid */}
           <div className="apple-card" style={{ padding: '24px !important' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Monthly Revenue</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Team Revenue Breakdown</h3>
-                  
-                  {/* Timeframe pill tabs */}
-                  <div className="apple-pill-tabs" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '4px' }}>
-                    {[
+              <div style={{ width: '100%', textAlign: 'center', margin: '16px 0 24px 0' }}>
+                <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)' }}>
+                  {(() => {
+                    const options = [
                       { label: '3M', value: 3 },
                       { label: '6M', value: 6 },
                       { label: '12M', value: 12 },
                       { label: '24M', value: 24 },
                       { label: 'All Time', value: 0 }
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setBreakdownPeriod(opt.value)}
-                        className={`apple-pill-tab ${breakdownPeriod === opt.value ? 'active' : ''}`}
-                        style={{
-                          padding: '6px 14px',
-                          fontSize: '0.8rem',
-                          borderRadius: '12px'
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                    ];
+                    const activeIndex = options.findIndex(o => o.value === breakdownPeriod);
+                    return (
+                      <>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 4, bottom: 4,
+                            left: `calc(4px + ${activeIndex * (100 / options.length)}%)`,
+                            width: `calc(${100 / options.length}% - 8px)`,
+                            background: 'var(--apple-accent-blue)',
+                            borderRadius: '999px',
+                            transition: 'left 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                            boxShadow: '0 2px 8px rgba(0, 113, 227, 0.3)'
+                          }}
+                        />
+                        {options.map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setBreakdownPeriod(opt.value)}
+                            style={{
+                              position: 'relative',
+                              zIndex: 1,
+                              padding: '6px 18px',
+                              fontSize: '0.82rem',
+                              fontWeight: breakdownPeriod === opt.value ? '700' : '600',
+                              color: breakdownPeriod === opt.value ? '#fff' : 'var(--text-secondary)',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              borderRadius: '999px',
+                              transition: 'color 0.2s',
+                              flex: 1,
+                              minWidth: '70px'
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </>
+                    )
+                  })()}
+                </div>
+              </div>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Monthly Revenue</div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Team Revenue Breakdown</h3>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>
+                    {breakdownPeriod === 0 ? 'All Time' : `${breakdownPeriod}-Month`} Total
+                  </div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-accent-blue)', letterSpacing: '-0.02em' }}>
+                    ${breakdownPeriodTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </div>
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>
-                  {breakdownPeriod === 0 ? 'All Time' : `${breakdownPeriod}-Month`} Total
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-accent-blue)', letterSpacing: '-0.02em' }}>
-                  ${breakdownPeriodTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </div>
-              </div>
-            </div>
 
             {/* Month grid wrapping into multiple rows */}
             <div style={{ 

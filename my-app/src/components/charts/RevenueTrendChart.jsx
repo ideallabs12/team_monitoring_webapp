@@ -44,7 +44,7 @@ const renderCustomLabel = (props) => {
         x={rx} y={ry}
         width={cardWidth} height={cardHeight}
         rx={6} ry={6}
-        fill="rgba(15, 23, 42, 0.95)"
+        fill="var(--apple-card-bg)"
         stroke={fill}
         strokeWidth={1.8}
         style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))' }}
@@ -52,13 +52,13 @@ const renderCustomLabel = (props) => {
       <rect x={rx + 10} y={y - 5} width={10} height={10} rx={3} fill={fill} />
       <text
         x={rx + 28} y={y}
-        fill="#f1f5f9"
+        fill="var(--apple-text-primary)"
         dominantBaseline="central"
         style={{ fontSize: '0.78rem', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}
       >
-        <tspan fill="#f1f5f9" fontWeight="bold">{name}</tspan>
-        <tspan fill="#94a3b8">: </tspan>
-        <tspan fill="#34d399">${value.toLocaleString()}</tspan>
+        <tspan fill="var(--apple-text-primary)" fontWeight="bold">{name}</tspan>
+        <tspan fill="var(--apple-text-secondary)">: </tspan>
+        <tspan fill="var(--apple-accent-green)">${value.toLocaleString()}</tspan>
       </text>
     </g>
   )

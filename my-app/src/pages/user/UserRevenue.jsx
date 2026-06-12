@@ -680,31 +680,60 @@ export default function UserRevenue({ user, isAdminView }) {
 
       {/* ===== MY TEAMS BREAKDOWN ===== */}
       <div className="apple-card" style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <h3 className="apple-title-small" style={{ margin: 0 }}>My Teams Breakdown</h3>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <h3 className="apple-title-small" style={{ margin: '0 0 16px 0' }}>My Teams Breakdown</h3>
           
-          <div className="apple-pill-tabs" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '4px' }}>
-            {[
-              { label: '3M', value: 3 },
-              { label: '6M', value: 6 },
-              { label: '12M', value: 12 },
-              { label: '24M', value: 24 },
-              { label: 'All Time', value: 0 }
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setBreakdownPeriod(opt.value)}
-                className={`apple-pill-tab ${breakdownPeriod === opt.value ? 'active' : ''}`}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '0.8rem',
-                  borderRadius: '12px'
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)' }}>
+            {(() => {
+              const options = [
+                { label: '3M', value: 3 },
+                { label: '6M', value: 6 },
+                { label: '12M', value: 12 },
+                { label: '24M', value: 24 },
+                { label: 'All Time', value: 0 }
+              ];
+              const activeIndex = options.findIndex(o => o.value === breakdownPeriod);
+              return (
+                <>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 4, bottom: 4,
+                      left: `calc(4px + ${activeIndex * (100 / options.length)}%)`,
+                      width: `calc(${100 / options.length}% - 8px)`,
+                      background: 'var(--apple-accent-blue)',
+                      borderRadius: '999px',
+                      transition: 'left 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                      boxShadow: '0 2px 8px rgba(0, 113, 227, 0.3)'
+                    }}
+                  />
+                  {options.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setBreakdownPeriod(opt.value)}
+                      style={{
+                        position: 'relative',
+                        zIndex: 1,
+                        padding: '6px 18px',
+                        fontSize: '0.82rem',
+                        fontWeight: breakdownPeriod === opt.value ? '700' : '600',
+                        color: breakdownPeriod === opt.value ? '#fff' : 'var(--text-secondary)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: '999px',
+                        transition: 'color 0.2s',
+                        flex: 1,
+                        minWidth: '70px'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </>
+              )
+            })()}
           </div>
         </div>
 
