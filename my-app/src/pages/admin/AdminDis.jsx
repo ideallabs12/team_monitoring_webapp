@@ -346,8 +346,7 @@ export default function AdminDis() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
-                className="apple-form-control"
-                style={{ paddingLeft: '38px' }}
+                className="apple-form-control has-icon"
               />
             </div>
           </div>
@@ -364,8 +363,7 @@ export default function AdminDis() {
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="apple-form-control"
-                style={{ paddingLeft: '38px' }}
+                className="apple-form-control has-icon"
               />
             </div>
           </div>

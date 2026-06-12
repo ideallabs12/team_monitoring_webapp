@@ -13,7 +13,7 @@ export default function Sparkline({ data, width = 80, height = 20 }) {
   const last = data[data.length - 1] || 0
   
   const strokeColor = isAllZero
-    ? 'rgba(255, 255, 255, 0.15)'
+    ? 'var(--apple-border)'
     : last > first
       ? '#34d399' // green (growth)
       : last < first

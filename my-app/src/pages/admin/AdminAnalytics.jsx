@@ -322,7 +322,7 @@ export default function AdminAnalytics() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <AlertCircle size={24} style={{ color: '#fbbf24', flexShrink: 0 }} />
             <div>
-              <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#f1f5f9', fontWeight: '600' }}>No Performance Metrics Found</h4>
+              <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>No Performance Metrics Found</h4>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                 The <strong>monthly_revenues</strong> and <strong>dis_reports</strong> tables are empty. Seed realistic demo data to preview the dashboard.
               </p>
@@ -356,7 +356,7 @@ export default function AdminAnalytics() {
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Revenue (This Month)
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', marginTop: '2px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--apple-text-primary)', marginTop: '2px' }}>
               ${kpis.currentMonthRev.toLocaleString(undefined, { minimumFractionDigits: 0 })}
             </div>
             <div style={{ fontSize: '0.74rem', color: kpis.revChange >= 0 ? '#34d399' : '#f87171', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
@@ -375,7 +375,7 @@ export default function AdminAnalytics() {
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Active Team Members
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', marginTop: '2px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--apple-text-primary)', marginTop: '2px' }}>
               {kpis.totalActiveUsers}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '3px' }}>
@@ -421,14 +421,14 @@ export default function AdminAnalytics() {
       <div className="card" style={{ padding: '24px', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Performer Rankings & Trends</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>Performer Rankings & Trends</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Track performance indicators, streaks, and sparkline trends across the last 6 months.
             </p>
           </div>
 
           {/* Top / Needs Attention toggles */}
-          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '2px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--apple-bg)', border: '1px solid var(--apple-border)', borderRadius: '16px', padding: '2px' }}>
             <button
               onClick={() => setPerformerTab('top')}
               style={{
@@ -470,8 +470,8 @@ export default function AdminAnalytics() {
             <tbody>
               {performerTab === 'top' ? (
                 topPerformers.slice(0, 10).map((usr, idx) => (
-                  <tr key={usr.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: '#f1f5f9' }}>
-                    <td style={{ padding: '10px 8px', fontWeight: 'bold', color: idx === 0 ? '#fbbf24' : idx === 1 ? '#cbd5e1' : idx === 2 ? '#cd7f32' : 'var(--text-secondary)' }}>
+                  <tr key={usr.id} style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}>
+                    <td style={{ padding: '10px 8px', fontWeight: 'bold', color: idx === 0 ? '#fbbf24' : idx === 1 ? 'var(--apple-text-secondary)' : idx === 2 ? '#cd7f32' : 'var(--text-secondary)' }}>
                       #{idx + 1}
                     </td>
                     <td style={{ padding: '10px 8px', fontWeight: '500' }}>{usr.name}</td>
@@ -499,7 +499,7 @@ export default function AdminAnalytics() {
                 ))
               ) : (
                 needsAttentionPerformers.map((usr) => (
-                  <tr key={usr.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: '#f1f5f9' }}>
+                  <tr key={usr.id} style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}>
                     <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#f87171' }}>⚠️</td>
                     <td style={{ padding: '10px 8px', fontWeight: '500' }}>{usr.name}</td>
                     <td style={{ padding: '10px 8px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{usr.teams}</td>
@@ -543,7 +543,7 @@ export default function AdminAnalytics() {
       <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Granular Analytics</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>Granular Analytics</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Weekly breakdown and source distribution across all active teams.
             </p>
@@ -551,9 +551,9 @@ export default function AdminAnalytics() {
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <label style={{
               display: 'flex', alignItems: 'center', gap: '6px',
-              color: '#ffffff', fontSize: '0.85rem', cursor: 'pointer',
-              background: 'rgba(255,255,255,0.04)', padding: '6px 12px',
-              borderRadius: '8px', border: '1px solid var(--border-color)',
+              color: 'var(--apple-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
+              background: 'var(--apple-bg)', padding: '6px 12px',
+              borderRadius: '8px', border: '1px solid var(--apple-border)',
             }}>
               <input
                 type="checkbox"
@@ -568,8 +568,9 @@ export default function AdminAnalytics() {
               onChange={e => setAnalyticsTeamId(e.target.value)}
               style={{
                 padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
-                background: 'rgba(15,23,42,0.8)', color: '#fff',
-                border: '1px solid var(--border-color)',
+                background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                border: '1px solid var(--apple-border)',
+                cursor: 'pointer',
               }}
             >
               <option value="all">All Teams</option>
@@ -581,8 +582,8 @@ export default function AdminAnalytics() {
               disabled={analyticsIsAllTime}
               style={{
                 padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
-                background: 'rgba(15,23,42,0.8)', color: '#fff',
-                border: '1px solid var(--border-color)',
+                background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                border: '1px solid var(--apple-border)',
                 opacity: analyticsIsAllTime ? 0.5 : 1,
                 cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer',
               }}
@@ -595,8 +596,8 @@ export default function AdminAnalytics() {
               disabled={analyticsIsAllTime}
               style={{
                 padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
-                background: 'rgba(15,23,42,0.8)', color: '#fff',
-                border: '1px solid var(--border-color)',
+                background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                border: '1px solid var(--apple-border)',
                 opacity: analyticsIsAllTime ? 0.5 : 1,
                 cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer',
               }}
@@ -609,8 +610,8 @@ export default function AdminAnalytics() {
         <div style={{ display: 'grid', gridTemplateColumns: analyticsIsAllTime ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
           {/* Weekly Analytics */}
           {!analyticsIsAllTime && (
-            <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#fff' }}>Weekly Breakdown</h4>
+            <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Weekly Breakdown</h4>
               {weeklyData.length > 0 ? (
                 <div style={{ height: 250, width: '100%' }}>
                   <ResponsiveContainer>
@@ -634,8 +635,8 @@ export default function AdminAnalytics() {
           )}
 
           {/* Source Breakdown */}
-          <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
-            <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: '#fff' }}>Source Breakdown</h4>
+          <div style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Source Breakdown</h4>
             {sourceData.length > 0 ? (
               <div style={{ height: 250, width: '100%' }}>
                 <ResponsiveContainer>

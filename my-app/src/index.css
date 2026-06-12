@@ -1445,6 +1445,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   outline: none;
 }
 
+.apple-form-control.has-icon {
+  padding-left: 38px !important;
+}
+
 .apple-form-control:focus {
   border-color: var(--apple-accent-blue) !important;
   background: rgba(255, 255, 255, 0.06) !important;

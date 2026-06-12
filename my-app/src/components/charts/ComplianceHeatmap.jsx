@@ -222,7 +222,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
       case 3: return '#10b981' // emerald-500
       case 2: return '#fbbf24' // amber-400
       case 1: return '#ef4444' // red-500
-      default: return 'rgba(255, 255, 255, 0.08)' // grey spacer or weekend with 0
+      default: return 'var(--apple-border)' // grey spacer or weekend with 0
     }
   }
 
@@ -238,15 +238,15 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
   return (
     <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
       <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>DIS Compliance Tracker</h3>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>DIS Compliance Tracker</h3>
         <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Submission rates and streaks of daily reports.
         </p>
       </div>
 
       {/* ── HEATMAP GRID SECTION ── */}
-      <div style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', padding: '20px', border: '1px solid rgba(255,255,255,0.03)', marginBottom: '28px' }}>
-        <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>Daily Submission Grid (Last 3 Months)</h4>
+      <div style={{ background: 'var(--apple-bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--apple-border)', marginBottom: '28px' }}>
+        <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Daily Submission Grid (Last 3 Months)</h4>
         
         <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
           
@@ -310,7 +310,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
                       borderRadius: '2px',
                       background: getLevelColor(cell.level),
                       cursor: 'pointer',
-                      border: cell.isWeekend ? '1px dashed rgba(255, 255, 255, 0.05)' : 'none',
+                      border: cell.isWeekend ? '1px dashed var(--apple-border)' : 'none',
                       transition: 'transform 0.1s'
                     }}
                   />
@@ -335,16 +335,16 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         
         {/* Left Column: Team Compliance Rates */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.2)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(255,255,255,0.03)' }}>
-          <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>Team Compliance (Last 30 Days)</h4>
+        <div style={{ background: 'var(--apple-bg)', borderRadius: '12px', padding: '16px', border: '1px solid var(--apple-border)' }}>
+          <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Team Compliance (Last 30 Days)</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {teamCompliance.map(tm => (
               <div key={tm.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{tm.name} <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>({tm.count} mems)</span></span>
+                  <span style={{ color: 'var(--apple-text-primary)', fontWeight: '500' }}>{tm.name} <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>({tm.count} mems)</span></span>
                   <span style={{ fontWeight: 'bold', color: tm.rate >= 80 ? '#34d399' : tm.rate >= 50 ? '#fbbf24' : '#f87171' }}>{tm.rate}%</span>
                 </div>
-                <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '6px', background: 'var(--apple-border)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div style={{ 
                     width: `${tm.rate}%`, 
                     height: '100%', 
@@ -362,23 +362,23 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
         </div>
 
         {/* Right Column: Missing streaks */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.2)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(255,255,255,0.03)' }}>
-          <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>Needs Attention (Missed 3+ Consecutive Days)</h4>
+        <div style={{ background: 'var(--apple-bg)', borderRadius: '12px', padding: '16px', border: '1px solid var(--apple-border)' }}>
+          <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Needs Attention (Missed 3+ Consecutive Days)</h4>
           <p style={{ margin: '0 0 16px 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Active team members who haven't reported recently.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '160px', overflowY: 'auto', paddingRight: '4px' }}>
             {missingStreaks.map(usr => (
-              <div key={usr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px' }}>
+              <div key={usr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255, 69, 58, 0.05)', border: '1px solid rgba(255, 69, 58, 0.15)', borderRadius: '8px' }}>
                 <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#fca5a5' }}>{usr.name}</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--apple-accent-red)' }}>{usr.name}</div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{usr.teams}</div>
                 </div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#ef4444', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--apple-accent-red)', background: 'rgba(255, 69, 58, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
                   {usr.missingDays} days missed
                 </div>
               </div>
             ))}
             {missingStreaks.length === 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', border: '1px dashed var(--apple-border)', borderRadius: '8px' }}>
                 <span style={{ fontSize: '1.2rem' }}>🎉</span>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>All members compliant!</span>
               </div>
@@ -394,19 +394,19 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
           position: 'absolute',
           left: tooltip.x,
           top: tooltip.y,
-          background: '#0f172a',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          background: 'var(--apple-card)',
+          border: '1px solid var(--apple-border)',
           padding: '8px 12px',
           borderRadius: '6px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
           zIndex: 100,
           pointerEvents: 'none',
           fontFamily: 'Inter, sans-serif'
         }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#fff', marginBottom: '2px' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--apple-text-primary)', marginBottom: '2px' }}>
             {new Date(tooltip.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)' }}>
             Rate: <strong style={{ color: getLevelColor(tooltip.level) }}>{tooltip.rate}%</strong> ({tooltip.count}/{tooltip.total} reports)
           </div>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '2px' }}>

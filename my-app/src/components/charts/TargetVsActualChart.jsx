@@ -115,7 +115,7 @@ export default function TargetVsActualChart({
       {/* ── HEADER ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '18px' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>
             Target vs Actual Revenue
           </h3>
           <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
@@ -145,8 +145,8 @@ export default function TargetVsActualChart({
         {/* Period pills */}
         <div style={{
           display: 'flex', gap: '3px',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid var(--border-color)',
+          background: 'var(--apple-bg)',
+          border: '1px solid var(--apple-border)',
           borderRadius: '20px',
           padding: '3px',
         }}>
@@ -184,9 +184,9 @@ export default function TargetVsActualChart({
               padding: '5px 28px 5px 10px',
               fontSize: '0.77rem',
               borderRadius: '8px',
-              background: 'rgba(15,23,42,0.8)',
-              color: '#f1f5f9',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--apple-card)',
+              color: 'var(--apple-text-primary)',
+              border: '1px solid var(--apple-border)',
               cursor: 'pointer',
               appearance: 'none',
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
@@ -213,7 +213,7 @@ export default function TargetVsActualChart({
           gap: '8px',
           background: 'rgba(255,255,255,0.01)',
           borderRadius: '10px',
-          border: '1px dashed rgba(255,255,255,0.06)',
+          border: '1px dashed var(--apple-border)',
         }}>
           <span style={{ fontSize: '1.8rem' }}>📊</span>
           <span>No revenue or target data for this period.</span>
@@ -240,7 +240,7 @@ export default function TargetVsActualChart({
 
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--apple-border)"
                 vertical={false}
               />
               <XAxis
@@ -308,7 +308,7 @@ export default function TargetVsActualChart({
         gap: '20px',
         marginTop: '16px',
         paddingTop: '14px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid var(--apple-border)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{

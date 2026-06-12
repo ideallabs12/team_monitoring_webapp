@@ -66,7 +66,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
   return (
     <div className="card" style={{ padding: '24px', background: 'var(--card-bg)', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Team Comparison Radar</h3>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>Team Comparison Radar</h3>
         <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Normalized performance index (0-100) across key business dimensions.
         </p>
@@ -87,10 +87,10 @@ export default function TeamRadarChart({ data, rawTeams }) {
                 gap: '6px',
                 padding: '4px 12px',
                 borderRadius: '16px',
-                border: active ? `1px solid ${color}` : '1px solid var(--border-color)',
+                border: active ? `1px solid ${color}` : '1px solid var(--apple-border)',
                 background: active ? `rgba(${active ? '59,130,246' : '0,0,0'}, 0.05)` : 'transparent',
                 backgroundColor: active ? `${color}15` : 'transparent',
-                color: active ? '#fff' : 'var(--text-secondary)',
+                color: active ? 'var(--apple-text-primary)' : 'var(--text-secondary)',
                 fontSize: '0.75rem',
                 fontWeight: active ? '600' : '400',
                 cursor: 'pointer',
@@ -102,7 +102,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
                 width: '6px', 
                 height: '6px', 
                 borderRadius: '50%', 
-                background: active ? color : 'rgba(255,255,255,0.2)',
+                background: active ? color : 'var(--apple-border)',
                 boxShadow: active ? `0 0 8px ${color}` : 'none'
               }} />
               {t.name}
@@ -113,7 +113,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
 
       {/* Radar Chart Container */}
       {activeTeamNames.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '280px', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '280px', border: '1px dashed var(--apple-border)', borderRadius: '12px' }}>
           <span style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🕸️</span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select one or more teams to overlay.</span>
         </div>
@@ -121,7 +121,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
         <div style={{ width: '100%', height: 280, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <ResponsiveContainer>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
-              <PolarGrid stroke="rgba(255, 255, 255, 0.05)" />
+              <PolarGrid stroke="var(--apple-border)" />
               <PolarAngleAxis 
                 dataKey="subject" 
                 tick={{ fill: 'var(--text-secondary)', fontSize: '0.75rem' }} 
@@ -129,7 +129,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
               <PolarRadiusAxis 
                 angle={30} 
                 domain={[0, 100]} 
-                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: '0.65rem' }}
+                tick={{ fill: 'var(--apple-text-secondary)', fontSize: '0.65rem' }}
                 axisLine={false}
               />
               
@@ -155,7 +155,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
         <div style={{ marginTop: '16px', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--text-secondary)' }}>
                 <th style={{ padding: '6px 4px' }}>Team</th>
                 <th style={{ padding: '6px 4px' }}>Total Rev</th>
                 <th style={{ padding: '6px 4px' }}>MoM Growth</th>
@@ -166,7 +166,7 @@ export default function TeamRadarChart({ data, rawTeams }) {
             </thead>
             <tbody>
               {rawTeams.filter(t => selectedTeams[t.name]).map(t => (
-                <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: '#e2e8f0' }}>
+                <tr key={t.id} style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}>
                   <td style={{ padding: '8px 4px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: teamColors[t.name] }} />
                     {t.name}

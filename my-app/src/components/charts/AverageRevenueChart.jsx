@@ -103,7 +103,7 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
           <h3 className="apple-title-small" style={{ margin: '0 0 4px 0' }}>{title}</h3>
           {hasData && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
-              <span style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', letterSpacing: '-0.03em' }}>
+              <span style={{ fontSize: '1.8rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.03em' }}>
                 ${stats.avg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>
@@ -129,10 +129,10 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
         <div style={{
           display: 'flex',
           gap: '2px',
-          background: 'rgba(255,255,255,0.04)',
+          background: 'var(--apple-bg)',
           borderRadius: '10px',
           padding: '3px',
-          border: '1px solid rgba(255,255,255,0.06)'
+          border: '1px solid var(--apple-border)'
         }}>
           {PERIOD_OPTIONS.map(p => {
             const isActive = selectedPeriod === p.value
@@ -145,7 +145,7 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
                   borderRadius: '8px',
                   border: 'none',
                   background: isActive ? 'rgba(0, 113, 227, 0.25)' : 'transparent',
-                  color: isActive ? '#fff' : 'var(--apple-text-secondary)',
+                  color: isActive ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
                   fontSize: '0.8rem',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -195,11 +195,11 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
                 tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}`}
                 width={55}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--apple-border)', strokeWidth: 1, strokeDasharray: '4 4' }} />
               {/* Average reference line */}
               <ReferenceLine
                 y={avgValue}
-                stroke="rgba(255,255,255,0.12)"
+                stroke="var(--apple-border)"
                 strokeDasharray="6 4"
                 label={{
                   value: `Avg $${avgValue >= 1000 ? `${(avgValue / 1000).toFixed(1)}k` : avgValue.toFixed(0)}`,
@@ -243,7 +243,7 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
           color: 'var(--apple-text-secondary)',
           fontSize: '0.9rem',
           fontStyle: 'italic',
-          background: 'rgba(255,255,255,0.02)',
+          background: 'var(--apple-bg)',
           borderRadius: '12px',
           marginTop: '16px'
         }}>

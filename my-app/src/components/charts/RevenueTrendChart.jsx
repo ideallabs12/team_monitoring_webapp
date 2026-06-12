@@ -124,7 +124,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
       {/* ── HEADER + FILTER ROW ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '22px' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#f1f5f9' }}>Revenue Distribution</h3>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>Revenue Distribution</h3>
           <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
             Total team revenue share for the selected period.
           </p>
@@ -136,8 +136,8 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           {/* Preset pills */}
           <div style={{
             display: 'flex', gap: '3px',
-            background: 'rgba(255,255,255,0.03)',
-            border: `1px solid ${!isCustomActive ? 'rgba(59,130,246,0.4)' : 'var(--border-color)'}`,
+            background: 'var(--apple-bg)',
+            border: `1px solid ${!isCustomActive ? 'rgba(59,130,246,0.4)' : 'var(--apple-border)'}`,
             borderRadius: '20px',
             padding: '3px',
             transition: 'border-color 0.2s',
@@ -167,7 +167,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           </div>
 
           {/* Separator */}
-          <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.9rem', userSelect: 'none' }}>|</span>
+          <span style={{ color: 'var(--apple-border)', fontSize: '0.9rem', userSelect: 'none' }}>|</span>
 
           {/* Custom Year picker */}
           <select
@@ -177,9 +177,9 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
               padding: '5px 26px 5px 10px',
               fontSize: '0.76rem',
               borderRadius: '8px',
-              background: isCustomActive ? 'rgba(59,130,246,0.12)' : 'rgba(15,23,42,0.6)',
-              color: isCustomActive ? '#93c5fd' : '#64748b',
-              border: `1px solid ${isCustomActive ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              background: isCustomActive ? 'rgba(59,130,246,0.12)' : 'var(--apple-card)',
+              color: isCustomActive ? 'var(--apple-accent)' : 'var(--apple-text-primary)',
+              border: `1px solid ${isCustomActive ? 'rgba(59,130,246,0.4)' : 'var(--apple-border)'}`,
               cursor: 'pointer',
               appearance: 'none',
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
@@ -200,9 +200,9 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
               padding: '5px 26px 5px 10px',
               fontSize: '0.76rem',
               borderRadius: '8px',
-              background: isCustomActive ? 'rgba(59,130,246,0.12)' : 'rgba(15,23,42,0.6)',
-              color: isCustomActive ? '#93c5fd' : '#64748b',
-              border: `1px solid ${isCustomActive ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              background: isCustomActive ? 'rgba(59,130,246,0.12)' : 'var(--apple-card)',
+              color: isCustomActive ? 'var(--apple-accent)' : 'var(--apple-text-primary)',
+              border: `1px solid ${isCustomActive ? 'rgba(59,130,246,0.4)' : 'var(--apple-border)'}`,
               cursor: 'pointer',
               appearance: 'none',
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
@@ -230,7 +230,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           gap: '8px',
           background: 'rgba(255,255,255,0.01)',
           borderRadius: '10px',
-          border: '1px dashed rgba(255,255,255,0.06)',
+          border: '1px dashed var(--apple-border)',
         }}>
           <span style={{ fontSize: '1.8rem' }}>📊</span>
           <span>No revenue data available for this period.</span>
@@ -255,7 +255,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                   stroke="rgba(0,0,0,0.3)"
                   strokeWidth={1}
                   label={renderCustomLabel}
-                  labelLine={{ stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1 }}
+                   labelLine={{ stroke: 'var(--apple-border)', strokeWidth: 1 }}
                 >
                   {pieData.map((_, index) => (
                     <Cell
@@ -273,8 +273,8 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <div style={{ flex: '0 1 260px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Grand total */}
             <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid var(--border-color)',
+              background: 'var(--apple-bg)',
+              border: '1px solid var(--apple-border)',
               borderRadius: '10px',
               padding: '12px 14px',
               marginBottom: '4px',
@@ -282,7 +282,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
               <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Total Revenue
               </div>
-              <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#fff', marginTop: '2px' }}>
+              <div style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--apple-text-primary)', marginTop: '2px' }}>
                 ${grandTotal.toLocaleString()}
               </div>
               <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
@@ -308,10 +308,10 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                     width: '10px', height: '10px', borderRadius: '3px',
                     background: COLORS[idx % COLORS.length], flexShrink: 0,
                   }} />
-                  <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: '400', color: '#94a3b8' }}>
+                  <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: '400', color: 'var(--apple-text-secondary)' }}>
                     {item.name}
                   </span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#cbd5e1' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>
                     ${item.value.toLocaleString()}
                   </span>
                   <span style={{
