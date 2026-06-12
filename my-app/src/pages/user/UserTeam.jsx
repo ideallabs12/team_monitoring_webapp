@@ -5,7 +5,10 @@ import {
   formatRevenueMonth,
   getEffectiveTarget,
   normalizeMonth,
-  sumRevenues
+  sumRevenues,
+  toRevenueMonthString,
+  MONTH_NAMES,
+  getAvailableYears
 } from '../../utils/revenueUtils'
 
 let globalTeamCache = {
@@ -18,8 +21,12 @@ export default function UserTeam({ user }) {
   const [loading, setLoading] = useState(globalTeamCache.userId !== user?.id)
 
   // Target & Revenue specific states
-  const monthOptions = useMemo(() => getTargetAssignmentMonths(11, 0), [])
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0])
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(new Date().getMonth())
+
+  const selectedMonth = useMemo(() => {
+    return toRevenueMonthString(selectedYear, selectedMonthIndex)
+  }, [selectedYear, selectedMonthIndex])
 
   useEffect(() => {
     async function fetchTeamData() {
@@ -133,151 +140,174 @@ export default function UserTeam({ user }) {
             monthMembers.sort((a, b) => b.reached - a.reached)
 
             const teamTotalTarget = monthMembers.reduce((sum, m) => sum + m.currentTarget, 0)
-            const teamTotalReached = monthMembers.reduce((sum, m) => sum + m.reached, 0)
-
-            return (
-              <div key={team.id} className="apple-card" style={{ padding: '0 !important', overflow: 'hidden' }}>
+            const teamTotalReached = monthMembers.reduce((sum, m) => sum + m.reached, 0)             return (
+              <div key={team.id} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
-                {/* Team Header & Filter */}
-                <div style={{ 
-                  padding: '24px clamp(16px, 4vw, 32px)', 
-                  background: 'rgba(255,255,255,0.01)', 
-                  borderBottom: '1px solid var(--apple-border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '24px'
-                }}>
-                  <div>
-                    <h2 className="apple-title-medium" style={{ margin: 0, textTransform: 'capitalize' }}>{team.name}</h2>
-                    <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem', fontWeight: '500', marginTop: '2px' }}>
-                      {monthMembers.length} {monthMembers.length === 1 ? 'Member' : 'Members'}
+                {/* CARD 1: Active Members List (at the top) */}
+                <div className="apple-card" style={{ padding: '0 !important', overflow: 'hidden' }}>
+                  {/* Team Header & Filter */}
+                  <div style={{ 
+                    padding: '24px clamp(16px, 4vw, 32px)', 
+                    background: 'rgba(255,255,255,0.01)', 
+                    borderBottom: '1px solid var(--apple-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '24px'
+                  }}>
+                    <div>
+                      <h2 className="apple-title-medium" style={{ margin: 0, textTransform: 'capitalize' }}>{team.name} — Active Members</h2>
+                      <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem', fontWeight: '500', marginTop: '2px' }}>
+                        {monthMembers.length} {monthMembers.length === 1 ? 'Member' : 'Members'}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Filter Period:</label>
+                      <select
+                        value={selectedMonthIndex}
+                        onChange={(e) => setSelectedMonthIndex(Number(e.target.value))}
+                        className="apple-form-control"
+                        style={{ width: 'auto', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer' }}
+                      >
+                        {MONTH_NAMES.map((name, idx) => (
+                          <option key={idx} value={idx}>{name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="apple-form-control"
+                        style={{ width: 'auto', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer' }}
+                      >
+                        {getAvailableYears().map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Filter Month:</label>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="apple-form-control"
-                      style={{ maxWidth: '200px', padding: '6px 12px', fontSize: '0.85rem' }}
-                    >
-                      {monthOptions.map(month => (
-                        <option key={month} value={month}>{formatRevenueMonth(month)}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Team Totals Section */}
-                <div style={{ 
-                  padding: '24px clamp(16px, 4vw, 32px)', 
-                  background: 'rgba(255,255,255,0.02)', 
-                  borderBottom: '1px solid var(--apple-border)',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: '16px'
-                }}>
-                  <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Team Target</div>
-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: '#60a5fa' }}>
-                      ${teamTotalTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.08)' }}>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Team Reached</div>
-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: '#4ade80' }}>
-                      ${teamTotalReached.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }}>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Team Achievement</div>
-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: '#fbbf24' }}>
-                      {teamTotalTarget > 0 ? `${((teamTotalReached / teamTotalTarget) * 100).toFixed(1)}%` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Members List */}
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {monthMembers.map((member, idx) => {
-                    const achievement = member.currentTarget > 0 ? (member.reached / member.currentTarget) * 100 : 0;
-                    
-                    return (
-                      <div key={member.id} style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'space-between',
-                        padding: '20px clamp(16px, 4vw, 32px)',
-                        borderBottom: idx < monthMembers.length - 1 ? '1px solid var(--apple-border)' : 'none',
-                        background: member.id === user.id ? 'rgba(0, 113, 227, 0.04)' : 'transparent',
-                        flexWrap: 'wrap',
-                        gap: '16px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '240px', flex: '1' }}>
-                          <div style={{ 
-                            width: '44px', 
-                            height: '44px', 
-                            borderRadius: '50%', 
-                            background: member.id === user.id 
-                              ? 'linear-gradient(135deg, #0071e3, #3b82f6)' 
-                              : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.15))',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: '700',
-                            color: '#ffffff',
-                            fontSize: '1rem',
-                            boxShadow: member.id === user.id ? '0 0 12px rgba(0, 113, 227, 0.3)' : 'none',
-                            border: '1px solid rgba(255, 255, 255, 0.1)'
-                          }}>
-                            {member.first_name?.charAt(0) || '?'}
+                  {/* Members List */}
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {monthMembers.map((member, idx) => {
+                      const achievement = member.currentTarget > 0 ? (member.reached / member.currentTarget) * 100 : 0;
+                      
+                      return (
+                        <div key={member.id} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '20px clamp(16px, 4vw, 32px)',
+                          borderBottom: idx < monthMembers.length - 1 ? '1px solid var(--apple-border)' : 'none',
+                          background: member.id === user.id ? 'rgba(0, 113, 227, 0.04)' : 'transparent',
+                          flexWrap: 'wrap',
+                          gap: '16px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '240px', flex: '1' }}>
+                            <div style={{ 
+                              width: '44px', 
+                              height: '44px', 
+                              borderRadius: '50%', 
+                              background: member.id === user.id 
+                                ? 'linear-gradient(135deg, #0071e3, #3b82f6)' 
+                                : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.15))',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '700',
+                              color: '#ffffff',
+                              fontSize: '1rem',
+                              boxShadow: member.id === user.id ? '0 0 12px rgba(0, 113, 227, 0.3)' : 'none',
+                              border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                              {member.first_name?.charAt(0) || '?'}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: '600', fontSize: '1.05rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {member.first_name} {member.last_name}
+                                {member.id === user.id && (
+                                  <span className="apple-badge apple-badge-blue" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>You</span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+                                <span>{member.email}</span>
+                                <span style={{ color: 'var(--apple-border-strong)' }}>•</span>
+                                <span className={member.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'} style={{ padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}>
+                                  {member.platform_role === 'teamlead' ? 'lead' : 'member'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <div style={{ fontWeight: '600', fontSize: '1.05rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {member.first_name} {member.last_name}
-                              {member.id === user.id && (
-                                <span className="apple-badge apple-badge-blue" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>You</span>
+                          
+                          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginLeft: 'auto', textAlign: 'right' }}>
+                            <div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target</div>
+                              <div style={{ fontWeight: '700', fontSize: '1.15rem', color: '#60a5fa' }}>
+                                ${member.currentTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reached</div>
+                              <div style={{ fontWeight: '700', fontSize: '1.15rem', color: member.reached > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }}>
+                                ${member.reached.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                              {member.currentTarget > 0 && (
+                                <div style={{ fontSize: '0.75rem', color: achievement >= 100 ? 'var(--apple-accent-green)' : '#fbbf24', marginTop: '2px' }}>
+                                  {achievement.toFixed(1)}%
+                                </div>
                               )}
                             </div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
-                              <span>{member.email}</span>
-                              <span style={{ color: 'var(--apple-border-strong)' }}>•</span>
-                              <span className={member.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'} style={{ padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}>
-                                {member.platform_role === 'teamlead' ? 'lead' : 'member'}
-                              </span>
-                            </div>
                           </div>
-                        </div>
-                        
-                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginLeft: 'auto', textAlign: 'right' }}>
-                          <div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target</div>
-                            <div style={{ fontWeight: '700', fontSize: '1.15rem', color: '#60a5fa' }}>
-                              ${member.currentTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reached</div>
-                            <div style={{ fontWeight: '700', fontSize: '1.15rem', color: member.reached > 0 ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }}>
-                              ${member.reached.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            {member.currentTarget > 0 && (
-                              <div style={{ fontSize: '0.75rem', color: achievement >= 100 ? 'var(--apple-accent-green)' : '#fbbf24', marginTop: '2px' }}>
-                                {achievement.toFixed(1)}%
-                              </div>
-                            )}
-                          </div>
-                        </div>
 
-                      </div>
-                    )
-                  })}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
 
+                {/* CARD 2: Team Performance Summary (below Card 1) */}
+                <div className="apple-card" style={{ padding: '0 !important', overflow: 'hidden' }}>
+                  {/* Summary Header */}
+                  <div style={{ 
+                    padding: '20px clamp(16px, 4vw, 32px)', 
+                    background: 'rgba(255,255,255,0.01)', 
+                    borderBottom: '1px solid var(--apple-border)'
+                  }}>
+                    <h3 className="apple-title-small" style={{ margin: 0 }}>Team Performance Summary</h3>
+                    <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                      Aggregate team-wide metrics for {MONTH_NAMES[selectedMonthIndex]} {selectedYear}.
+                    </p>
+                  </div>
 
+                  {/* Team Totals Section */}
+                  <div style={{ 
+                    padding: '24px clamp(16px, 4vw, 32px)', 
+                    background: 'rgba(255,255,255,0.02)', 
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Team Target</div>
+                      <div style={{ fontSize: '2rem', fontWeight: '800', color: '#60a5fa' }}>
+                        ${teamTotalTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.08)' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Team Reached</div>
+                      <div style={{ fontSize: '2rem', fontWeight: '800', color: '#4ade80' }}>
+                        ${teamTotalReached.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Team Achievement</div>
+                      <div style={{ fontSize: '2rem', fontWeight: '800', color: '#fbbf24' }}>
+                        {teamTotalTarget > 0 ? `${((teamTotalReached / teamTotalTarget) * 100).toFixed(1)}%` : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
               </div>
             )
