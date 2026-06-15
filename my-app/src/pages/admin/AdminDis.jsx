@@ -126,7 +126,7 @@ export default function AdminDis() {
 
     return teams
       .map(team => {
-        const teamMems = profiles.filter(p => p.team_id === team.id && nonAdminIds.has(p.id) && p.has_dis_reporting !== false)
+        const teamMems = profiles.filter(p => (p.team_id === team.id || p.secondary_team_id === team.id) && nonAdminIds.has(p.id) && p.has_dis_reporting !== false)
         const teamMemberIds = new Set(teamMems.map(m => m.id))
 
         const teamReps = reports.filter(r => {
