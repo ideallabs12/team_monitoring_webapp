@@ -436,9 +436,18 @@ export default function AdminTeams() {
   // VIEW 2: TEAM MEMBERS DETAILS VIEW
   // ==========================================
   if (activeTeam) {
-    const activeProfiles = profiles
+    // Active profiles: primary AND secondary members of this team
+    const activePrimary = profiles
       .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin' && !p.is_deactivated)
-      .sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
+      .map(p => ({ ...p, isSecondary: false }))
+    const activeSecondary = profiles
+      .filter(p => p.secondary_team_id === activeTeam.id && p.platform_role !== 'admin' && !p.is_deactivated)
+      .map(p => ({ ...p, isSecondary: true }))
+    const activePrimaryIds = new Set(activePrimary.map(p => p.id))
+    const activeProfiles = [
+      ...activePrimary,
+      ...activeSecondary.filter(p => !activePrimaryIds.has(p.id))
+    ].sort((a, b) => (a.platform_role === 'teamlead' ? -1 : 1))
 
     const activeProfileIds = new Set(activeProfiles.map(p => p.id))
 
@@ -1280,9 +1289,9 @@ export default function AdminTeams() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', width: '100%' }}>
         {teams.length > 0 ? (
           teams.map(team => {
-            // Count total members (excluding platform admins and deactivated)
-            const teamMemberCount = profiles.filter(p => 
-              p.team_id === team.id && p.platform_role !== 'admin' && !p.is_deactivated
+            // Count total members (primary + secondary, excluding admins and deactivated)
+            const teamMemberCount = profiles.filter(p =>
+              (p.team_id === team.id || p.secondary_team_id === team.id) && p.platform_role !== 'admin' && !p.is_deactivated
             ).length
 
             // Sum this month's revenue
