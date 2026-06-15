@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { BarChart3, Building2, ShieldCheck, UsersRound } from 'lucide-react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 
 export default function Login({ user, isAdmin }) {
   const navigate = useNavigate()

@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 import {
   getLastNMonths,
   normalizeMonth,
   formatRevenueMonthShort,
   sumRevenues
-} from '../utils/revenueUtils'
+} from '../../utils/revenueUtils'
 
 let globalProfileCache = {
   userId: null,
