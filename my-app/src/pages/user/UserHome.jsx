@@ -335,67 +335,67 @@ export default function UserHome({ user, isAdminView }) {
             </div>
           </div>
 
-          {/* Card 4: Latest DIS Report */}
-          <div className="apple-card">
-            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Latest Daily DIS Report</h3>
-            
-            {latestReport ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        </div>
+
+        {/* BOTTOM FULL-WIDTH: Latest Daily DIS Report */}
+        <div className="apple-card" style={{ gridColumn: '1 / -1' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Latest Daily DIS Report</h3>
+          
+          {latestReport ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                borderBottom: '1px solid var(--apple-border)', 
+                paddingBottom: '12px' 
+              }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Report Date</span>
+                <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.9rem' }}>
+                  {new Date(latestReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                </span>
+              </div>
+              
+              <div className="apple-two-col-grid">
                 <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  borderBottom: '1px solid var(--apple-border)', 
-                  paddingBottom: '12px' 
+                  textAlign: 'center', 
+                  background: 'rgba(0, 113, 227, 0.03)', 
+                  border: '1px solid rgba(0, 113, 227, 0.15)', 
+                  borderRadius: '10px', 
+                  padding: '12px' 
                 }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Report Date</span>
-                  <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.9rem' }}>
-                    {new Date(latestReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                  </span>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Expected Revenue</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
+                    ${Number(latestReport.expected_revenue).toFixed(2)}
+                  </div>
                 </div>
                 
-                <div className="apple-two-col-grid">
-                  <div style={{ 
-                    textAlign: 'center', 
-                    background: 'rgba(0, 113, 227, 0.03)', 
-                    border: '1px solid rgba(0, 113, 227, 0.15)', 
-                    borderRadius: '10px', 
-                    padding: '12px' 
-                  }}>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Expected Revenue</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
-                      ${Number(latestReport.expected_revenue).toFixed(2)}
-                    </div>
-                  </div>
-                  
-                  <div style={{ 
-                    textAlign: 'center', 
-                    background: 'rgba(255, 159, 10, 0.03)', 
-                    border: '1px solid rgba(255, 159, 10, 0.15)', 
-                    borderRadius: '10px', 
-                    padding: '12px' 
-                  }}>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Positive Leads</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>
-                      {latestReport.positive_leads}
-                    </div>
+                <div style={{ 
+                  textAlign: 'center', 
+                  background: 'rgba(255, 159, 10, 0.03)', 
+                  border: '1px solid rgba(255, 159, 10, 0.15)', 
+                  borderRadius: '10px', 
+                  padding: '12px' 
+                }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Positive Leads</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>
+                    {latestReport.positive_leads}
                   </div>
                 </div>
               </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>
-                  {isAdminView ? "This user hasn't submitted any daily reports yet." : "You haven't submitted any daily reports yet."}
-                </p>
-                {!isAdminView && (
-                  <Link to="/dis" className="apple-btn apple-btn-secondary" style={{ padding: '8px 20px !important', fontSize: '0.85rem' }}>
-                    Create First Report
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>
+                {isAdminView ? "This user hasn't submitted any daily reports yet." : "You haven't submitted any daily reports yet."}
+              </p>
+              {!isAdminView && (
+                <Link to="/dis" className="apple-btn apple-btn-secondary" style={{ padding: '8px 20px !important', fontSize: '0.85rem' }}>
+                  Create First Report
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
       </div>
