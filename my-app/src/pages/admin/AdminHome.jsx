@@ -595,7 +595,7 @@ export default function AdminHome() {
         {/* Left Column: Revenue Trend + Top Contributors */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
           {/* Revenue Trend Area Chart */}
-          <div className="terminal-card" style={{ padding: '22px', flex: 1.1, display: 'flex', flexDirection: 'column' }}>
+          <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div>
                 <div style={{
@@ -653,7 +653,7 @@ export default function AdminHome() {
           </div>
 
           {/* Top Performers Leaderboard Card */}
-          <div className="terminal-card" style={{ padding: '22px', flex: 0.9, display: 'flex', flexDirection: 'column' }}>
+          <div className="terminal-card" style={{ padding: '22px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div>
                 <div style={{
