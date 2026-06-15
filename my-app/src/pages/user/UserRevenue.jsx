@@ -63,25 +63,27 @@ export default function UserRevenue({ user, isAdminView }) {
   async function loadData() {
     try {
       const [profileRes, allTeamsRes, revDataRes] = await Promise.all([
-        supabase.from('profiles').select('team_id, has_revenue_logging').eq('id', user.id).single(),
+        supabase.from('profiles').select('team_id, secondary_team_id, has_revenue_logging').eq('id', user.id).single(),
         supabase.from('teams').select('*'),
         supabase.from('monthly_revenues').select('*, teams(name)').eq('user_id', user.id).order('revenue_month', { ascending: false })
       ])
 
       setAllTeams(allTeamsRes.data || [])
 
-      // Get user's single team
       if (profileRes.data?.has_revenue_logging === false) {
         setAccessDenied(true)
         setLoading(false)
         return
       }
+
       const assignedTeams = []
       if (profileRes.data?.team_id) {
         const userTeam = allTeamsRes.data?.find(t => t.id === profileRes.data.team_id)
-        if (userTeam) {
-          assignedTeams.push(userTeam)
-        }
+        if (userTeam) assignedTeams.push({ ...userTeam, label: 'Primary Team' })
+      }
+      if (profileRes.data?.secondary_team_id) {
+        const secTeam = allTeamsRes.data?.find(t => t.id === profileRes.data.secondary_team_id)
+        if (secTeam) assignedTeams.push({ ...secTeam, label: 'Secondary Team' })
       }
 
       const revData = revDataRes.data || []
@@ -90,7 +92,6 @@ export default function UserRevenue({ user, isAdminView }) {
       setTeams(assignedTeams)
       setAllTeams(allTeamsRes.data || [])
 
-      // Update cache for silent fetching
       revenueCache = {
         userId: user.id,
         revenues: revData,
@@ -119,11 +120,9 @@ export default function UserRevenue({ user, isAdminView }) {
   const last12Total = useMemo(() => sumRevenues(filterRevenuesByPeriod(revenues, 12)), [revenues])
 
   const uniqueTeamIds = useMemo(() => {
-    // User belongs to only one team, so just use that one (or all revenue team IDs if user has no assigned team)
     if (teams.length > 0) {
-      return [teams[0].id]
+      return teams.map(t => t.id)
     }
-    // Fallback: get unique team IDs from revenues if user has no assigned team
     const revTeamIds = revenues.map(r => r.team_id)
     return [...new Set(revTeamIds)]
   }, [teams, revenues])
@@ -437,17 +436,33 @@ export default function UserRevenue({ user, isAdminView }) {
 
               {/* Row 1: Team, Year, Month */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                {/* Team (read-only) */}
+                {/* Team (read-only if one, dropdown if multiple) */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
                   <div style={{ position: 'relative' }}>
-                    <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
-                    <div
-                      className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
-                    >
-                      {teams[0]?.name || 'No Team'}
-                    </div>
+                    <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1 }} />
+                    {teams.length > 1 ? (
+                      <>
+                        <select
+                          value={selectedTeam}
+                          onChange={e => setSelectedTeam(e.target.value)}
+                          className="form-control"
+                          style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                        >
+                          {teams.map(t => (
+                            <option key={t.id} value={t.id}>{t.name} ({t.label})</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                      </>
+                    ) : (
+                      <div
+                        className="form-control"
+                        style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
+                      >
+                        {teams[0]?.name || 'No Team'}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -25,6 +25,7 @@ export default function AdminUsers() {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [newTeamId, setNewTeamId] = useState('')
+  const [newSecondaryTeamId, setNewSecondaryTeamId] = useState('')
   const [userRevenues, setUserRevenues] = useState([])
   const [loadingRevenues, setLoadingRevenues] = useState(false)
 
@@ -40,6 +41,7 @@ export default function AdminUsers() {
     }
 
     setNewTeamId(viewingProfileUser.team_id || '')
+    setNewSecondaryTeamId(viewingProfileUser.secondary_team_id || '')
     setErrorMsg('')
     setSuccessMsg('')
 
@@ -214,6 +216,51 @@ export default function AdminUsers() {
     }
   }
 
+  // Update User's Secondary Team Assignment
+  const handleUpdateSecondaryTeam = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ secondary_team_id: newSecondaryTeamId || null })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg('Secondary Team assignment updated successfully!')
+      updateProfileUser({ secondary_team_id: newSecondaryTeamId || null })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update secondary team assignment.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Remove User from Secondary Team
+  const handleRemoveFromSecondaryTeam = async () => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ secondary_team_id: null })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg('User removed from secondary team successfully!')
+      setNewSecondaryTeamId('')
+      updateProfileUser({ secondary_team_id: null })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to remove user from secondary team.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Compile Dynamic Activity Logs
   const userActivities = useMemo(() => {
     if (!viewingProfileUser) return []
@@ -312,6 +359,7 @@ export default function AdminUsers() {
 
   if (viewingProfileUser) {
     const memberTeam = teams.find(t => t.id === viewingProfileUser.team_id)
+    const secondaryTeam = teams.find(t => t.id === viewingProfileUser.secondary_team_id)
     const isDeactivated = !!viewingProfileUser.is_deactivated
 
     const normalizedRole = viewingProfileUser.platform_role?.toLowerCase() || 'user'
@@ -581,6 +629,53 @@ export default function AdminUsers() {
                   </form>
                 </div>
               </div>
+            </div>
+
+            {/* Card 2.2: Secondary Team Assignment */}
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Plus size={18} style={{ color: '#a78bfa' }} /> Secondary Team Assignment
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '16px', margin: '0 0 16px 0' }}>
+                Assign a second team for this user. Their DIS and Revenue for this team will be tracked separately.
+              </p>
+              {secondaryTeam ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '12px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{secondaryTeam.name}</span>
+                  <button
+                    disabled={saving}
+                    onClick={handleRemoveFromSecondaryTeam}
+                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No secondary team assigned.</p>
+              )}
+
+              <form onSubmit={handleUpdateSecondaryTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <select
+                  value={newSecondaryTeamId}
+                  onChange={(e) => setNewSecondaryTeamId(e.target.value)}
+                  required
+                  className="apple-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
+                >
+                  <option value="" disabled>-- Select a Secondary Team --</option>
+                  {teams.filter(t => t.id !== viewingProfileUser.team_id).map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={saving || !newSecondaryTeamId}
+                  className="apple-btn apple-btn-primary"
+                  style={{ width: '100%', cursor: 'pointer', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}
+                >
+                  {secondaryTeam ? 'Change Secondary Team' : 'Assign Secondary Team'}
+                </button>
+              </form>
             </div>
 
           </div>
