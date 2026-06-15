@@ -496,137 +496,140 @@ export default function AdminUsers() {
 
           </div>
 
-          {/* Column 2: Security Controls, Team Assignment, and Latest DIS */}
+          {/* Column 2: Security Controls and Team Assignment */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
             
             {/* Card 2.1: Security & Team Assignment */}
-            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Key size={18} style={{ color: '#10b981' }} /> Security
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button
-                    onClick={() => handleToggleDeactivation(isDeactivated)}
-                    disabled={saving}
-                    className="apple-btn"
-                    style={{
-                      width: '100%',
-                      background: isDeactivated ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                      color: isDeactivated ? '#4ade80' : '#f87171',
-                      borderColor: isDeactivated ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {isDeactivated ? '🔓 Reactivate Account' : '🔒 Block Portal Access'}
-                  </button>
-                  <button
-                    onClick={handleSendResetEmail}
-                    disabled={saving}
-                    className="apple-btn apple-btn-secondary"
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  >
-                    Send Password Reset Email
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%' }} />
-
-              <div>
-                <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <UserIcon size={18} style={{ color: '#f59e0b' }} /> Team Assignment
-                </h3>
-                {memberTeam ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{memberTeam.name}</span>
+            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                  <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Key size={18} style={{ color: '#10b981' }} /> Security
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <button
+                      onClick={() => handleToggleDeactivation(isDeactivated)}
                       disabled={saving}
-                      onClick={handleRemoveFromTeam}
-                      style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Trash2 size={14} /> Remove
-                    </button>
-                  </div>
-                ) : (
-                  <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No team assigned.</p>
-                )}
-
-                <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <select
-                    value={newTeamId}
-                    onChange={(e) => setNewTeamId(e.target.value)}
-                    required
-                    className="apple-input"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
-                  >
-                    <option value="" disabled>-- Select a Team --</option>
-                    {teams.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="submit"
-                    disabled={saving || !newTeamId}
-                    className="apple-btn apple-btn-primary"
-                    style={{ width: '100%', cursor: 'pointer' }}
-                  >
-                    {memberTeam ? 'Change Team Assignment' : 'Assign to Team'}
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* Card 2.2: Latest DIS Reports */}
-            <div className="apple-card" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <FileText size={18} style={{ color: 'var(--apple-accent-orange)' }} />
-                <h3 className="apple-title-small" style={{ margin: 0 }}>Latest Daily DIS</h3>
-              </div>
-
-              {loadingDis ? (
-                <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
-              ) : userDisReports.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {userDisReports.slice(0, 6).map(rep => (
-                    <div
-                      key={rep.id}
+                      className="apple-btn"
                       style={{
-                        padding: '12px',
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--apple-border)',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem'
+                        width: '100%',
+                        background: isDeactivated ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: isDeactivated ? '#4ade80' : '#f87171',
+                        borderColor: isDeactivated ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        cursor: 'pointer'
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
-                        <span style={{ color: 'var(--apple-text-primary)' }}>
-                          {new Date(rep.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                        </span>
-                        <span style={{ color: 'var(--apple-accent-green)' }}>
-                          + {rep.positive_leads} Leads
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
-                        <span>Exp Revenue:</span>
-                        <span style={{ color: 'var(--apple-text-primary)', fontWeight: '500' }}>${Number(rep.expected_revenue).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
+                      {isDeactivated ? '🔓 Reactivate Account' : '🔒 Block Portal Access'}
+                    </button>
+                    <button
+                      onClick={handleSendResetEmail}
+                      disabled={saving}
+                      className="apple-btn apple-btn-secondary"
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    >
+                      Send Password Reset Email
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.85rem' }}>
-                  No DIS entries submitted yet.
-                </p>
-              )}
+
+                <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%' }} />
+
+                <div>
+                  <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserIcon size={18} style={{ color: '#f59e0b' }} /> Team Assignment
+                  </h3>
+                  {memberTeam ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{memberTeam.name}</span>
+                      <button
+                        disabled={saving}
+                        onClick={handleRemoveFromTeam}
+                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No team assigned.</p>
+                  )}
+
+                  <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <select
+                      value={newTeamId}
+                      onChange={(e) => setNewTeamId(e.target.value)}
+                      required
+                      className="apple-input"
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
+                    >
+                      <option value="" disabled>-- Select a Team --</option>
+                      {teams.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="submit"
+                      disabled={saving || !newTeamId}
+                      className="apple-btn apple-btn-primary"
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    >
+                      {memberTeam ? 'Change Team Assignment' : 'Assign to Team'}
+                    </button>
+                  </form>
+                </div>
+              </div>
             </div>
 
           </div>
           
         </div>
 
-        {/* Full-width Stack: Revenue details and then Activity Timeline */}
+        {/* Full-width Stack: Latest DIS, Revenue details, and then Activity Timeline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          
+          {/* Latest Daily DIS Reports */}
+          <div className="apple-card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <FileText size={18} style={{ color: 'var(--apple-accent-orange)' }} />
+              <h3 className="apple-title-small" style={{ margin: 0 }}>Latest Daily DIS</h3>
+            </div>
+
+            {loadingDis ? (
+              <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
+            ) : userDisReports.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                {userDisReports.slice(0, 6).map(rep => (
+                  <div
+                    key={rep.id}
+                    style={{
+                      padding: '12px',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid var(--apple-border)',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
+                      <span style={{ color: 'var(--apple-text-primary)' }}>
+                        {new Date(rep.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                      </span>
+                      <span style={{ color: 'var(--apple-accent-green)' }}>
+                        + {rep.positive_leads} Leads
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
+                      <span>Exp Revenue:</span>
+                      <span style={{ color: 'var(--apple-text-primary)', fontWeight: '500' }}>${Number(rep.expected_revenue).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.85rem' }}>
+                No DIS entries submitted yet.
+              </p>
+            )}
+          </div>
+
           {/* Revenue Details */}
           <div>
             <UserRevenue user={viewingProfileUser} isAdminView={true} />
