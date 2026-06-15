@@ -35,13 +35,13 @@ function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+      background: 'var(--apple-card-bg)', border: '1px solid var(--apple-border)',
       borderRadius: '12px', padding: '12px 16px', fontSize: '0.8rem',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)'
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)', backdropFilter: 'blur(20px)'
     }}>
       <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600' }}>{label}</div>
       {payload.map((p, i) => {
-        const color = p.color && p.color.startsWith('url') ? 'var(--apple-accent-blue)' : (p.color || '#fff');
+        const color = p.color && p.color.startsWith('url') ? 'var(--apple-accent-blue)' : (p.color || 'var(--apple-text-primary)');
         return (
           <div key={i} style={{ color, display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
             <span>{p.name}</span>
@@ -416,7 +416,7 @@ export default function AdminRevenue() {
                 <div style={{
                   fontSize: '0.92rem',
                   fontWeight: '700',
-                  color: d.actual > 0 ? '#fff' : 'rgba(255,255,255,0.2)'
+                  color: d.actual > 0 ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)'
                 }}>
                   {d.actual > 0
                     ? `$${d.actual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`

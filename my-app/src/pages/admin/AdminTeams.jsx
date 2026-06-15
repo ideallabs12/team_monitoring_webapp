@@ -19,15 +19,15 @@ const ChartTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div style={{
-        background: 'rgba(15, 23, 42, 0.9)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'var(--apple-card-bg)',
+        border: '1px solid var(--apple-border)',
         borderRadius: '8px',
         padding: '12px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
         backdropFilter: 'blur(8px)'
       }}>
         <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.75rem', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
-        <p style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
+        <p style={{ color: 'var(--apple-text-primary)', fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
           ${payload[0].value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
       </div>
@@ -319,7 +319,7 @@ export default function AdminTeams() {
                 justifyContent: 'center',
                 fontSize: '1.25rem',
                 fontWeight: 'bold',
-                color: '#fff'
+                color: 'white'
               }}>
                 {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
               </div>
@@ -818,7 +818,7 @@ export default function AdminTeams() {
                     <div style={{
                       fontSize: '0.88rem',
                       fontWeight: '700',
-                      color: d.total > 0 ? '#fff' : 'rgba(120, 120, 128, 0.5)'
+                      color: d.total > 0 ? 'var(--apple-text-primary)' : 'rgba(120, 120, 128, 0.5)'
                     }}>
                       ${d.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>

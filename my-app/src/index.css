@@ -1019,6 +1019,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   --apple-blur-bg: rgba(22, 22, 23, 0.82);
   --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --apple-ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --apple-card-bg: #161617;
 }
 
 [data-theme="light"] {
@@ -1036,6 +1037,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   --apple-accent-red: #ff3b30;
   --apple-accent-blue: #0071e3;
   --apple-blur-bg: rgba(255, 255, 255, 0.82);
+  --apple-card-bg: #ffffff;
 
   --bg-color: #f5f5f7;
   --card-bg: rgba(255, 255, 255, 0.8);

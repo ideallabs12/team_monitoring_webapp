@@ -30,40 +30,40 @@ function CustomTooltip({ active, payload, label }) {
 
   return (
     <div style={{
-      background: 'rgba(10, 18, 35, 0.98)',
-      border: '1px solid rgba(255,255,255,0.1)',
+      background: 'var(--apple-card-bg)',
+      border: '1px solid var(--apple-border)',
       padding: '14px 18px',
       borderRadius: '12px',
-      boxShadow: '0 24px 48px -8px rgba(0,0,0,0.9)',
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
       fontFamily: 'Inter, sans-serif',
       minWidth: '210px',
     }}>
-      <p style={{ color: '#64748b', margin: '0 0 10px 0', fontSize: '0.72rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+      <p style={{ color: 'var(--apple-text-secondary)', margin: '0 0 10px 0', fontSize: '0.72rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '24px', alignItems: 'center' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#94a3b8' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--apple-text-secondary)' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#3b82f6', flexShrink: 0 }} />
             Target
           </span>
-          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#e2e8f0' }}>
+          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>
             {target.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '24px', alignItems: 'center' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#94a3b8' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--apple-text-secondary)' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#10b981', flexShrink: 0 }} />
             Actual
           </span>
-          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#e2e8f0' }}>
+          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>
             {actual.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
         </div>
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '3px 0' }} />
+        <div style={{ height: '1px', background: 'var(--apple-border)', margin: '3px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '24px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.84rem', color: '#94a3b8' }}>Attainment</span>
-          <span style={{ fontSize: '0.92rem', fontWeight: '800', color: target > 0 ? attColor : '#64748b' }}>
+          <span style={{ fontSize: '0.84rem', color: 'var(--apple-text-secondary)' }}>Attainment</span>
+          <span style={{ fontSize: '0.92rem', fontWeight: '800', color: target > 0 ? attColor : 'var(--apple-text-secondary)' }}>
             {target > 0 ? `${pct}%` : 'N/A'}
           </span>
         </div>

@@ -40,13 +40,13 @@ function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+      background: 'var(--apple-card-bg)', border: '1px solid var(--apple-border)',
       borderRadius: '12px', padding: '12px 16px', fontSize: '0.8rem',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)'
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)', backdropFilter: 'blur(20px)'
     }}>
       <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '6px', fontWeight: '600' }}>{label}</div>
       {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color || '#fff', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+        <div key={i} style={{ color: p.color || 'var(--apple-text-primary)', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
           <span>{p.name}</span>
           <span style={{ fontWeight: '700' }}>{fmtFull(p.value)}</span>
         </div>
@@ -690,7 +690,7 @@ export default function AdminHome() {
                       width: '36px', height: '36px', borderRadius: '10px',
                       background: 'linear-gradient(135deg, var(--apple-accent-blue), #30d5c8)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.9rem', fontWeight: '700', color: '#fff', flexShrink: 0
+                      fontSize: '0.9rem', fontWeight: '700', color: 'white', flexShrink: 0
                     }}>
                       {initials || '?'}
                     </div>
@@ -911,12 +911,12 @@ export default function AdminHome() {
                       content={({ active, payload }) =>
                         active && payload?.length ? (
                           <div style={{
-                            background: 'rgba(22, 22, 23, 0.95)', border: '1px solid var(--apple-border)',
+                            background: 'var(--apple-card-bg)', border: '1px solid var(--apple-border)',
                             borderRadius: '12px', padding: '10px 14px', fontSize: '0.78rem',
-                            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(20px)'
+                            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)', backdropFilter: 'blur(20px)'
                           }}>
                             <div style={{ color: payload[0].payload.color, fontWeight: '700' }}>{payload[0].name}</div>
-                            <div style={{ color: '#fff', fontWeight: '700', marginTop: '4px' }}>{fmt(payload[0].value)}</div>
+                            <div style={{ color: 'var(--apple-text-primary)', fontWeight: '700', marginTop: '4px' }}>{fmt(payload[0].value)}</div>
                           </div>
                         ) : null
                       }
