@@ -70,11 +70,6 @@ export default function UserDis() {
           // Use cached profile if we have it to avoid flash
           if (globalDisCache.userId === user.id && globalDisCache.profile) {
             setProfile(globalDisCache.profile)
-            if (globalDisCache.profile.has_dis_reporting === false) {
-              setAccessDenied(true)
-              setLoading(false)
-              return
-            }
           }
 
           const { data: prof } = await supabase
@@ -86,12 +81,6 @@ export default function UserDis() {
             setProfile(prof)
             globalDisCache.userId = user.id
             globalDisCache.profile = prof
-
-            if (prof.has_dis_reporting === false) {
-              setAccessDenied(true)
-              setLoading(false)
-              return
-            }
           }
         }
       } catch (err) {

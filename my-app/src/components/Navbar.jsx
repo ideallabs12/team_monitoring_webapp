@@ -81,7 +81,7 @@ export default function Navbar({ user }) {
     { to: '/team', label: 'Team' }
   ]
   if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
-  if (profile?.has_dis_reporting !== false) navLinks.push({ to: '/dis', label: 'My DIS' })
+  navLinks.push({ to: '/dis', label: 'My DIS' })
 
   navLinks.push({ to: '/profile', label: 'Profile' })
 
