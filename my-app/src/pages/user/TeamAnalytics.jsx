@@ -71,7 +71,7 @@ export default function TeamAnalytics({ user }) {
         
         if (error) throw error
         
-        if (prof?.platform_role !== 'teamlead') {
+        if (prof?.platform_role?.toLowerCase() !== 'teamlead') {
           setAccessDenied(true)
           setLoading(false)
           return

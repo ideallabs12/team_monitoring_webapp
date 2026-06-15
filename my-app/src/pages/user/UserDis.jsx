@@ -124,7 +124,7 @@ export default function UserDis() {
           const loadedTeams = [{
             id: teamData.id,
             name: teamData.name,
-            role: profileData.platform_role === 'teamlead' ? 'lead' : 'member'
+            role: profileData.platform_role?.toLowerCase() === 'teamlead' ? 'lead' : 'member'
           }]
           setUserTeams(loadedTeams)
           globalDisCache.userTeams = loadedTeams
@@ -315,7 +315,7 @@ export default function UserDis() {
       {/* Premium Header */}
       <div style={{ marginBottom: 'clamp(24px, 5vw, 40px)' }}>
         <div className="apple-kicker">Operational Sales Sheets</div>
-        <h1 className="apple-title-large">Daily Information Sheet (DIS)</h1>
+        <h1 className="apple-title-large">My Daily Information Sheet</h1>
         <p className="apple-lead">
           Submit and audit your daily sales metrics, positive leads, and revenue targets.
         </p>

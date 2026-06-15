@@ -81,7 +81,7 @@ export default function Navbar({ user }) {
     { to: '/team', label: 'Team' }
   ]
   if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
-  if (profile?.has_dis_reporting !== false) navLinks.push({ to: '/dis', label: 'DIS' })
+  if (profile?.has_dis_reporting !== false) navLinks.push({ to: '/dis', label: 'My DIS' })
 
   navLinks.push({ to: '/profile', label: 'Profile' })
 
@@ -89,7 +89,7 @@ export default function Navbar({ user }) {
   const othersLinks = [
     { to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' },
   ]
-  if (profile?.platform_role === 'teamlead') {
+  if (profile?.platform_role?.toLowerCase() === 'teamlead') {
     othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
   }
 
@@ -148,7 +148,7 @@ export default function Navbar({ user }) {
                 </Link>
               ))}
 
-              {profile?.platform_role === 'teamlead' && (
+              {profile?.platform_role?.toLowerCase() === 'teamlead' && (
                 <div
                   ref={teamHubRef}
                   style={{ position: 'relative' }}
@@ -295,7 +295,7 @@ export default function Navbar({ user }) {
                   </Link>
                 ))}
 
-                {profile?.platform_role === 'teamlead' && (
+                {profile?.platform_role?.toLowerCase() === 'teamlead' && (
                   <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--apple-border)' }}>
                     <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px', paddingLeft: '2px' }}>
                       Team Hub
