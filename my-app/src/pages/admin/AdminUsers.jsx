@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText } from 'lucide-react'
+import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import UserRevenue from '../user/UserRevenue'
 
@@ -21,31 +21,238 @@ export default function AdminUsers() {
   const [userDisReports, setUserDisReports] = useState([])
   const [loadingDis, setLoadingDis] = useState(false)
 
-  // Load DIS Reports dynamically for the selected profile
+  const [saving, setSaving] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  const [newTeamId, setNewTeamId] = useState('')
+  const [userRevenues, setUserRevenues] = useState([])
+  const [loadingRevenues, setLoadingRevenues] = useState(false)
+
+  // Load Details dynamically for the selected profile
   useEffect(() => {
     if (!viewingProfileUser) {
       setUserDisReports([])
+      setUserRevenues([])
+      setNewTeamId('')
+      setErrorMsg('')
+      setSuccessMsg('')
       return
     }
 
-    async function fetchUserDis() {
+    setNewTeamId(viewingProfileUser.team_id || '')
+    setErrorMsg('')
+    setSuccessMsg('')
+
+    async function fetchUserData() {
       setLoadingDis(true)
+      setLoadingRevenues(true)
       try {
-        const { data, error } = await supabase
-          .from('dis_reports')
-          .select('*')
-          .eq('user_id', viewingProfileUser.id)
-          .order('report_date', { ascending: false })
-          .limit(6)
-        if (data) setUserDisReports(data)
+        const [disRes, revRes] = await Promise.all([
+          supabase
+            .from('dis_reports')
+            .select('*')
+            .eq('user_id', viewingProfileUser.id)
+            .order('report_date', { ascending: false }),
+          supabase
+            .from('monthly_revenues')
+            .select('*')
+            .eq('user_id', viewingProfileUser.id)
+        ])
+
+        if (disRes.error) throw disRes.error
+        if (revRes.error) throw revRes.error
+
+        setUserDisReports(disRes.data || [])
+        setUserRevenues(revRes.data || [])
       } catch (err) {
-        console.error("Error loading user DIS reports:", err)
+        console.error("Error loading user profile details:", err)
+        setErrorMsg('Failed to load profile details.')
       } finally {
         setLoadingDis(false)
+        setLoadingRevenues(false)
       }
     }
-    fetchUserDis()
+    fetchUserData()
   }, [viewingProfileUser])
+
+  // Helper helper to update profile state & main state
+  const updateProfileUser = (updatedFields) => {
+    const updatedUser = { ...viewingProfileUser, ...updatedFields }
+    setViewingProfileUser(updatedUser)
+    setUsers(prevUsers => {
+      const updatedList = prevUsers.map(u => u.id === viewingProfileUser.id ? updatedUser : u)
+      adminUsersCache.users = updatedList
+      return updatedList
+    })
+  }
+
+  // Update Platform Role
+  const handleUpdatePlatformRole = async (newRole) => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ platform_role: newRole })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg(`Platform role updated to ${newRole}!`)
+      updateProfileUser({ platform_role: newRole })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update platform role.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Toggle Access Flags
+  const handleToggleAccess = async (field, currentStatus) => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    const nextStatus = !currentStatus
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [field]: nextStatus })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : 'DIS Reporting'} to ${nextStatus ? 'ON' : 'OFF'}`)
+      updateProfileUser({ [field]: nextStatus })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update access status.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Toggle Account Activation/Deactivation
+  const handleToggleDeactivation = async (currentStatus) => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    const nextStatus = !currentStatus
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_deactivated: nextStatus })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg(nextStatus ? 'Account successfully deactivated!' : 'Account successfully activated!')
+      updateProfileUser({ is_deactivated: nextStatus })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update activation status.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Send Password Reset Email
+  const handleSendResetEmail = async () => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(viewingProfileUser.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+      if (error) throw error
+      setSuccessMsg('Password reset link sent to user email successfully!')
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to send password reset email.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Update User's Team Assignment
+  const handleUpdateTeam = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ team_id: newTeamId || null })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg('Team assignment updated successfully!')
+      updateProfileUser({ team_id: newTeamId || null })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update team assignment.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Remove User from Team
+  const handleRemoveFromTeam = async () => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ team_id: null })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg('User removed from team successfully!')
+      setNewTeamId('')
+      updateProfileUser({ team_id: null })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to remove user from team.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Compile Dynamic Activity Logs
+  const userActivities = useMemo(() => {
+    if (!viewingProfileUser) return []
+    const activities = []
+
+    for (const r of userRevenues) {
+      const team = teams.find(t => t.id === r.team_id)
+      activities.push({
+        id: `rev-${r.id}`,
+        type: 'revenue',
+        date: new Date(r.created_at || r.revenue_month),
+        description: `Logged revenue contribution of $${Number(r.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} for team "${team ? team.name : 'Unknown'}"`,
+        icon: '💰'
+      })
+    }
+
+    for (const d of userDisReports) {
+      activities.push({
+        id: `dis-${d.id}`,
+        type: 'dis',
+        date: new Date(d.report_date),
+        description: `Submitted Daily Information Sheet (DIS) with ${d.positive_leads} positive leads and $${Number(d.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 2 })} expected revenue`,
+        icon: '📝'
+      })
+    }
+
+    if (viewingProfileUser.team_id) {
+      const team = teams.find(t => t.id === viewingProfileUser.team_id)
+      activities.push({
+        id: `team-assigned`,
+        type: 'team',
+        date: new Date(viewingProfileUser.created_at),
+        description: `Assigned to team "${team ? team.name : 'Unknown'}"`,
+        icon: '👥'
+      })
+    }
+
+    return activities.sort((a, b) => b.date - a.date)
+  }, [viewingProfileUser, userRevenues, userDisReports, teams])
 
   const loadData = async () => {
     try {
@@ -105,6 +312,8 @@ export default function AdminUsers() {
 
   if (viewingProfileUser) {
     const memberTeam = teams.find(t => t.id === viewingProfileUser.team_id)
+    const isDeactivated = !!viewingProfileUser.is_deactivated
+
     return (
       <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)', paddingBottom: '60px' }}>
         {/* Back navigation left top hero section */}
@@ -130,123 +339,336 @@ export default function AdminUsers() {
           <ArrowLeft size={16} /> Back to Directory
         </button>
 
-        {/* Full-width stacked rows: Profile → Latest DIS → Revenue */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          
-          {/* ROW 1: My Profile Card */}
-          <div className="apple-card" style={{ padding: '24px !important' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-              <div style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.25rem',
-                fontWeight: 'bold',
-                color: 'white'
-              }}>
-                {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>
-                  {viewingProfileUser.first_name} {viewingProfileUser.last_name}
-                </h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
-                  {viewingProfileUser.platform_role || 'Member'}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
-                  <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
-                </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.email}</div>
-              </div>
-
-              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
-                  <Phone size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Phone Number
-                </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.phone || '—'}</div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '500' }}>
-                  Team Assignments
-                </div>
-                {memberTeam ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    <span
-                      className={viewingProfileUser.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
-                      style={{ fontSize: '0.72rem', padding: '2px 8px' }}
-                    >
-                      {memberTeam.name} ({viewingProfileUser.platform_role === 'teamlead' ? 'lead' : 'member'})
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
-                    No team assigned
-                  </span>
-                )}
-              </div>
-            </div>
+        {/* Status Messages */}
+        {errorMsg && (
+          <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '12px', fontSize: '0.9rem', marginBottom: '24px' }}>
+            {errorMsg}
           </div>
+        )}
+        {successMsg && (
+          <div style={{ padding: '12px 16px', background: 'rgba(74, 222, 128, 0.1)', border: '1px solid rgba(74, 222, 128, 0.2)', color: '#4ade80', borderRadius: '12px', fontSize: '0.9rem', marginBottom: '24px' }}>
+            {successMsg}
+          </div>
+        )}
 
-          {/* ROW 2: Latest DIS Reports */}
-          <div className="apple-card" style={{ padding: '24px !important' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <FileText size={18} style={{ color: 'var(--apple-accent-orange)' }} />
-              <h3 className="apple-title-small" style={{ margin: 0 }}>Latest Daily DIS</h3>
+        {/* Two Column Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '28px' }}>
+          
+          {/* Column 1: Profile Info and Access Controls */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            
+            {/* Card 1.1: Profile Details */}
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  fontWeight: 'bold',
+                  color: 'white'
+                }}>
+                  {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>
+                    {viewingProfileUser.first_name} {viewingProfileUser.last_name}
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
+                    {viewingProfileUser.platform_role || 'Member'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                    <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.email}</div>
+                </div>
+
+                <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                    <Phone size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Phone Number
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.phone || '—'}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '500' }}>
+                    Team Assignments
+                  </div>
+                  {memberTeam ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      <span
+                        className={viewingProfileUser.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
+                        style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                      >
+                        {memberTeam.name} ({viewingProfileUser.platform_role === 'teamlead' ? 'lead' : 'member'})
+                      </span>
+                    </div>
+                  ) : (
+                    <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
+                      No team assigned
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {loadingDis ? (
-              <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
-            ) : userDisReports.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                {userDisReports.map(rep => (
-                  <div
-                    key={rep.id}
+            {/* Card 1.2: Access Controls */}
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Shield size={18} style={{ color: '#818cf8' }} /> Access Controls
+              </h3>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Platform Role</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleUpdatePlatformRole('user')}
+                    disabled={saving || viewingProfileUser.platform_role === 'user'}
+                    className="apple-btn"
                     style={{
-                      padding: '12px',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid var(--apple-border)',
-                      borderRadius: '10px',
-                      fontSize: '0.85rem'
+                      flex: 1,
+                      background: viewingProfileUser.platform_role === 'user' ? '#818cf8' : 'rgba(255,255,255,0.05)',
+                      color: viewingProfileUser.platform_role === 'user' ? '#0f172a' : 'var(--apple-text-secondary)',
+                      borderColor: viewingProfileUser.platform_role === 'user' ? '#818cf8' : 'var(--apple-border)',
+                      cursor: 'pointer'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
-                      <span style={{ color: 'var(--apple-text-primary)' }}>
-                        {new Date(rep.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                      </span>
-                      <span style={{ color: 'var(--apple-accent-green)' }}>
-                        + {rep.positive_leads} Leads
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
-                      <span>Exp Revenue:</span>
-                      <span style={{ color: 'var(--apple-text-primary)', fontWeight: '500' }}>${Number(rep.expected_revenue).toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
+                    User Role
+                  </button>
+                  <button
+                    onClick={() => handleUpdatePlatformRole('teamlead')}
+                    disabled={saving || viewingProfileUser.platform_role === 'teamlead'}
+                    className="apple-btn"
+                    style={{
+                      flex: 1,
+                      background: viewingProfileUser.platform_role === 'teamlead' ? '#eab308' : 'rgba(255,255,255,0.05)',
+                      color: viewingProfileUser.platform_role === 'teamlead' ? '#0f172a' : 'var(--apple-text-secondary)',
+                      borderColor: viewingProfileUser.platform_role === 'teamlead' ? '#eab308' : 'var(--apple-border)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Team Lead
+                  </button>
+                </div>
               </div>
-            ) : (
-              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.85rem' }}>
-                No DIS entries submitted yet.
-              </p>
-            )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '600', textTransform: 'uppercase' }}>Feature Access</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>Revenue Logging</span>
+                  <button
+                    onClick={() => handleToggleAccess('has_revenue_logging', viewingProfileUser.has_revenue_logging)}
+                    disabled={saving}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: viewingProfileUser.has_revenue_logging ? '#4ade80' : '#475569',
+                      border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                    }}
+                  >
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.has_revenue_logging ? '23px' : '3px', transition: 'left 0.3s' }} />
+                  </button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>DIS Reporting</span>
+                  <button
+                    onClick={() => handleToggleAccess('has_dis_reporting', viewingProfileUser.has_dis_reporting)}
+                    disabled={saving}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: viewingProfileUser.has_dis_reporting ? '#4ade80' : '#475569',
+                      border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                    }}
+                  >
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.has_dis_reporting ? '23px' : '3px', transition: 'left 0.3s' }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          {/* ROW 3: Revenue (full width) */}
+          {/* Column 2: Security Controls, Team Assignment, and Latest DIS */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            
+            {/* Card 2.1: Security & Team Assignment */}
+            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div>
+                <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Key size={18} style={{ color: '#10b981' }} /> Security
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button
+                    onClick={() => handleToggleDeactivation(isDeactivated)}
+                    disabled={saving}
+                    className="apple-btn"
+                    style={{
+                      width: '100%',
+                      background: isDeactivated ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      color: isDeactivated ? '#4ade80' : '#f87171',
+                      borderColor: isDeactivated ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isDeactivated ? '🔓 Reactivate Account' : '🔒 Block Portal Access'}
+                  </button>
+                  <button
+                    onClick={handleSendResetEmail}
+                    disabled={saving}
+                    className="apple-btn apple-btn-secondary"
+                    style={{ width: '100%', cursor: 'pointer' }}
+                  >
+                    Send Password Reset Email
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%' }} />
+
+              <div>
+                <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserIcon size={18} style={{ color: '#f59e0b' }} /> Team Assignment
+                </h3>
+                {memberTeam ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{memberTeam.name}</span>
+                    <button
+                      disabled={saving}
+                      onClick={handleRemoveFromTeam}
+                      style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No team assigned.</p>
+                )}
+
+                <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <select
+                    value={newTeamId}
+                    onChange={(e) => setNewTeamId(e.target.value)}
+                    required
+                    className="apple-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
+                  >
+                    <option value="" disabled>-- Select a Team --</option>
+                    {teams.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={saving || !newTeamId}
+                    className="apple-btn apple-btn-primary"
+                    style={{ width: '100%', cursor: 'pointer' }}
+                  >
+                    {memberTeam ? 'Change Team Assignment' : 'Assign to Team'}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Card 2.2: Latest DIS Reports */}
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <FileText size={18} style={{ color: 'var(--apple-accent-orange)' }} />
+                <h3 className="apple-title-small" style={{ margin: 0 }}>Latest Daily DIS</h3>
+              </div>
+
+              {loadingDis ? (
+                <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
+              ) : userDisReports.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {userDisReports.slice(0, 6).map(rep => (
+                    <div
+                      key={rep.id}
+                      style={{
+                        padding: '12px',
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid var(--apple-border)',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
+                        <span style={{ color: 'var(--apple-text-primary)' }}>
+                          {new Date(rep.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                        </span>
+                        <span style={{ color: 'var(--apple-accent-green)' }}>
+                          + {rep.positive_leads} Leads
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
+                        <span>Exp Revenue:</span>
+                        <span style={{ color: 'var(--apple-text-primary)', fontWeight: '500' }}>${Number(rep.expected_revenue).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.85rem' }}>
+                  No DIS entries submitted yet.
+                </p>
+              )}
+            </div>
+
+          </div>
+          
+        </div>
+
+        {/* Full-width Stack: Revenue details and then Activity Timeline */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          {/* Revenue Details */}
           <div>
             <UserRevenue user={viewingProfileUser} isAdminView={true} />
           </div>
 
+          {/* Activity Timeline */}
+          <div className="apple-card" style={{ padding: '24px' }}>
+            <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Activity size={18} style={{ color: '#38bdf8' }} /> Activity Timeline
+            </h3>
+            <div style={{
+              maxHeight: '400px',
+              overflowY: 'auto',
+              background: 'rgba(255,255,255,0.01)',
+              border: '1px solid var(--apple-border)',
+              borderRadius: '12px',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              {userActivities.length > 0 ? (
+                userActivities.map(act => (
+                  <div key={act.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{act.icon}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', lineHeight: '1.4' }}>{act.description}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
+                        {act.date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.9rem', textAlign: 'center', display: 'block', padding: '20px 0' }}>
+                  No platform activity logged yet.
+                </span>
+              )}
+            </div>
+          </div>
         </div>
+
       </div>
     )
   }
@@ -306,7 +728,6 @@ export default function AdminUsers() {
                   <th style={{ padding: '12px' }}>Platform Role</th>
                   <th style={{ padding: '12px' }}>Active Teams</th>
                   <th style={{ padding: '12px' }}>Account Status</th>
-                  <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -369,24 +790,6 @@ export default function AdminUsers() {
                         }}>
                           {isDeactivated ? 'Deactivated' : 'Active'}
                         </span>
-                      </td>
-                      <td style={{ padding: '14px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        <Link
-                          to={`/admin/users/${user.id}`}
-                          className="btn btn-secondary"
-                          style={{
-                            padding: '6px 14px',
-                            fontSize: '0.8rem',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            textDecoration: 'none'
-                          }}
-                        >
-                          ⚙️ Control Panel
-                        </Link>
                       </td>
                     </tr>
                   )
