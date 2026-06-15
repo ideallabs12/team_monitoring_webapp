@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText } from 'lucide-react'
+import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import UserRevenue from '../user/UserRevenue'
 
 let adminUsersCache = { loaded: false, users: [], teams: [], revenues: [], disReports: [] }
 
@@ -12,31 +11,9 @@ export default function AdminUsers() {
   const [teams, setTeams] = useState(adminUsersCache.teams)
   const [revenues, setRevenues] = useState(adminUsersCache.revenues)
   const [disReports, setDisReports] = useState(adminUsersCache.disReports)
-  const [viewingProfileUser, setViewingProfileUser] = useState(null)
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('')
-
-  // Find the team this user belongs to
-  const memberTeam = useMemo(() => {
-    if (!viewingProfileUser || !viewingProfileUser.team_id) return null
-    const team = teams.find(t => t.id === viewingProfileUser.team_id)
-    return team ? { name: team.name, id: team.id } : null
-  }, [viewingProfileUser, teams])
-
-  // Filter and sort DIS reports in memory for the profile view
-  const userDisReports = useMemo(() => {
-    if (!viewingProfileUser) return []
-    return disReports
-      .filter(r => r.user_id === viewingProfileUser.id)
-      .sort((a, b) => new Date(b.report_date) - new Date(a.report_date))
-      .slice(0, 6)
-  }, [disReports, viewingProfileUser])
-
-  const handleRowClick = (e, user) => {
-    if (e.target.closest('a') || e.target.closest('button')) return
-    setViewingProfileUser(user)
-  }
 
   const loadData = async () => {
     try {
@@ -96,165 +73,8 @@ export default function AdminUsers() {
 
   if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading registered users...</div>
 
-  if (viewingProfileUser) {
-    return (
-      <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)', paddingBottom: '60px' }}>
-        {/* Back navigation */}
-        <button
-          onClick={() => setViewingProfileUser(null)}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid var(--apple-border)',
-            color: '#fff',
-            padding: '10px 18px',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            fontSize: '0.88rem',
-            fontWeight: '600',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '28px',
-            transition: 'all 0.25s var(--apple-ease)'
-          }}
-          className="apple-btn-secondary"
-        >
-          <ArrowLeft size={16} /> Back to Users Directory
-        </button>
-
-        {/* Full-width stacked rows: Profile → Latest DIS → Revenue */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          
-          {/* ROW 1: Profile Card */}
-          <div className="apple-card" style={{ padding: '24px !important' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-              <div style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.25rem',
-                fontWeight: 'bold',
-                color: 'white'
-              }}>
-                {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', fontWeight: '700' }}>
-                  {viewingProfileUser.first_name} {viewingProfileUser.last_name}
-                </h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
-                  {viewingProfileUser.platform_role || 'Member'}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
-                  <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{viewingProfileUser.email}</div>
-              </div>
-
-              <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
-                  <Phone size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Phone Number
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{viewingProfileUser.phone || '—'}</div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '500' }}>
-                  Team Assignments
-                </div>
-                {memberTeam ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    <span
-                      className={viewingProfileUser.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
-                      style={{ fontSize: '0.72rem', padding: '2px 8px' }}
-                    >
-                      {memberTeam.name} ({viewingProfileUser.platform_role === 'teamlead' ? 'lead' : 'member'})
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
-                    No team assigned
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ROW 2: Latest DIS Reports */}
-          <div className="apple-card" style={{ padding: '24px !important' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <FileText size={18} style={{ color: 'var(--apple-accent-orange)' }} />
-              <h3 className="apple-title-small" style={{ margin: 0 }}>Latest Daily DIS</h3>
-            </div>
-
-            {userDisReports.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                {userDisReports.map(rep => (
-                  <div
-                    key={rep.id}
-                    style={{
-                      padding: '12px',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid var(--apple-border)',
-                      borderRadius: '10px',
-                      fontSize: '0.85rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
-                      <span style={{ color: '#fff' }}>
-                        {new Date(rep.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                      </span>
-                      <span style={{ color: 'var(--apple-accent-green)' }}>
-                        + {rep.positive_leads} Leads
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--apple-text-secondary)', fontSize: '0.78rem' }}>
-                      <span>Exp Revenue:</span>
-                      <span style={{ color: '#fff', fontWeight: '500' }}>${Number(rep.expected_revenue).toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: 0, fontSize: '0.85rem' }}>
-                No DIS entries submitted yet.
-              </p>
-            )}
-          </div>
-
-          {/* ROW 3: Revenue (full width) */}
-          <div>
-            <UserRevenue user={viewingProfileUser} isAdminView={true} />
-          </div>
-
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div>
-      <style>{`
-        .user-directory-row {
-          cursor: pointer;
-          transition: background-color 0.15s ease;
-        }
-        .user-directory-row:hover {
-          background-color: rgba(255, 255, 255, 0.02) !important;
-        }
-        [data-theme="light"] .user-directory-row:hover {
-          background-color: rgba(0, 0, 0, 0.03) !important;
-        }
-      `}</style>
       {/* Header */}
       <div className="admin-page-header">
         <div className="admin-page-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
@@ -295,7 +115,7 @@ export default function AdminUsers() {
 
       {/* Users List Card */}
       <div className="card" style={{ padding: '24px' }}>
-        <h3 style={{ marginBottom: '20px', fontSize: '1.2rem', color: 'var(--apple-text-primary)' }}>Registered Users Directory</h3>
+        <h3 style={{ marginBottom: '20px', fontSize: '1.2rem', color: '#fff' }}>Registered Users Directory</h3>
 
         {filteredUsers.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
@@ -314,14 +134,9 @@ export default function AdminUsers() {
                   const isDeactivated = !!user.is_deactivated
 
                   return (
-                    <tr
-                      key={user.id}
-                      className="user-directory-row"
-                      onClick={(e) => handleRowClick(e, user)}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', opacity: isDeactivated ? 0.6 : 1 }}
-                    >
+                    <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', opacity: isDeactivated ? 0.6 : 1 }}>
                       <td style={{ padding: '14px 12px' }}>
-                        <div style={{ fontWeight: '600', color: 'var(--apple-text-primary)' }}>
+                        <div style={{ fontWeight: '600', color: '#fff' }}>
                           {user.first_name} {user.last_name}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{user.email}</div>
