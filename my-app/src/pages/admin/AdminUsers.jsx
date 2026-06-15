@@ -314,6 +314,10 @@ export default function AdminUsers() {
     const memberTeam = teams.find(t => t.id === viewingProfileUser.team_id)
     const isDeactivated = !!viewingProfileUser.is_deactivated
 
+    const normalizedRole = viewingProfileUser.platform_role?.toLowerCase() || 'user'
+    const isTeamLeadRole = normalizedRole === 'teamlead' || normalizedRole === 'team lead'
+    const isUserRole = !isTeamLeadRole && normalizedRole !== 'admin'
+
     return (
       <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)', paddingBottom: '60px' }}>
         {/* Back navigation left top hero section */}
@@ -406,10 +410,10 @@ export default function AdminUsers() {
                   {memberTeam ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       <span
-                        className={viewingProfileUser.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
+                        className={isTeamLeadRole ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
                         style={{ fontSize: '0.72rem', padding: '2px 8px' }}
                       >
-                        {memberTeam.name} ({viewingProfileUser.platform_role === 'teamlead' ? 'lead' : 'member'})
+                        {memberTeam.name} ({isTeamLeadRole ? 'lead' : 'member'})
                       </span>
                     </div>
                   ) : (
@@ -432,13 +436,13 @@ export default function AdminUsers() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={() => handleUpdatePlatformRole('user')}
-                    disabled={saving || viewingProfileUser.platform_role === 'user'}
+                    disabled={saving || isUserRole}
                     className="apple-btn"
                     style={{
                       flex: 1,
-                      background: viewingProfileUser.platform_role === 'user' ? '#818cf8' : 'rgba(255,255,255,0.05)',
-                      color: viewingProfileUser.platform_role === 'user' ? '#0f172a' : 'var(--apple-text-secondary)',
-                      borderColor: viewingProfileUser.platform_role === 'user' ? '#818cf8' : 'var(--apple-border)',
+                      background: isUserRole ? '#818cf8' : 'rgba(255,255,255,0.05)',
+                      color: isUserRole ? '#0f172a' : 'var(--apple-text-secondary)',
+                      borderColor: isUserRole ? '#818cf8' : 'var(--apple-border)',
                       cursor: 'pointer'
                     }}
                   >
@@ -446,13 +450,13 @@ export default function AdminUsers() {
                   </button>
                   <button
                     onClick={() => handleUpdatePlatformRole('teamlead')}
-                    disabled={saving || viewingProfileUser.platform_role === 'teamlead'}
+                    disabled={saving || isTeamLeadRole}
                     className="apple-btn"
                     style={{
                       flex: 1,
-                      background: viewingProfileUser.platform_role === 'teamlead' ? '#eab308' : 'rgba(255,255,255,0.05)',
-                      color: viewingProfileUser.platform_role === 'teamlead' ? '#0f172a' : 'var(--apple-text-secondary)',
-                      borderColor: viewingProfileUser.platform_role === 'teamlead' ? '#eab308' : 'var(--apple-border)',
+                      background: isTeamLeadRole ? '#eab308' : 'rgba(255,255,255,0.05)',
+                      color: isTeamLeadRole ? '#0f172a' : 'var(--apple-text-secondary)',
+                      borderColor: isTeamLeadRole ? '#eab308' : 'var(--apple-border)',
                       cursor: 'pointer'
                     }}
                   >
