@@ -826,8 +826,8 @@ export default function UserRevenue({ user, isAdminView }) {
               const teamObj = allTeams.find(t => t.id === teamId)
               if (!teamObj) return null
 
-              // Determine role from profile (single-team model)
-              const isUserTeam = teams.length > 0 && teams[0].id === teamId
+              // Determine role: "member" if it's any of the user's active teams, otherwise "former member"
+              const isUserTeam = teams.some(t => t.id === teamId)
               const teamRole = isUserTeam ? 'member' : 'former member'
 
               const teamRevs = revenues.filter(r => r.team_id === teamId)
