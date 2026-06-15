@@ -242,7 +242,15 @@ export default function AdminTeams() {
   // Calculations for Team Performance Breakdown
   const teamProfiles = useMemo(() => {
     if (!activeTeam) return []
-    return profiles.filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin')
+    const primary = profiles
+      .filter(p => p.team_id === activeTeam.id && p.platform_role !== 'admin')
+      .map(p => ({ ...p, isSecondary: false }))
+    const secondary = profiles
+      .filter(p => p.secondary_team_id === activeTeam.id && p.platform_role !== 'admin')
+      .map(p => ({ ...p, isSecondary: true }))
+    // Avoid duplicates (user whose primary AND secondary is the same team — edge case)
+    const primaryIds = new Set(primary.map(p => p.id))
+    return [...primary, ...secondary.filter(p => !primaryIds.has(p.id))]
   }, [profiles, activeTeam])
 
   const memberBreakdown = useMemo(() => {
@@ -574,10 +582,17 @@ export default function AdminTeams() {
                           {profile.email}
                         </div>
                       </div>
-                      <span className={isLead ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
-                        style={{ fontSize: '0.65rem', padding: '2px 8px', flexShrink: 0 }}>
-                        {isLead ? 'Lead' : 'Member'}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', flexShrink: 0 }}>
+                        <span className={isLead ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
+                          style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                          {isLead ? 'Lead' : 'Member'}
+                        </span>
+                        {profile.isSecondary && (
+                          <span style={{ fontSize: '0.62rem', padding: '2px 7px', borderRadius: '999px', background: 'rgba(167,139,250,0.12)', color: '#a78bfa', fontWeight: '600', border: '1px solid rgba(167,139,250,0.25)' }}>
+                            Secondary
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Revenue row */}
