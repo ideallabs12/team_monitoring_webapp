@@ -1,0 +1,86 @@
+﻿Commit Hash,Author,Date,Message
+64df8f8,Ajay Varma,2026-06-12,updated scrolling bar in admin dashboard
+b3cfe75,Ajay Varma,2026-06-12,fixing bug revenue page is not opening
+c09ffe7,Ajay Varma,2026-06-12,Added a This Month card to the top stats grid to highlight current month revenue till date, and fixed the performance trend tooltip so both actual and target revenues are clearly visible. Also added a pill-style timeframe selector to the Team Leaderboard, allowing you to easily switch between 1M, 2M, 3M, 6M, 12M, and All Time views
+cb66a90,Ajay Varma,2026-06-12,bug fixed in copying revenue report
+293bed9,Ajay Varma,2026-06-12,now we could copy revenue report in teams
+6c43b9d,Ajay Varma,2026-06-12,Added a Previous Months Data toggle to the Teams overview page to keep the default view clean with only current month revenue. When activated, an animated selector drops down allowing you to switch between 2M, 3M, 4M, and 6M views. As you switch timeframes, individual team cards dynamically update to reveal their past revenue totals.
+7241de6,Ajay Varma,2026-06-12,I cleaned up the monthly revenue grid to cleanly display the month and year without duplicate short-year text. I also updated the timeframe toggle to use a soft, light blue background for active selections. Finally, I implemented a GPU-accelerated CSS transform that provides a buttery smooth, liquid-like sliding animation when you switch between different timeframes.
+1377b44,Ajay Varma,2026-06-12,I optimized the Admin Analytics page for light mode by replacing hardcoded white styling with dynamic CSS variables, ensuring empty states and table rows are perfectly legible. I also updated the SVG tooltips in charts like RevenueTrendChart to automatically invert colors based on the active theme. In the Admin Teams panel, I unified the layout by wrapping the Month/Year filters and the Active/Historical member grids into a single, clean background card. Finally, I centered the 3M/6M/12M/All Time timeframe toggles across the team views and implemented a smooth, iOS-style sliding pill animation for when you click between the different periods.
+79103e6,Ajay Varma,2026-06-12,now in adminpanel teams page team members profiles will be displayed at top of the page and similar to user monthly break down has time frame now every team has time frame
+bed132e,Ajay Varma,2026-06-12,now team members profiles will be displayed at top of the page allowing admin to know active team members in that team with current month revenue
+21b9f65,Ajay Varma,2026-06-12,bugs fixed in displaying monthly breakdown of users revenue
+c640dfc,Ajay Varma,2026-06-12,now monthly revenue break down will be displayed in more than one row based on selected time frame
+3f519a0,Ajay Varma,2026-06-12,now when we open user profile it will display his monthly revenue break down for all time. we time frame 3m,6m,12m,24,alltime
+55b573b,Ajay Varma,2026-06-12,updated logic for displaying highest revenue in a month by team lead
+b5da47f,Ajay Varma,2026-06-12,updated logic for displaying highest revenue in a month by team lead
+9cd2354,Ajay Varma,2026-06-12,now in users profile we could see last 12months revenue
+79899df,Ajay Varma,2026-06-12,fixed UI issues in admin analytics page in light color theme
+633777e,Ajay Varma,2026-06-11,fix background-clip logo text visibility in dark and light modes
+234b760,Ajay Varma,2026-06-11,added light color mode in apple theme for all users including admins,teamleads,members
+4266967,Ajay Varma,2026-06-11,redesigned Admin DIS Audit Hub page to align with Apple theme design system
+447bcf9,Ajay Varma,2026-06-11,added Team Performance Breakdown to Admin Teams page detail view
+5ecebfe,Ajay Varma,2026-06-11,added 6-month accumulated revenue metric to team cards on Admin Teams page
+3240ca5,Ajay Varma,2026-06-11,updated admin revenue page instead of displaying regular trend line now it will display creative visual representaion for company performance
+3428e6d,Ajay Varma,2026-06-11,updated admin revenue page instead of displaying regular trend line now it will display creative visual representaion for company performance
+2a9f8fa,Ajay Varma,2026-06-11,now admin revenue page will display company total for last 12 months and it will have performance trend line
+075fc09,Ajay Varma,2026-06-11,Now users could delete their old DIS reports
+0dbd0ce,Ajay Varma,2026-06-11,updated team analytics page now it would show team target instead of showing expected DIS revenue
+db7fbb7,Ajay Varma,2026-06-11,updated admin dashboard UI to apple design theme makeing  professional
+69617fc,Ajay Varma,2026-06-11, new changes were made
+ad5d73b,Ajay Varma,2026-06-11,bring back old code
+e2f19e9,Ajay Varma,2026-06-11,now if member was part of secondry team they also will be displayed in secondary teams
+f4f720e,Ajay Varma,2026-06-11,we have updated admin panel page / and removed separete team wise access management system as it was not appropriate
+a9386d1,Ajay Varma,2026-06-11, fixing major errors
+c75ca76,Ajay Varma,2026-06-11, fixing architecture step by step as of now we have to control member access when he is part of two teams updating all page to new architecture
+47da26e,Ajay Varma,2026-06-11,  entire architecture is broken trying fix the errors
+214f318,Ajay Varma,2026-06-11,updated enitre all hands portal architecture to supoort one member can be part of 2 or more teams now they could log revenue in all teams they are part of and similarly DIS also. each user has to submit reports in all teams they belong too
+e77976b,Ajay Varma,2026-06-11,in admin panel teams page update UI so that now it will display users as cards instead of row for better viewing experience
+0fe3454,Ajay Varma,2026-06-11,bugs fixed in admin panel teams page
+87a56fa,Ajay Varma,2026-06-11,updated teams page in admin panel
+f3eaa29,Ajay Varma,2026-06-11, new analytics added that will show team performance history in admin panel team page
+14a2e06,Ajay Varma,2026-06-10,vercel deployment bug fixed
+20cef14,Ajay Varma,2026-06-10,revenue page logic updated
+8f54300,Ajay Varma,2026-06-10, chnaged revenue page UI in admin panel
+13a5fa1,Ajay Varma,2026-06-10, added separete DIS page for team leads to track their team members DIS
+b9ec599,Ajay Varma,2026-06-10,Fix chart overlap: remove flex-fill, use clean fixed pixel heights for chart containers
+ffac0ec,Ajay Varma,2026-06-10,Fix chart layout whitespace: flex-fill rows, explicit heights, add MTD revenue share donut chart
+a448846,Ajay Varma,2026-06-10,Admin Dashboard: trading terminal UI with ticker tape, charts, team watchlist, compliance gauge, AI insights
+2cb9d88,Ajay Varma,2026-06-10,Admin Dashboard: remove Team Member Targets (already in Revenue page), add quick-stats overview
+ced8b99,Ajay Varma,2026-06-10,Fix: Add profile team fallback for report badges when All Teams is selected
+be5c124,Ajay Varma,2026-06-10,DIS page UI is completly updated
+f7dc8e1,Ajay Varma,2026-06-10, access changes for some pages
+6e7733e,Ajay Varma,2026-06-10,new milestones page was added
+eb0c13e,Ajay Varma,2026-06-09,updated analytics pages
+ebf0fe4,Ajay Varma,2026-06-09, bugs fixing
+cf7f1fb,Ajay Varma,2026-06-09,added leader board page for admins
+5c75fd9,Ajay Varma,2026-06-09,now team leads could view/update/delete  teammembers old revenue logs and add new revenue
+b763a38,Ajay Varma,2026-06-09,fixed UI issues in teammanagement page
+069c523,Ajay Varma,2026-06-09,now team leads can add/update revenue behalf of their team members
+f4746f8,Ajay Varma,2026-06-09,now user portal teams page will display their team total not user total
+c5ae54d,Ajay Varma,2026-06-09,update admin analytics bug
+7d6187d,Ajay Varma,2026-06-09,update admin analytics
+f6139c6,Ajay Varma,2026-06-08, updated text in DIS page
+0bebb43,Ajay Varma,2026-06-08,now expected revenue  is not calculated by DIS
+1bad2fb,Ajay Varma,2026-06-08,zero revenue bug fixing
+8edbb9e,Ajay Varma,2026-06-08, new chnages were done
+ad31ab7,Ajay Varma,2026-06-08,updated logo
+3df7c7d,Ajay Varma,2026-06-08,user home page updated to display his name
+e1008e0,Ajay Varma,2026-06-08,some changers were made
+1ed7ba1,Ajay Varma,2026-06-08, fixed transparent navbar
+bcf985e,Ajay Varma,2026-06-08,now teams page in users panel will display their team targets and reached targets
+f68cebb,Ajay Varma,2026-06-08, separate page in navbar for team leads analytics and management
+a2f552c,Ajay Varma,2026-06-06,separate team analytics page added only for team lead and separate control panel added for admin to control users and some other chnages
+902cbc5,Ajay Varma,2026-06-05,added granular analytics in both user and admin panels and new users accounts are deactivated by default ,admin needs to approve their accounts
+93e487c,Ajay Varma,2026-06-05,updated sources of revenue
+8b08c5d,Ajay Varma,2026-06-04,optimised website performance using cache
+87b455a,Ajay Varma,2026-06-04,updated app.jsx that pages dont reload quite often when we switch tabs in browser
+fdc9b10,Ajay Varma,2026-06-04,updated project base that user can be part of one team only and while loggin revenu new inputs added like speakername,source,week of month
+ebe7aad,Ajay Varma,2026-06-03,app jsx file updated
+6769a7b,Ajay Varma,2026-06-03,login page company name changed
+95a600e,Ajay Varma,2026-06-03,some changes updates
+7a42c40,Ajay Varma,2026-05-30,updated
+6516f6e,Ajay Varma,2026-05-29,added speed insights from vercel
+f261f8c,Ajay Varma,2026-05-29,updated login page as two column layout
+c6bea76,Ajay Varma,2026-05-29,fixed authentication redirection URL for complete profile component
+b31562b,Ajay Varma,2026-05-29,first commit
