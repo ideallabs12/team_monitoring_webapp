@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Plus, TrendingUp, PhoneCall, Calendar, Search, Filter } from 'lucide-react'
+import { Plus, TrendingUp, PhoneCall, Calendar, Search, Filter, Edit2, X } from 'lucide-react'
 
 export default function SalesExecutive({ user }) {
   const [loading, setLoading] = useState(true)
@@ -12,10 +12,12 @@ export default function SalesExecutive({ user }) {
   const [logs, setLogs] = useState([])
   
   // Form State
+  const [editingLogId, setEditingLogId] = useState(null)
   const [selectedTeam, setSelectedTeam] = useState('')
   const [selectedMember, setSelectedMember] = useState('')
   const [speakerName, setSpeakerName] = useState('')
-  const [salesRevenue, setSalesRevenue] = useState('')
+  const [notes, setNotes] = useState('')
+  const [salesRevenue, setSalesRevenue] = useState('0.00')
   const [callDate, setCallDate] = useState(new Date().toISOString().split('T')[0])
   
   // Filters
@@ -59,7 +61,6 @@ export default function SalesExecutive({ user }) {
         return
       }
       try {
-        // Based on existing admin logic, users have team_id in their profiles
         const { data, error } = await supabase
           .from('profiles')
           .select('id, first_name, last_name')
@@ -68,14 +69,40 @@ export default function SalesExecutive({ user }) {
           
         if (error) throw error
         setMembers(data || [])
-        // Reset selected member if it doesn't belong to the new team
-        setSelectedMember('')
       } catch (err) {
         console.error('Error loading members:', err)
       }
     }
     loadMembers()
   }, [selectedTeam])
+
+  const handleEdit = (log) => {
+    setEditingLogId(log.id)
+    setSelectedTeam(log.team_id)
+    // We need to wait for members to load, but the useEffect will handle it.
+    // However, selectedMember might reset if members load after. 
+    // It's safe to just set it here, and the useEffect doesn't clear it.
+    // Actually, in the previous code, the useEffect reset selectedMember!
+    // I need to fix that or set selectedMember in a timeout. Let's just set it.
+    setSelectedMember(log.member_id)
+    setSpeakerName(log.speaker_name)
+    setNotes(log.notes || '')
+    setSalesRevenue(log.sales_revenue.toString())
+    setCallDate(log.call_date)
+    setErrorMsg('')
+    setSuccessMsg('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingLogId(null)
+    setSpeakerName('')
+    setNotes('')
+    setSalesRevenue('0.00')
+    setSelectedMember('')
+    setErrorMsg('')
+    setSuccessMsg('')
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -84,35 +111,60 @@ export default function SalesExecutive({ user }) {
     setSuccessMsg('')
     
     if (!selectedTeam || !selectedMember || !speakerName || !salesRevenue || !callDate) {
-      setErrorMsg('Please fill in all fields.')
+      setErrorMsg('Please fill in all required fields.')
       setSaving(false)
       return
     }
 
     try {
-      const { data, error } = await supabase
-        .from('sales_analytics')
-        .insert({
-          team_id: selectedTeam,
-          member_id: selectedMember,
-          speaker_name: speakerName,
-          sales_revenue: parseFloat(salesRevenue),
-          call_date: callDate,
-          entered_by: user.id
-        })
-        .select('*, teams(name), profiles:member_id(first_name, last_name)')
-        .single()
+      if (editingLogId) {
+        // Update existing log
+        const { data, error } = await supabase
+          .from('sales_analytics')
+          .update({
+            team_id: selectedTeam,
+            member_id: selectedMember,
+            speaker_name: speakerName,
+            notes: notes,
+            sales_revenue: parseFloat(salesRevenue),
+            call_date: callDate
+          })
+          .eq('id', editingLogId)
+          .select('*, teams(name), profiles:member_id(first_name, last_name)')
+          .single()
+          
+        if (error) throw error
         
-      if (error) throw error
-      
-      setSuccessMsg('Call log added successfully!')
-      setLogs([data, ...logs].sort((a, b) => new Date(b.call_date) - new Date(a.call_date)))
-      
-      // Reset form
-      setSelectedMember('')
-      setSpeakerName('')
-      setSalesRevenue('')
-      // keep selectedTeam and callDate for convenience
+        setSuccessMsg('Call log updated successfully!')
+        setLogs(logs.map(l => l.id === editingLogId ? data : l).sort((a, b) => new Date(b.call_date) - new Date(a.call_date)))
+        handleCancelEdit()
+      } else {
+        // Insert new log
+        const { data, error } = await supabase
+          .from('sales_analytics')
+          .insert({
+            team_id: selectedTeam,
+            member_id: selectedMember,
+            speaker_name: speakerName,
+            notes: notes,
+            sales_revenue: parseFloat(salesRevenue),
+            call_date: callDate,
+            entered_by: user.id
+          })
+          .select('*, teams(name), profiles:member_id(first_name, last_name)')
+          .single()
+          
+        if (error) throw error
+        
+        setSuccessMsg('Call log added successfully!')
+        setLogs([data, ...logs].sort((a, b) => new Date(b.call_date) - new Date(a.call_date)))
+        
+        // Reset form
+        setSelectedMember('')
+        setSpeakerName('')
+        setNotes('')
+        setSalesRevenue('0.00')
+      }
     } catch (err) {
       console.error('Error saving log:', err)
       setErrorMsg('Failed to save call log.')
@@ -143,7 +195,7 @@ export default function SalesExecutive({ user }) {
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
       <div style={{ marginBottom: '24px' }}>
         <h1 className="apple-title-large" style={{ margin: '0 0 8px 0' }}>Sales Analytics</h1>
-        <p style={{ margin: 0, color: 'var(--apple-text-secondary)' }}>Log and track your individual call activity and generated sales revenue.</p>
+        <p style={{ margin: 0, color: 'var(--apple-text-secondary)' }}>Log and track your individual call activity, notes, and generated sales revenue.</p>
       </div>
 
       {errorMsg && (
@@ -182,20 +234,29 @@ export default function SalesExecutive({ user }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', '@media (min-width: 1024px)': { gridTemplateColumns: '320px 1fr' } }}>
         {/* Entry Form */}
         <div className="apple-card" style={{ padding: '24px', height: 'fit-content' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Plus size={18} style={{ color: 'var(--apple-accent-blue)' }} /> Add Call Log
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 className="apple-title-small" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {editingLogId ? <Edit2 size={18} style={{ color: '#a78bfa' }} /> : <Plus size={18} style={{ color: 'var(--apple-accent-blue)' }} />}
+              {editingLogId ? 'Edit Call Log' : 'Add Call Log'}
+            </h3>
+            {editingLogId && (
+              <button onClick={handleCancelEdit} style={{ background: 'none', border: 'none', color: 'var(--apple-text-secondary)', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Team</label>
-              <select className="apple-input" value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} required>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Team <span style={{color: '#ef4444'}}>*</span></label>
+              <select className="apple-input" value={selectedTeam} onChange={e => { setSelectedTeam(e.target.value); setSelectedMember(''); }} required>
                 <option value="" disabled>Select Team</option>
                 {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Member</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Member <span style={{color: '#ef4444'}}>*</span></label>
               <select className="apple-input" value={selectedMember} onChange={e => setSelectedMember(e.target.value)} required disabled={!selectedTeam}>
                 <option value="" disabled>{selectedTeam ? 'Select Member' : 'Select Team First'}</option>
                 {members.map(m => <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>)}
@@ -203,22 +264,34 @@ export default function SalesExecutive({ user }) {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Speaker Name</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Speaker Name <span style={{color: '#ef4444'}}>*</span></label>
               <input type="text" className="apple-input" value={speakerName} onChange={e => setSpeakerName(e.target.value)} required placeholder="e.g. John Doe" />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Sales Revenue ($)</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Call Notes</label>
+              <textarea 
+                className="apple-input" 
+                value={notes} 
+                onChange={e => setNotes(e.target.value)} 
+                placeholder="Enter details about the call..." 
+                rows={4}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Sales Revenue ($) <span style={{color: '#ef4444'}}>*</span></label>
               <input type="number" step="0.01" min="0" className="apple-input" value={salesRevenue} onChange={e => setSalesRevenue(e.target.value)} required placeholder="0.00" />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Call Date</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Call Date <span style={{color: '#ef4444'}}>*</span></label>
               <input type="date" className="apple-input" value={callDate} onChange={e => setCallDate(e.target.value)} required />
             </div>
 
-            <button type="submit" className="apple-btn apple-btn-primary" disabled={saving} style={{ marginTop: '8px' }}>
-              {saving ? 'Saving...' : 'Submit Log'}
+            <button type="submit" className="apple-btn apple-btn-primary" disabled={saving} style={{ marginTop: '8px', background: editingLogId ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' : '' }}>
+              {saving ? 'Saving...' : (editingLogId ? 'Update Log' : 'Submit Log')}
             </button>
           </form>
         </div>
@@ -253,22 +326,36 @@ export default function SalesExecutive({ user }) {
           <div style={{ flex: 1, overflowY: 'auto', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
             {filteredLogs.length > 0 ? (
               <div style={{ minWidth: '600px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', padding: '12px 16px', borderBottom: '1px solid var(--apple-border)', fontSize: '0.75rem', fontWeight: '600', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr auto', padding: '12px 16px', borderBottom: '1px solid var(--apple-border)', fontSize: '0.75rem', fontWeight: '600', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   <div>Date</div>
                   <div>Team</div>
                   <div>Member</div>
                   <div>Speaker</div>
                   <div style={{ textAlign: 'right' }}>Revenue</div>
+                  <div style={{ width: '40px' }}></div>
                 </div>
                 {filteredLogs.map(log => (
-                  <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', transition: 'background 0.2s', ':hover': { background: 'rgba(255,255,255,0.02)' } }}>
-                    <div style={{ fontSize: '0.9rem' }}>{new Date(log.call_date).toLocaleDateString()}</div>
-                    <div style={{ fontSize: '0.9rem' }}>{log.teams?.name || 'Unknown'}</div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.first_name} {log.profiles?.last_name}</div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{log.speaker_name}</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#4ade80', textAlign: 'right' }}>
-                      ${Number(log.sales_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div key={log.id} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr auto', padding: '16px', alignItems: 'center', transition: 'background 0.2s', ':hover': { background: 'rgba(255,255,255,0.02)' } }}>
+                      <div style={{ fontSize: '0.9rem' }}>{new Date(log.call_date).toLocaleDateString()}</div>
+                      <div style={{ fontSize: '0.9rem' }}>{log.teams?.name || 'Unknown'}</div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.first_name} {log.profiles?.last_name}</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{log.speaker_name}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: '600', color: Number(log.sales_revenue) > 0 ? '#4ade80' : 'var(--apple-text-secondary)', textAlign: 'right' }}>
+                        ${Number(log.sales_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div style={{ textAlign: 'right', paddingLeft: '16px' }}>
+                        <button onClick={() => handleEdit(log)} style={{ background: 'none', border: 'none', color: 'var(--apple-text-secondary)', cursor: 'pointer', padding: '4px' }} title="Edit Log">
+                          <Edit2 size={16} />
+                        </button>
+                      </div>
                     </div>
+                    {log.notes && (
+                      <div style={{ padding: '0 16px 16px 16px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
+                        <strong style={{ color: 'var(--apple-text-primary)' }}>Notes: </strong> 
+                        <span style={{ whiteSpace: 'pre-wrap' }}>{log.notes}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.sales_analytics (
   team_id uuid references public.teams(id) on delete cascade not null,
   member_id uuid references public.profiles(id) on delete cascade not null,
   speaker_name text not null,
+  notes text,
   sales_revenue numeric(12, 2) default 0.00 not null,
   call_date date not null,
   entered_by uuid references public.profiles(id) on delete cascade not null,
@@ -27,6 +28,10 @@ FOR INSERT WITH CHECK (auth.uid() = entered_by AND EXISTS (
   SELECT 1 FROM profiles WHERE id = auth.uid() AND is_sales_executive = true
 ));
 
+
 -- Sales executives can update their own analytics
 CREATE POLICY "Users can update own sales analytics." ON sales_analytics 
 FOR UPDATE USING (auth.uid() = entered_by);
+
+-- 5. Add notes column if table already existed without it (for safe migrations)
+ALTER TABLE public.sales_analytics ADD COLUMN IF NOT EXISTS notes text;
