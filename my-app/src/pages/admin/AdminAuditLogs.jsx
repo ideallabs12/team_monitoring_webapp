@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { ClipboardList, Users, ShieldAlert, DollarSign, LogIn, Activity, AlertCircle } from 'lucide-react'
+import { ClipboardList, Users, ShieldAlert, DollarSign, LogIn, Activity, AlertCircle, Trash2 } from 'lucide-react'
 import { supabase } from '../../supabaseClient'
 import { usePresence } from '../../components/PresenceProvider'
 
@@ -62,6 +62,16 @@ export default function AdminAuditLogs() {
       }
     }
     setLoading(false)
+  }
+
+  const handleDeleteLog = async (logId) => {
+    if (!window.confirm('Are you sure you want to delete this log?')) return
+    const { error } = await supabase.from('audit_logs').delete().eq('id', logId)
+    if (!error) {
+      setLogs(prev => prev.filter(l => l.id !== logId))
+    } else {
+      alert('Failed to delete log: ' + error.message)
+    }
   }
 
   useEffect(() => {
@@ -201,8 +211,29 @@ export default function AdminAuditLogs() {
                           ({log.user?.email})
                         </span>
                       </div>
-                      <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
-                        {formatDate(log.created_at)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
+                          {formatDate(log.created_at)}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteLog(log.id)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '4px',
+                            opacity: 0.7,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7}
+                          title="Delete Log"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
                     <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem' }}>

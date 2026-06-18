@@ -23,3 +23,8 @@ create policy "Admins can view all audit logs" on audit_logs for select using (
 
 -- 4. Enable Realtime for the table so the frontend updates immediately
 alter publication supabase_realtime add table public.audit_logs;
+
+-- 5. Allow admins to delete audit logs to save storage
+create policy "Admins can delete audit logs" on audit_logs for delete using (
+  exists (select 1 from public.profiles where id = auth.uid() and platform_role = 'admin')
+);
