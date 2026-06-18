@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 
 // Components
 import Layout from './components/Layout'
+import MaintenanceScreen from './components/MaintenanceScreen'
 import Login from './pages/homeprofile/Login'
 import UserHome from './pages/user/UserHome'
 import UserTeam from './pages/user/UserTeam'
@@ -237,16 +238,10 @@ function App() {
   }
 
   // Handle Maintenance Mode
-  if (systemSettings.maintenance_mode && !isAdmin) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f172a', color: '#fff', textAlign: 'center', padding: '20px' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🛠️</div>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '16px' }}>System Under Maintenance</h1>
-        <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '500px', lineHeight: '1.6' }}>
-          We are currently performing scheduled maintenance. The platform will be back online shortly. Thank you for your patience!
-        </p>
-      </div>
-    )
+  // If the user is logged in but is NOT an admin, block them with the maintenance screen.
+  // Unauthenticated users (user === null) will see the login screen, allowing admins to log in.
+  if (systemSettings.maintenance_mode && user && !isAdmin) {
+    return <MaintenanceScreen />
   }
 
 

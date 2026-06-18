@@ -18,6 +18,7 @@ export default function AdminUsers() {
 
   // Profile Detail View State
   const [viewingProfileUser, setViewingProfileUser] = useState(null)
+  const [activeTab, setActiveTab] = useState('control_panel')
   const [userDisReports, setUserDisReports] = useState([])
   const [loadingDis, setLoadingDis] = useState(false)
 
@@ -37,11 +38,12 @@ export default function AdminUsers() {
       setNewTeamId('')
       setErrorMsg('')
       setSuccessMsg('')
+      setActiveTab('control_panel')
       return
     }
 
-    setNewTeamId(viewingProfileUser.team_id || '')
-    setNewSecondaryTeamId(viewingProfileUser.secondary_team_id || '')
+    setNewTeamId('')
+    setNewSecondaryTeamId('')
     setErrorMsg('')
     setSuccessMsg('')
 
@@ -403,76 +405,100 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Two Column Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '28px' }}>
-          
-          {/* Column 1: Profile Info and Access Controls */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-            
-            {/* Card 1.1: Profile Details */}
-            <div className="apple-card" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-                <div style={{
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
-                  color: 'white'
-                }}>
-                  {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>
-                    {viewingProfileUser.first_name} {viewingProfileUser.last_name}
-                  </h3>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
-                    {viewingProfileUser.platform_role || 'Member'}
-                  </span>
-                </div>
+        {/* Apple-themed Segmented Control */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
+          <div style={{
+            display: 'flex',
+            background: 'rgba(255,255,255,0.05)',
+            padding: '4px',
+            borderRadius: '16px',
+            border: '1px solid var(--apple-border)'
+          }}>
+            <button
+              onClick={() => setActiveTab('control_panel')}
+              style={{
+                padding: '8px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                background: activeTab === 'control_panel' ? 'var(--apple-accent-blue)' : 'transparent',
+                color: activeTab === 'control_panel' ? '#fff' : 'var(--apple-text-secondary)',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s var(--apple-ease)'
+              }}
+            >
+              Control Panel
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              style={{
+                padding: '8px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                background: activeTab === 'profile' ? 'var(--apple-accent-blue)' : 'transparent',
+                color: activeTab === 'profile' ? '#fff' : 'var(--apple-text-secondary)',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s var(--apple-ease)'
+              }}
+            >
+              Profile & Analytics
+            </button>
+          </div>
+        </div>
+
+        {/* Card 1.1: Profile Details (Moved to Top) */}
+        <div className="apple-card" style={{ padding: '24px', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: 'white'
+            }}>
+              {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>
+                {viewingProfileUser.first_name} {viewingProfileUser.last_name}
+              </h3>
+              <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
+                {viewingProfileUser.platform_role || 'Member'}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
-                    <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.email}</div>
-                </div>
-
-                <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
-                    <Phone size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Phone Number
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.phone || '—'}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '500' }}>
-                    Team Assignments
-                  </div>
-                  {memberTeam ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      <span
-                        className={isTeamLeadRole ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-blue'}
-                        style={{ fontSize: '0.72rem', padding: '2px 8px' }}
-                      >
-                        {memberTeam.name} ({isTeamLeadRole ? 'lead' : 'member'})
-                      </span>
-                    </div>
-                  ) : (
-                    <span style={{ fontStyle: 'italic', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
-                      No team assigned
-                    </span>
-                  )}
-                </div>
-              </div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.email}</div>
             </div>
 
+            <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                <Phone size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Phone Number
+              </div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.phone || '—'}</div>
+            </div>
+
+          </div>
+        </div>
+
+        {activeTab === 'control_panel' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '28px' }}>
+          {/* Two Column Grid */}
+          
+          {/* Column 1: Access Controls (Profile info moved up) */}
             {/* Card 1.2: Access Controls */}
             <div className="apple-card" style={{ padding: '24px' }}>
               <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -560,52 +586,53 @@ export default function AdminUsers() {
               </div>
             </div>
 
-          </div>
-
           {/* Column 2: Security Controls and Team Assignment */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
             
-            {/* Card 2.1: Security & Team Assignment */}
-            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div>
-                  <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Key size={18} style={{ color: '#10b981' }} /> Security
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <button
-                      onClick={() => handleToggleDeactivation(isDeactivated)}
-                      disabled={saving}
-                      className="apple-btn"
-                      style={{
-                        width: '100%',
-                        background: isDeactivated ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        color: isDeactivated ? '#4ade80' : '#f87171',
-                        borderColor: isDeactivated ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {isDeactivated ? '🔓 Reactivate Account' : '🔒 Block Portal Access'}
-                    </button>
-                    <button
-                      onClick={handleSendResetEmail}
-                      disabled={saving}
-                      className="apple-btn apple-btn-secondary"
-                      style={{ width: '100%', cursor: 'pointer' }}
-                    >
-                      Send Password Reset Email
-                    </button>
-                  </div>
+            {/* Card 2.1: Security */}
+            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div>
+                <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Key size={18} style={{ color: '#10b981' }} /> Security
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button
+                    onClick={() => handleToggleDeactivation(isDeactivated)}
+                    disabled={saving}
+                    className="apple-btn"
+                    style={{
+                      width: '100%',
+                      background: isDeactivated ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      color: isDeactivated ? '#4ade80' : '#f87171',
+                      borderColor: isDeactivated ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isDeactivated ? '🔓 Reactivate Account' : '🔒 Block Portal Access'}
+                  </button>
+                  <button
+                    onClick={handleSendResetEmail}
+                    disabled={saving}
+                    className="apple-btn apple-btn-secondary"
+                    style={{ width: '100%', cursor: 'pointer' }}
+                  >
+                    Send Password Reset Email
+                  </button>
                 </div>
+              </div>
+            </div>
 
-                <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%' }} />
-
-                <div>
-                  <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <UserIcon size={18} style={{ color: '#f59e0b' }} /> Team Assignment
-                  </h3>
-                  {memberTeam ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '16px' }}>
+            {/* Card 2.1b: Team Assignments (Primary & Secondary) */}
+            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div>
+                <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={18} style={{ color: '#f59e0b' }} /> Team Assignments
+                </h3>
+                
+                {/* Primary Team Section */}
+                <div style={{ marginBottom: '28px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Primary Team</label>
+                  {memberTeam && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{memberTeam.name}</span>
                       <button
                         disabled={saving}
@@ -615,89 +642,88 @@ export default function AdminUsers() {
                         <Trash2 size={14} /> Remove
                       </button>
                     </div>
-                  ) : (
-                    <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No team assigned.</p>
                   )}
 
-                  <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <select
-                      value={newTeamId}
-                      onChange={(e) => setNewTeamId(e.target.value)}
-                      required
-                      className="apple-input"
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
-                    >
-                      <option value="" disabled>-- Select a Team --</option>
-                      {teams.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="submit"
-                      disabled={saving || !newTeamId}
-                      className="apple-btn apple-btn-primary"
-                      style={{ width: '100%', cursor: 'pointer' }}
-                    >
-                      {memberTeam ? 'Change Team Assignment' : 'Assign to Team'}
-                    </button>
-                  </form>
+                  {!memberTeam && (
+                    <form onSubmit={handleUpdateTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <select
+                        value={newTeamId}
+                        onChange={(e) => setNewTeamId(e.target.value)}
+                        required
+                        className="apple-input"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
+                      >
+                        <option value="" disabled>-- Select a Team --</option>
+                        {teams.filter(t => t.id !== viewingProfileUser.team_id).map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={saving || !newTeamId}
+                        className="apple-btn"
+                        style={{ width: '100%', cursor: 'pointer', background: '#1c1c1e', color: '#fafafa', border: '1px solid rgba(255,255,255,0.1)' }}
+                      >
+                        Assign to Team
+                      </button>
+                    </form>
+                  )}
+                </div>
+
+                <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%', marginBottom: '24px' }} />
+
+                {/* Secondary Team Section */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Secondary Team</label>
+                  {secondaryTeam && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{secondaryTeam.name}</span>
+                      <button
+                        disabled={saving}
+                        onClick={handleRemoveFromSecondaryTeam}
+                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </div>
+                  )}
+
+                  {!secondaryTeam && (
+                    <form onSubmit={handleUpdateSecondaryTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <select
+                        value={newSecondaryTeamId}
+                        onChange={(e) => setNewSecondaryTeamId(e.target.value)}
+                        required
+                        className="apple-input"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
+                      >
+                        <option value="" disabled>-- Select a Secondary Team --</option>
+                        {teams.filter(t => t.id !== viewingProfileUser.team_id && t.id !== viewingProfileUser.secondary_team_id).map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={saving || !newSecondaryTeamId}
+                        className="apple-btn"
+                        style={{ width: '100%', cursor: 'pointer', background: '#1c1c1e', color: '#fafafa', border: '1px solid rgba(255,255,255,0.1)' }}
+                      >
+                        Assign Secondary Team
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Card 2.2: Secondary Team Assignment */}
-            <div className="apple-card" style={{ padding: '24px' }}>
-              <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={18} style={{ color: '#a78bfa' }} /> Secondary Team Assignment
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginBottom: '16px', margin: '0 0 16px 0' }}>
-                Assign a second team for this user. Their DIS and Revenue for this team will be tracked separately.
-              </p>
-              {secondaryTeam ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '12px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{secondaryTeam.name}</span>
-                  <button
-                    disabled={saving}
-                    onClick={handleRemoveFromSecondaryTeam}
-                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Trash2 size={14} /> Remove
-                  </button>
-                </div>
-              ) : (
-                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>No secondary team assigned.</p>
-              )}
-
-              <form onSubmit={handleUpdateSecondaryTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <select
-                  value={newSecondaryTeamId}
-                  onChange={(e) => setNewSecondaryTeamId(e.target.value)}
-                  required
-                  className="apple-input"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
-                >
-                  <option value="" disabled>-- Select a Secondary Team --</option>
-                  {teams.filter(t => t.id !== viewingProfileUser.team_id).map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={saving || !newSecondaryTeamId}
-                  className="apple-btn apple-btn-primary"
-                  style={{ width: '100%', cursor: 'pointer', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}
-                >
-                  {secondaryTeam ? 'Change Secondary Team' : 'Assign Secondary Team'}
-                </button>
-              </form>
-            </div>
-
-          </div>
+          {/* Removed Column 2 Wrapper */}
           
         </div>
+        )}
 
-        {/* Full-width Stack: Latest DIS, Revenue details, and then Activity Timeline */}
+        {activeTab === 'profile' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          {/* Full-width Stack: Latest DIS, Revenue details, and then Activity Timeline */}
           
           {/* Latest Daily DIS Reports */}
           <div className="apple-card" style={{ padding: '24px' }}>
@@ -784,6 +810,7 @@ export default function AdminUsers() {
             </div>
           </div>
         </div>
+        )}
 
       </div>
     )
