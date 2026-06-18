@@ -52,6 +52,7 @@ export default function AdminLayout({ user, isDeactivated }) {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [theme, setTheme] = useState(getSystemTheme)
 
   useEffect(() => {
@@ -96,51 +97,113 @@ export default function AdminLayout({ user, isDeactivated }) {
     ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim()
     : 'System Admin'
 
-  const SidebarContent = () => (
-    <div className="admin-sidebar">
-      {/* ── Brand ── */}
-      <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
-        <div className="admin-sidebar-brand-icon">
-          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
+  const SidebarContent = ({ isMobileView }) => {
+    const collapsed = isMobileView ? false : isCollapsed
+
+    return (
+      <div className={`admin-sidebar ${collapsed ? 'collapsed' : ''}`}>
+        {/* ── Brand ── */}
+        <div className="admin-sidebar-brand" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          width: '100%',
+          padding: collapsed ? '18px 0' : '18px 16px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          borderBottom: '1px solid var(--apple-border)',
+          marginBottom: '8px',
+          minHeight: '62px'
+        }}>
+          {/* Hamburger toggle */}
+          <button
+            className="admin-menu-toggle-btn"
+            onClick={() => {
+              if (isMobileView) setSidebarOpen(false)
+              else setIsCollapsed(!isCollapsed)
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--apple-text-secondary)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '8px',
+              flexShrink: 0,
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--apple-text-primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+          >
+            {isMobileView ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {!collapsed && (
+            <>
+              {/* Brand text */}
+              <span className="admin-sidebar-brand-name" style={{ flex: 1, fontSize: '1.05rem', letterSpacing: '-0.02em' }}>All-Hands</span>
+
+              {/* Logo pushed to the right */}
+              <div className="admin-sidebar-brand-icon" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '20px', height: '20px' }} />
+              </div>
+            </>
+          )}
         </div>
-        <span className="admin-sidebar-brand-name">All-Hands</span>
-      </div>
 
-      {/* ── Navigation ── */}
-      <nav className="admin-sidebar-nav">
-        {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
-          const active = isActive(path)
-          return (
-            <Link
-              key={path}
-              to={path}
-              className={`admin-sidebar-link${active ? ' active' : ''}`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <Icon size={18} strokeWidth={active ? 2.5 : 2} />
-              <span>{label}</span>
-            </Link>
-          )
-        })}
-      </nav>
+        {/* ── Navigation ── */}
+        <nav className="admin-sidebar-nav" style={{ padding: collapsed ? '0 8px' : '0 10px' }}>
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+            const active = isActive(path)
+            return (
+              <Link
+                key={path}
+                to={path}
+                className={`admin-sidebar-link${active ? ' active' : ''}`}
+                title={collapsed ? label : ''}
+                onClick={() => {
+                  if (window.innerWidth <= 768 || isMobileView) setSidebarOpen(false)
+                }}
+                style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }}
+              >
+                <Icon size={collapsed ? 22 : 18} strokeWidth={active ? 2.5 : 2} />
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            )
+          })}
+        </nav>
 
-      {/* ── Bottom: Profile + Sign Out ── */}
-      <div className="admin-sidebar-bottom">
-        <div className="admin-sidebar-profile">
-          <div className="admin-sidebar-avatar">{initials}</div>
-          <div className="admin-sidebar-profile-info">
-            <span className="admin-sidebar-profile-name">{fullName}</span>
-            <span className="admin-sidebar-role-badge">Admin</span>
+        {/* ── Bottom: Profile + Sign Out ── */}
+        <div className="admin-sidebar-bottom" style={{ padding: collapsed ? '16px 8px 20px' : '16px 10px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', marginBottom: '16px', padding: collapsed ? '0' : '0 8px' }}>
+            {!collapsed && <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Theme</span>}
+            <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
           </div>
-        </div>
 
-        <button className="admin-sidebar-signout" onClick={handleLogout}>
-          <LogOut size={16} />
-          <span>Sign out</span>
-        </button>
+          {!collapsed ? (
+            <div className="admin-sidebar-profile">
+              <div className="admin-sidebar-avatar">{initials}</div>
+              <div className="admin-sidebar-profile-info">
+                <span className="admin-sidebar-profile-name">{fullName}</span>
+                <span className="admin-sidebar-role-badge">Admin</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }} title={fullName}>
+              <div className="admin-sidebar-avatar" style={{ width: '36px', height: '36px' }}>{initials}</div>
+            </div>
+          )}
+
+          <button className="admin-sidebar-signout" onClick={handleLogout} style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }} title={collapsed ? "Sign out" : ""}>
+            <LogOut size={collapsed ? 20 : 16} />
+            {!collapsed && <span>Sign out</span>}
+          </button>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="admin-shell">
@@ -153,19 +216,19 @@ export default function AdminLayout({ user, isDeactivated }) {
       )}
 
       {/* ── Desktop Sidebar ── */}
-      <div className="admin-sidebar-wrapper">
-        <SidebarContent />
+      <div className={`admin-sidebar-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
+        <SidebarContent isMobileView={false} />
       </div>
 
       {/* ── Mobile Sidebar ── */}
       <div className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}>
-        <SidebarContent />
+        <SidebarContent isMobileView={true} />
       </div>
 
       {/* ── Main Content ── */}
       <div className="admin-main">
         {/* Mobile top bar */}
-        <div className="admin-mobile-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div className="admin-mobile-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <button
               className="admin-mobile-menu-btn"
@@ -176,9 +239,6 @@ export default function AdminLayout({ user, isDeactivated }) {
             <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
               All-Hands Admin
             </div>
-          </div>
-          <div style={{ marginRight: '8px' }}>
-            <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
           </div>
         </div>
 

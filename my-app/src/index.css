@@ -657,11 +657,17 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   top: 0;
   height: 100vh;
   z-index: 40;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-sidebar-wrapper.collapsed {
+  width: 72px;
 }
 
 /* ── The sidebar itself ── */
 .admin-sidebar {
   width: 220px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100vh;
   background: var(--apple-card);
   border-right: 1px solid var(--apple-border);
@@ -670,6 +676,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   padding: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.admin-sidebar.collapsed {
+  width: 72px;
 }
 
 /* Scrollbar styling for sidebar */
@@ -857,8 +867,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* ── Mobile top bar ── */
 .admin-mobile-topbar {
-  display: none;
+  display: none !important;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 14px;
   padding: 14px 20px;
   background: var(--apple-card);
@@ -907,7 +919,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 /* ── Responsive: mobile breakpoint ── */
 @media (max-width: 768px) {
   .admin-sidebar-wrapper { display: none; }
-  .admin-mobile-topbar { display: flex; }
+  .admin-mobile-topbar { display: flex !important; }
   .admin-sidebar-mobile { display: block; }
   .admin-sidebar-overlay { display: block; }
   .admin-content { padding: 24px 20px; }
