@@ -33,5 +33,9 @@ FOR INSERT WITH CHECK (auth.uid() = entered_by AND EXISTS (
 CREATE POLICY "Users can update own sales analytics." ON sales_analytics 
 FOR UPDATE USING (auth.uid() = entered_by);
 
+-- Sales executives can delete their own analytics
+CREATE POLICY "Users can delete own sales analytics." ON sales_analytics 
+FOR DELETE USING (auth.uid() = entered_by);
+
 -- 5. Add notes column if table already existed without it (for safe migrations)
 ALTER TABLE public.sales_analytics ADD COLUMN IF NOT EXISTS notes text;

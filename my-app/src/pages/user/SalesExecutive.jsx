@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Plus, TrendingUp, PhoneCall, Calendar, Search, Filter, Edit2, X } from 'lucide-react'
+import { Plus, TrendingUp, PhoneCall, Calendar, Search, Filter, Edit2, X, Trash2 } from 'lucide-react'
 
 export default function SalesExecutive({ user }) {
   const [loading, setLoading] = useState(true)
@@ -102,6 +102,25 @@ export default function SalesExecutive({ user }) {
     setSelectedMember('')
     setErrorMsg('')
     setSuccessMsg('')
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this log?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('sales_analytics')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setLogs(logs.filter(log => log.id !== id));
+      setSuccessMsg('Call log deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting log:', err);
+      setErrorMsg('Failed to delete call log.');
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -344,9 +363,12 @@ export default function SalesExecutive({ user }) {
                       <div style={{ fontSize: '0.95rem', fontWeight: '600', color: Number(log.sales_revenue) > 0 ? '#4ade80' : 'var(--apple-text-secondary)', textAlign: 'right' }}>
                         ${Number(log.sales_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      <div style={{ textAlign: 'right', paddingLeft: '16px' }}>
+                      <div style={{ textAlign: 'right', paddingLeft: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                         <button onClick={() => handleEdit(log)} style={{ background: 'none', border: 'none', color: 'var(--apple-text-secondary)', cursor: 'pointer', padding: '4px' }} title="Edit Log">
                           <Edit2 size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(log.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }} title="Delete Log">
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
