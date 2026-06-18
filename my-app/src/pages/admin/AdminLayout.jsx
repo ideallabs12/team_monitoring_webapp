@@ -183,7 +183,7 @@ export default function AdminLayout({ user, isDeactivated }) {
         </div>
 
         <main className="admin-content">
-          {isDeactivated ? <RestrictedAccessView /> : <Outlet />}
+          {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ user }} />}
         </main>
       </div>
     </div>

@@ -33,6 +33,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminUserControlPanel from './pages/admin/AdminUserControlPanel'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
+import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -64,6 +65,14 @@ function App() {
         event !== 'SIGNED_OUT'
       ) {
         return
+      }
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        supabase.from('audit_logs').insert({
+          user_id: session.user.id,
+          action_type: 'login',
+          details: { email: session.user.email }
+        }).then()
       }
 
       handleSession(session, event)
@@ -198,9 +207,10 @@ function App() {
 
 
   return (
-    <Router>
-      <SpeedInsights />
-      <Routes>
+    <PresenceProvider user={user}>
+      <Router>
+        <SpeedInsights />
+        <Routes>
         {/* Login/Auth Routes */}
         <Route
           path="/"
@@ -264,6 +274,7 @@ function App() {
         } />
       </Routes>
     </Router>
+    </PresenceProvider>
   )
 }
 

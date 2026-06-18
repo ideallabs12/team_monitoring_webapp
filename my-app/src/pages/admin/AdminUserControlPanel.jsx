@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { Shield, Key, AlertTriangle, Activity, Trash2, ArrowLeft, User as UserIcon } from 'lucide-react'
 
 export default function AdminUserControlPanel() {
+  const { user: adminUser } = useOutletContext() || {}
   const { id } = useParams()
   const [loading, setLoading] = useState(true)
   
@@ -57,6 +58,14 @@ export default function AdminUserControlPanel() {
         .eq('id', user.id)
       if (error) throw error
 
+      if (adminUser) {
+        await supabase.from('audit_logs').insert({
+          user_id: adminUser.id,
+          action_type: 'admin_activity',
+          details: { description: `Updated role of ${user.email} to ${newRole}` }
+        })
+      }
+
       setSuccessMsg(`Platform role updated to ${newRole}!`)
       setUser({ ...user, platform_role: newRole })
     } catch (err) {
@@ -79,6 +88,14 @@ export default function AdminUserControlPanel() {
         .eq('id', user.id)
       if (error) throw error
 
+      if (adminUser) {
+        await supabase.from('audit_logs').insert({
+          user_id: adminUser.id,
+          action_type: 'admin_activity',
+          details: { description: `Updated ${field} for ${user.email} to ${nextStatus}` }
+        })
+      }
+
       setSuccessMsg(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : 'DIS Reporting'} to ${nextStatus ? 'ON' : 'OFF'}`)
       setUser({ ...user, [field]: nextStatus })
     } catch (err) {
@@ -100,6 +117,14 @@ export default function AdminUserControlPanel() {
         .update({ is_deactivated: nextStatus })
         .eq('id', user.id)
       if (error) throw error
+
+      if (adminUser) {
+        await supabase.from('audit_logs').insert({
+          user_id: adminUser.id,
+          action_type: 'admin_activity',
+          details: { description: `${nextStatus ? 'Deactivated' : 'Activated'} account for ${user.email}` }
+        })
+      }
 
       setSuccessMsg(nextStatus ? 'Account successfully deactivated!' : 'Account successfully activated!')
       setUser({ ...user, is_deactivated: nextStatus })
@@ -142,6 +167,15 @@ export default function AdminUserControlPanel() {
         .eq('id', user.id)
       if (error) throw error
 
+      if (adminUser) {
+        const teamName = newTeamId ? teams.find(t => t.id === newTeamId)?.name : 'None'
+        await supabase.from('audit_logs').insert({
+          user_id: adminUser.id,
+          action_type: 'admin_activity',
+          details: { description: `Updated team assignment for ${user.email} to ${teamName}` }
+        })
+      }
+
       setSuccessMsg('Team assignment updated successfully!')
       setUser({ ...user, team_id: newTeamId || null })
     } catch (err) {
@@ -162,6 +196,14 @@ export default function AdminUserControlPanel() {
         .update({ team_id: null })
         .eq('id', user.id)
       if (error) throw error
+
+      if (adminUser) {
+        await supabase.from('audit_logs').insert({
+          user_id: adminUser.id,
+          action_type: 'admin_activity',
+          details: { description: `Removed ${user.email} from their team` }
+        })
+      }
 
       setSuccessMsg('User removed from team successfully!')
       setNewTeamId('')

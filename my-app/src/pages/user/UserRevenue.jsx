@@ -277,6 +277,12 @@ export default function UserRevenue({ user, isAdminView }) {
           })
           .eq('id', editingRecord.id)
         if (error) throw error
+
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action_type: 'revenue_updated',
+          details: { old_amount: editingRecord.amount, new_amount: numAmount, revenue_month: revenueMonth, client: finalClientName }
+        })
       } else {
         // New entry: always insert a new row
         const { error } = await supabase
@@ -292,6 +298,12 @@ export default function UserRevenue({ user, isAdminView }) {
             entered_by: user.id
           })
         if (error) throw error
+
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action_type: 'revenue_added',
+          details: { amount: numAmount, revenue_month: revenueMonth, client: finalClientName }
+        })
       }
 
       const monthLabel = `${MONTH_NAMES[selectedMonth]} ${selectedYear}`
