@@ -33,7 +33,7 @@ export default function Navbar({ user }) {
 
   useEffect(() => {
     if (user) {
-      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting, platform_role').eq('id', user.id).single()
+      supabase.from('profiles').select('has_revenue_logging, has_dis_reporting, platform_role, is_sales_executive').eq('id', user.id).single()
         .then(({ data }) => {
           if (data) setProfile(data)
         })
@@ -73,7 +73,7 @@ export default function Navbar({ user }) {
   }
 
   const isActive = (path) => location.pathname === path
-  const isOthersActive = ['/revenue-history'].includes(location.pathname)
+  const isOthersActive = ['/revenue-history', '/sales-analytics'].includes(location.pathname)
   const isTeamHubActive = ['/team-analytics', '/team-management', '/team-dis-report'].includes(location.pathname)
 
   const navLinks = [
@@ -91,6 +91,9 @@ export default function Navbar({ user }) {
   ]
   if (profile?.platform_role?.toLowerCase() === 'teamlead') {
     othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
+  }
+  if (profile?.is_sales_executive) {
+    othersLinks.push({ to: '/sales-analytics', label: 'Sales Executive', desc: 'Call activity & analytics' })
   }
 
   const teamHubLinks = [

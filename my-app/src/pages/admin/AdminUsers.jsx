@@ -122,7 +122,7 @@ export default function AdminUsers() {
         .eq('id', viewingProfileUser.id)
       if (error) throw error
 
-      setSuccessMsg(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : 'DIS Reporting'} to ${nextStatus ? 'ON' : 'OFF'}`)
+      setSuccessMsg(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : field === 'has_dis_reporting' ? 'DIS Reporting' : 'Sales Executive'} to ${nextStatus ? 'ON' : 'OFF'}`)
       updateProfileUser({ [field]: nextStatus })
     } catch (err) {
       setErrorMsg(err.message || 'Failed to update access status.')
@@ -541,6 +541,20 @@ export default function AdminUsers() {
                     }}
                   >
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.has_dis_reporting ? '23px' : '3px', transition: 'left 0.3s' }} />
+                  </button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>Sales Executive</span>
+                  <button
+                    onClick={() => handleToggleAccess('is_sales_executive', viewingProfileUser.is_sales_executive)}
+                    disabled={saving}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: viewingProfileUser.is_sales_executive ? '#4ade80' : '#475569',
+                      border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                    }}
+                  >
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.is_sales_executive ? '23px' : '3px', transition: 'left 0.3s' }} />
                   </button>
                 </div>
               </div>

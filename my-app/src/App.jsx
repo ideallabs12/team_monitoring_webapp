@@ -21,6 +21,7 @@ import ResetPassword from './pages/homeprofile/ResetPassword'
 import Leaderboard from './pages/user/Leaderboard'
 import Milestones from './pages/user/Milestones'
 import TeamDisReport from './pages/user/TeamDisReport'
+import SalesExecutive from './pages/user/SalesExecutive'
 
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
@@ -248,6 +249,7 @@ function App() {
           <Route path="/team-dis-report" element={hasProfile && !isAdmin ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/leaderboard" element={hasProfile && !isAdmin ? <Leaderboard user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/milestones" element={hasProfile && !isAdmin ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/sales-analytics" element={hasProfile && !isAdmin ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
