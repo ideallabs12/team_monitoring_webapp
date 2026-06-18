@@ -140,13 +140,24 @@ function App() {
           setIsDeactivated(false)
         }
 
+        const deviceInfo = (() => {
+          const ua = navigator.userAgent
+          if (/Windows/i.test(ua)) return 'Windows'
+          if (/Mac/i.test(ua)) return 'Mac'
+          if (/iPhone/i.test(ua)) return 'iPhone'
+          if (/iPad/i.test(ua)) return 'iPad'
+          if (/Android/i.test(ua)) return 'Android'
+          if (/Linux/i.test(ua)) return 'Linux'
+          return 'Unknown Device'
+        })();
+
         if (data.platform_role === 'admin') {
           setIsAdmin(true)
           setHasProfile(true)
           supabase.from('audit_logs').insert({
             user_id: userId,
             action_type: 'admin_activity',
-            details: { description: 'Admin logged in', email: currentUser.email }
+            details: { description: 'Admin logged in', email: currentUser.email, device: deviceInfo }
           }).then()
         } else {
           setIsAdmin(false)
@@ -155,7 +166,7 @@ function App() {
           supabase.from('audit_logs').insert({
             user_id: userId,
             action_type: 'login',
-            details: { email: currentUser.email }
+            details: { email: currentUser.email, device: deviceInfo }
           }).then()
         }
       } else {

@@ -134,10 +134,12 @@ export default function AdminAuditLogs() {
       return `Updated revenue to $${details.new_amount} for ${details.revenue_month}`
     }
     if (action_type === 'login') {
-      return `Logged in successfully`
+      const dev = details.device ? ` from ${details.device}` : ''
+      return `Logged in successfully${dev}`
     }
     if (action_type === 'admin_activity') {
-      return details.description || JSON.stringify(details)
+      const dev = details.device ? ` from ${details.device}` : ''
+      return (details.description || JSON.stringify(details)) + dev
     }
     return JSON.stringify(details)
   }
