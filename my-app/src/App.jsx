@@ -42,6 +42,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isDeactivated, setIsDeactivated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [systemSettings, setSystemSettings] = useState({ maintenance_mode: false, show_leaderboard: true })
 
   // Prevent duplicate profile checks
   const profileFetchedFor = useRef(null)
@@ -71,7 +72,22 @@ function App() {
       handleSession(session, event)
     })
 
-    return () => subscription.unsubscribe()
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('system_settings').select('*').eq('id', 1).maybeSingle()
+      if (data) setSystemSettings(data)
+    }
+    fetchSettings()
+
+    const channel = supabase.channel('system_settings_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, payload => {
+        setSystemSettings(payload.new)
+      })
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleSession = async (session, event) => {
@@ -220,6 +236,19 @@ function App() {
     )
   }
 
+  // Handle Maintenance Mode
+  if (systemSettings.maintenance_mode && !isAdmin) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f172a', color: '#fff', textAlign: 'center', padding: '20px' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🛠️</div>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '16px' }}>System Under Maintenance</h1>
+        <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '500px', lineHeight: '1.6' }}>
+          We are currently performing scheduled maintenance. The platform will be back online shortly. Thank you for your patience!
+        </p>
+      </div>
+    )
+  }
+
 
   return (
     <PresenceProvider user={user}>
@@ -261,7 +290,7 @@ function App() {
           <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-dis-report" element={hasProfile && !isAdmin ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/leaderboard" element={hasProfile && !isAdmin ? <Leaderboard user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/leaderboard" element={hasProfile && !isAdmin ? (systemSettings.show_leaderboard ? <Leaderboard user={user} /> : <Navigate to="/home" replace />) : <Navigate to="/complete-profile" replace />} />
           <Route path="/milestones" element={hasProfile && !isAdmin ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/sales-analytics" element={hasProfile && !isAdmin ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />

@@ -6,6 +6,8 @@ import {
   formatRevenueMonthShort,
   sumRevenues
 } from '../../utils/revenueUtils'
+import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
+import ThemeSwitch from '../../components/ThemeSwitch'
 
 let globalProfileCache = {
   userId: null,
@@ -32,6 +34,20 @@ export default function ProfileSettings({ user }) {
   // Extra features state
   const [teams, setTeams] = useState(globalProfileCache.teams)
   const [revenues, setRevenues] = useState(globalProfileCache.revenues)
+  const [theme, setTheme] = useState(getSystemTheme)
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setTheme(getSystemTheme())
+    }
+    window.addEventListener('theme-change', handleThemeChange)
+    return () => window.removeEventListener('theme-change', handleThemeChange)
+  }, [])
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setSystemTheme(nextTheme)
+  }
 
   useEffect(() => {
     async function loadProfile() {
@@ -221,6 +237,17 @@ export default function ProfileSettings({ user }) {
                   placeholder="••••••••"
                   className="apple-form-control"
                 />
+              </div>
+            </div>
+
+            <div className="apple-card">
+              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>App Preferences</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                <div>
+                  <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>App Theme</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Toggle between dark and light modes.</div>
+                </div>
+                <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
               </div>
             </div>
 

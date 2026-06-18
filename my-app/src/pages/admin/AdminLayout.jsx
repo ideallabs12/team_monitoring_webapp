@@ -17,8 +17,6 @@ import {
   Trophy,
   Crown
 } from 'lucide-react'
-import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
-import ThemeSwitch from '../../components/ThemeSwitch'
 
 const NAV_ITEMS = [
   { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
@@ -53,23 +51,6 @@ export default function AdminLayout({ user, isDeactivated }) {
   const [profile, setProfile] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [theme, setTheme] = useState(getSystemTheme)
-
-  useEffect(() => {
-    const handleThemeChange = () => {
-      setTheme(getSystemTheme())
-    }
-    window.addEventListener('theme-change', handleThemeChange)
-    
-    document.documentElement.setAttribute('data-theme', theme)
-    
-    return () => window.removeEventListener('theme-change', handleThemeChange)
-  }, [theme, user])
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark'
-    setSystemTheme(nextTheme)
-  }
 
   useEffect(() => {
     if (!user?.id) return
@@ -177,10 +158,6 @@ export default function AdminLayout({ user, isDeactivated }) {
 
         {/* ── Bottom: Profile + Sign Out ── */}
         <div className="admin-sidebar-bottom" style={{ padding: collapsed ? '16px 8px 20px' : '16px 10px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', marginBottom: '16px', padding: collapsed ? '0' : '0 8px' }}>
-            {!collapsed && <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Theme</span>}
-            <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
-          </div>
 
           {!collapsed ? (
             <div className="admin-sidebar-profile">

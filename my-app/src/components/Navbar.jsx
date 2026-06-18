@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { ChevronDown } from 'lucide-react'
-import { getSystemTheme, setSystemTheme } from '../utils/themeHelper'
-import ThemeSwitch from './ThemeSwitch'
 
 export default function Navbar({ user }) {
   const navigate = useNavigate()
@@ -14,22 +12,6 @@ export default function Navbar({ user }) {
   const othersRef = useRef(null)
   const [teamHubOpen, setTeamHubOpen] = useState(false)
   const teamHubRef = useRef(null)
-  const [theme, setTheme] = useState(getSystemTheme)
-
-  useEffect(() => {
-    const handleThemeChange = () => {
-      setTheme(getSystemTheme())
-    }
-    window.addEventListener('theme-change', handleThemeChange)
-    // Apply initial theme
-    document.documentElement.setAttribute('data-theme', theme)
-    return () => window.removeEventListener('theme-change', handleThemeChange)
-  }, [theme])
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark'
-    setSystemTheme(nextTheme)
-  }
 
   useEffect(() => {
     if (user) {
@@ -126,7 +108,7 @@ export default function Navbar({ user }) {
         display: 'flex', height: '64px', alignItems: 'center',
         justifyContent: 'space-between', maxWidth: '1200px', margin: '0 auto', width: '100%'
       }}>
-        {/* Brand & Theme Switcher */}
+        {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <Link to="/home" style={{
             fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px',
@@ -137,7 +119,6 @@ export default function Navbar({ user }) {
               All-Hands
             </span>
           </Link>
-          <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
         </div>
 
         {user && (

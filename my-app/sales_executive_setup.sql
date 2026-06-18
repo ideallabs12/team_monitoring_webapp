@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS public.sales_analytics (
   team_id uuid references public.teams(id) on delete cascade not null,
   member_id uuid references public.profiles(id) on delete cascade not null,
   speaker_name text not null,
-  notes text,
   sales_revenue numeric(12, 2) default 0.00 not null,
   call_date date not null,
   entered_by uuid references public.profiles(id) on delete cascade not null,
@@ -37,5 +36,5 @@ FOR UPDATE USING (auth.uid() = entered_by);
 CREATE POLICY "Users can delete own sales analytics." ON sales_analytics 
 FOR DELETE USING (auth.uid() = entered_by);
 
--- 5. Add notes column if table already existed without it (for safe migrations)
-ALTER TABLE public.sales_analytics ADD COLUMN IF NOT EXISTS notes text;
+-- 5. Drop notes column if it existed
+ALTER TABLE public.sales_analytics DROP COLUMN IF EXISTS notes;

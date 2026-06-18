@@ -16,7 +16,6 @@ export default function SalesExecutive({ user }) {
   const [selectedTeam, setSelectedTeam] = useState('')
   const [selectedMember, setSelectedMember] = useState('')
   const [speakerName, setSpeakerName] = useState('')
-  const [notes, setNotes] = useState('')
   const [salesRevenue, setSalesRevenue] = useState('0.00')
   const [callDate, setCallDate] = useState(new Date().toISOString().split('T')[0])
   
@@ -86,7 +85,6 @@ export default function SalesExecutive({ user }) {
     // I need to fix that or set selectedMember in a timeout. Let's just set it.
     setSelectedMember(log.member_id)
     setSpeakerName(log.speaker_name)
-    setNotes(log.notes || '')
     setSalesRevenue(log.sales_revenue.toString())
     setCallDate(log.call_date)
     setErrorMsg('')
@@ -97,7 +95,6 @@ export default function SalesExecutive({ user }) {
   const handleCancelEdit = () => {
     setEditingLogId(null)
     setSpeakerName('')
-    setNotes('')
     setSalesRevenue('0.00')
     setSelectedMember('')
     setErrorMsg('')
@@ -144,7 +141,6 @@ export default function SalesExecutive({ user }) {
             team_id: selectedTeam,
             member_id: selectedMember,
             speaker_name: speakerName,
-            notes: notes,
             sales_revenue: parseFloat(salesRevenue),
             call_date: callDate
           })
@@ -165,7 +161,6 @@ export default function SalesExecutive({ user }) {
             team_id: selectedTeam,
             member_id: selectedMember,
             speaker_name: speakerName,
-            notes: notes,
             sales_revenue: parseFloat(salesRevenue),
             call_date: callDate,
             entered_by: user.id
@@ -181,7 +176,6 @@ export default function SalesExecutive({ user }) {
         // Reset form
         setSelectedMember('')
         setSpeakerName('')
-        setNotes('')
         setSalesRevenue('0.00')
       }
     } catch (err) {
@@ -288,18 +282,6 @@ export default function SalesExecutive({ user }) {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Call Notes</label>
-              <textarea 
-                className="apple-input" 
-                value={notes} 
-                onChange={e => setNotes(e.target.value)} 
-                placeholder="Enter details about the call..." 
-                rows={4}
-                style={{ resize: 'vertical' }}
-              />
-            </div>
-
-            <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Sales Revenue ($) <span style={{color: '#ef4444'}}>*</span></label>
               <input type="number" step="0.01" min="0" className="apple-input" value={salesRevenue} onChange={e => setSalesRevenue(e.target.value)} required placeholder="0.00" />
             </div>
@@ -372,12 +354,6 @@ export default function SalesExecutive({ user }) {
                         </button>
                       </div>
                     </div>
-                    {log.notes && (
-                      <div style={{ padding: '0 16px 16px 16px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
-                        <strong style={{ color: 'var(--apple-text-primary)' }}>Notes: </strong> 
-                        <span style={{ whiteSpace: 'pre-wrap' }}>{log.notes}</span>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
