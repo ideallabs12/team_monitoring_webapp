@@ -17,6 +17,8 @@ import {
   formatRevenueMonthShort,
   sumRevenues
 } from '../../utils/revenueUtils'
+import ThemeSwitch from '../../components/ThemeSwitch'
+import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
 
 /* ─── tiny helpers ─────────────────────────────────────────────────────────── */
 const fmt = (n) =>
@@ -194,7 +196,19 @@ export default function AdminHome() {
   const [targets, setTargets]     = useState(adminHomeCache.targets)
   const [disReports, setDisReports] = useState(adminHomeCache.disReports)
   const [clock, setClock]         = useState(new Date())
+  const [theme, setTheme]         = useState(getSystemTheme)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const handleThemeChange = () => setTheme(getSystemTheme())
+    window.addEventListener('theme-change', handleThemeChange)
+    return () => window.removeEventListener('theme-change', handleThemeChange)
+  }, [])
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setSystemTheme(nextTheme)
+  }
 
   /* live clock */
   useEffect(() => {
@@ -543,12 +557,17 @@ export default function AdminHome() {
             Real-time performance monitoring · {teams.length} teams · {totalMembers} members
           </p>
         </div>
-        <div>
-          <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#ffffff', letterSpacing: '0.02em' }}>
-            {clock.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div>
+            <div style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '0.02em', textAlign: 'right' }}>
+              {clock.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginTop: '4px', textAlign: 'right' }}>
+              {clock.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+            </div>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
-            {clock.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+          <div style={{ '--toggle-size': '8px', display: 'flex', alignItems: 'center', height: '100%' }}>
+            <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
           </div>
         </div>
       </div>

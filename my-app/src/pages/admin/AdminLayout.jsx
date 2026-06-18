@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient'
 import {
   LayoutDashboard,
   Users,
-  UsersRound,
+  User,
   FileText,
   DollarSign,
   TrendingUp,
@@ -15,13 +15,16 @@ import {
   Menu,
   X,
   Trophy,
-  Crown
+  Crown,
+  Network,
+  Sun,
+  Moon
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
-  { path: '/admin/teams',     label: 'Teams',       icon: UsersRound },
-  { path: '/admin/users',     label: 'Users',       icon: Users },
+  { path: '/admin/teams',     label: 'Teams',       icon: Network },
+  { path: '/admin/users',     label: 'Users',       icon: User },
   { path: '/admin/dis',       label: 'DIS Reports', icon: FileText },
   { path: '/admin/revenue',   label: 'Revenue',     icon: DollarSign },
   { path: '/admin/analytics', label: 'Analytics',   icon: TrendingUp },

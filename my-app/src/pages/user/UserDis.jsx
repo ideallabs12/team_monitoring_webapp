@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
+import { X } from 'lucide-react'
+import { MONTH_NAMES } from '../../utils/revenueUtils'
 
 let globalDisCache = {
   userId: null,
@@ -245,6 +247,33 @@ export default function UserDis() {
   const [historyMessage, setHistoryMessage] = useState({ type: '', text: '' })
   const [activeTab, setActiveTab] = useState('submit')
 
+  // Data Filters
+  const [filterYear, setFilterYear] = useState('All')
+  const [filterMonth, setFilterMonth] = useState('All')
+
+  const availableYears = useMemo(() => {
+    const years = [...new Set(history.map(r => new Date(r.report_date).getFullYear()))]
+    return years.sort((a, b) => b - a)
+  }, [history])
+
+  const filteredHistory = useMemo(() => {
+    let list = [...history]
+    if (filterYear !== 'All') {
+      list = list.filter(r => new Date(r.report_date).getFullYear() === Number(filterYear))
+    }
+    if (filterMonth !== 'All') {
+      list = list.filter(r => new Date(r.report_date).getMonth() === Number(filterMonth))
+    }
+    return list
+  }, [history, filterYear, filterMonth])
+
+  const hasActiveFilters = filterYear !== 'All' || filterMonth !== 'All'
+
+  const clearFilters = () => {
+    setFilterYear('All')
+    setFilterMonth('All')
+  }
+
   // Load User & Profile
   useEffect(() => {
     async function getUserData() {
@@ -389,6 +418,7 @@ export default function UserDis() {
       {activeTab === 'history' && (
         <div className="apple-card">
           <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>DIS Submission History</h3>
+          
           {historyMessage.text && (
             <div style={{
               padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
@@ -400,6 +430,54 @@ export default function UserDis() {
               {historyMessage.text}
             </div>
           )}
+
+          {/* ===== DATA FILTERS ===== */}
+          <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid var(--apple-border)' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Year</label>
+                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="apple-input" style={{ minWidth: '100px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+                  <option value="All">All</option>
+                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Month</label>
+                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="apple-input" style={{ minWidth: '120px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+                  <option value="All">All Months</option>
+                  {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                </select>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 14px', borderRadius: '10px',
+                    border: '1px solid rgba(255,69,58,0.3)',
+                    background: 'rgba(255,69,58,0.08)',
+                    color: 'var(--apple-accent-red)',
+                    cursor: 'pointer', fontSize: '0.82rem', fontWeight: '600',
+                    transition: 'all 0.2s', whiteSpace: 'nowrap', height: '36px'
+                  }}
+                >
+                  <X size={14} /> Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Active filter chips */}
+            {hasActiveFilters && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '14px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', alignSelf: 'center', marginRight: '4px' }}>Active:</span>
+                {filterYear !== 'All' && <Chip label={filterYear} onRemove={() => setFilterYear('All')} />}
+                {filterMonth !== 'All' && <Chip label={MONTH_NAMES[Number(filterMonth)]} onRemove={() => setFilterMonth('All')} />}
+              </div>
+            )}
+          </div>
+
           {loadingHistory ? (
             <div style={{ color: 'var(--apple-text-secondary)' }}>Loading history...</div>
           ) : history.length > 0 ? (
@@ -418,7 +496,7 @@ export default function UserDis() {
                     </tr>
                   </thead>
                   <tbody>
-                    {history.map(row => {
+                    {filteredHistory.map(row => {
                       const isSecondary = secondaryTeam && row.team_id === secondaryTeam.id
                       return (
                         <tr key={row.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
@@ -457,11 +535,16 @@ export default function UserDis() {
                     })}
                   </tbody>
                 </table>
+                {filteredHistory.length === 0 && (
+                  <div style={{ padding: '30px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
+                    No reports match the selected filters.
+                  </div>
+                )}
               </div>
 
               {/* Mobile Cards */}
               <div className="apple-mobile-list-card">
-                {history.map(row => {
+                {filteredHistory.map(row => {
                   const isSecondary = secondaryTeam && row.team_id === secondaryTeam.id
                   return (
                     <div key={row.id} className="apple-mobile-list-item" style={{ gap: '8px' }}>
@@ -511,5 +594,22 @@ export default function UserDis() {
         </div>
       )}
     </div>
+  )
+}
+
+function Chip({ label, onRemove }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      padding: '3px 8px 3px 10px',
+      background: 'rgba(0,113,227,0.12)', border: '1px solid rgba(0,113,227,0.25)',
+      borderRadius: '20px', color: 'var(--apple-accent-blue)',
+      fontSize: '0.75rem', fontWeight: '600'
+    }}>
+      {label}
+      <button onClick={onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: '0', display: 'flex', alignItems: 'center', opacity: 0.7 }}>
+        <X size={11} />
+      </button>
+    </span>
   )
 }

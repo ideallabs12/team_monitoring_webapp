@@ -90,12 +90,12 @@ export default function AdminSettings() {
     try {
       const { error } = await supabase
         .from('system_settings')
-        .upsert({ 
-          id: 1, 
+        .update({ 
           maintenance_mode: maintenanceMode,
           show_leaderboard: showLeaderboard,
           updated_at: new Date().toISOString()
         })
+        .eq('id', 1)
         
       if (error) throw error
       setSuccessMsg('System settings updated successfully.')
