@@ -68,14 +68,6 @@ function App() {
         return
       }
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        supabase.from('audit_logs').insert({
-          user_id: session.user.id,
-          action_type: 'login',
-          details: { email: session.user.email }
-        }).then()
-      }
-
       handleSession(session, event)
     })
 
@@ -109,7 +101,7 @@ function App() {
       setLoading(true)
       setUser(currentUser)
       setHasProfile(null)
-      await checkProfile(currentUser.id)
+      await checkProfile(currentUser)
 
     } catch (err) {
       console.error("Session handler error:", err)
@@ -117,7 +109,8 @@ function App() {
     }
   }
 
-  const checkProfile = async (userId) => {
+  const checkProfile = async (currentUser) => {
+    const userId = currentUser.id
     try {
       let data = null
 
@@ -150,10 +143,20 @@ function App() {
         if (data.platform_role === 'admin') {
           setIsAdmin(true)
           setHasProfile(true)
+          supabase.from('audit_logs').insert({
+            user_id: userId,
+            action_type: 'admin_activity',
+            details: { description: 'Admin logged in', email: currentUser.email }
+          }).then()
         } else {
           setIsAdmin(false)
           const completed = !!data.first_name || data.profile_completed === true
           setHasProfile(completed)
+          supabase.from('audit_logs').insert({
+            user_id: userId,
+            action_type: 'login',
+            details: { email: currentUser.email }
+          }).then()
         }
       } else {
         // No profile row — check auth metadata as fallback

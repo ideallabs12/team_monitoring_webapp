@@ -74,6 +74,31 @@ export default function AdminAuditLogs() {
     }
   }
 
+  const handleClearAllLogs = async () => {
+    if (!window.confirm(`Are you sure you want to delete ALL logs in this category? This cannot be undone.`)) return
+    
+    let actionFilter = []
+    if (activeTab === 'revenue') {
+      actionFilter = ['revenue_added', 'revenue_updated']
+    } else if (activeTab === 'login') {
+      actionFilter = ['login']
+    } else if (activeTab === 'admin') {
+      actionFilter = ['admin_activity']
+    }
+
+    if (actionFilter.length > 0) {
+      setLoading(true)
+      const { error } = await supabase.from('audit_logs').delete().in('action_type', actionFilter)
+      if (!error) {
+        setLogs([])
+        // The realtime subscription might also clear it, but setting it here is safe.
+      } else {
+        alert('Failed to delete logs: ' + error.message)
+      }
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchLogs()
 
@@ -131,37 +156,61 @@ export default function AdminAuditLogs() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        {TABS.map(tab => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="apple-btn"
-              style={{
-                background: isActive ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.05)',
-                color: isActive ? '#fff' : 'var(--apple-text-secondary)',
-                border: isActive ? 'none' : '1px solid var(--apple-border)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '0.9rem'
-              }}
-            >
-              <Icon size={16} />
-              {tab.label}
-              {tab.id === 'active' && activeUsersList.length > 0 && (
-                <span style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(48, 213, 200, 0.2)', color: isActive ? '#fff' : 'var(--apple-accent-green)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  {activeUsersList.length}
-                </span>
-              )}
-            </button>
-          )
-        })}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {TABS.map(tab => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="apple-btn"
+                style={{
+                  background: isActive ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.05)',
+                  color: isActive ? '#fff' : 'var(--apple-text-secondary)',
+                  border: isActive ? 'none' : '1px solid var(--apple-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem'
+                }}
+              >
+                <Icon size={16} />
+                {tab.label}
+                {tab.id === 'active' && activeUsersList.length > 0 && (
+                  <span style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(48, 213, 200, 0.2)', color: isActive ? '#fff' : 'var(--apple-accent-green)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                    {activeUsersList.length}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+        
+        {activeTab !== 'active' && logs.length > 0 && (
+          <button
+            onClick={handleClearAllLogs}
+            className="apple-btn"
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Trash2 size={16} />
+            Clear All Logs
+          </button>
+        )}
       </div>
 
       <div className="admin-card" style={{ padding: '20px' }}>
