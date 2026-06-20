@@ -4,23 +4,36 @@ import { Calendar, Plus, Trash2, Power, RefreshCw } from 'lucide-react'
 
 export default function AdminEvents() {
   const [events, setEvents] = useState([])
+  const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [targetTeamId, setTargetTeamId] = useState('all')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   const loadEvents = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      // Fetch events with teams
+      const { data: eventsData, error: eventsError } = await supabase
         .from('events')
-        .select('*')
+        .select('*, teams(name)')
         .order('created_at', { ascending: false })
       
-      if (error) throw error
-      setEvents(data || [])
+      if (eventsError) throw eventsError
+      setEvents(eventsData || [])
+      
+      // Fetch all teams for the dropdown
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('id, name')
+        .order('name')
+        
+      if (!teamsError) {
+        setTeams(teamsData || [])
+      }
     } catch (err) {
       console.error('Error loading events:', err)
       setMessage({ type: 'error', text: 'Failed to load events.' })
@@ -39,10 +52,17 @@ export default function AdminEvents() {
     setMessage({ type: '', text: '' })
     
     try {
+      const insertData = {
+        title,
+        description,
+        is_active: true,
+        target_team_id: targetTeamId === 'all' ? null : targetTeamId
+      }
+      
       const { data, error } = await supabase
         .from('events')
-        .insert([{ title, description, is_active: true }])
-        .select()
+        .insert([insertData])
+        .select('*, teams(name)')
         .single()
         
       if (error) throw error
@@ -50,6 +70,7 @@ export default function AdminEvents() {
       setEvents([data, ...events])
       setTitle('')
       setDescription('')
+      setTargetTeamId('all')
       setShowCreate(false)
       setMessage({ type: 'success', text: 'Event created successfully!' })
     } catch (err) {
@@ -156,6 +177,19 @@ export default function AdminEvents() {
               />
             </div>
             <div>
+              <label className="apple-form-label">Target Team</label>
+              <select
+                className="apple-form-control"
+                value={targetTeamId}
+                onChange={(e) => setTargetTeamId(e.target.value)}
+              >
+                <option value="all">All Teams</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>{team.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="apple-form-label">Description (Optional)</label>
               <textarea
                 value={description}
@@ -195,8 +229,12 @@ export default function AdminEvents() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
               <div>
                 <h3 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: '700' }}>{ev.title}</h3>
-                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
-                  Created on {new Date(ev.created_at).toLocaleDateString()}
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span>Created on {new Date(ev.created_at).toLocaleDateString()}</span>
+                  <span>•</span>
+                  <span style={{ color: ev.teams?.name ? 'var(--apple-accent-blue)' : 'var(--apple-text-primary)' }}>
+                    {ev.teams?.name ? `Target: ${ev.teams.name}` : 'Target: All Teams'}
+                  </span>
                 </div>
               </div>
               <span className={`apple-badge ${ev.is_active ? 'apple-badge-green' : 'apple-badge-gray'}`} style={{ fontSize: '0.65rem' }}>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { RefreshCw, Star, Edit, Trash2, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { RefreshCw, Star, Edit, Trash2, CheckCircle, AlertCircle, Clock, XCircle, Copy, Upload } from 'lucide-react'
 
 export default function UserReviews({ user }) {
   const [profile, setProfile] = useState(null)
@@ -14,6 +14,8 @@ export default function UserReviews({ user }) {
   const [context, setContext] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [photoFile, setPhotoFile] = useState(null)
+  const [photoPreview, setPhotoPreview] = useState(null)
   
   // Edit State
   const [editingReviewId, setEditingReviewId] = useState(null)
@@ -45,11 +47,16 @@ export default function UserReviews({ user }) {
 
       const reviewedEventIds = reviewsData?.map(r => r.event_id) || []
       
-      // 2. Load active events
+      // 2. Load active events, filtering by target team
+      const teamFilter = profData?.team_id 
+        ? `target_team_id.is.null,target_team_id.eq.${profData.team_id}` 
+        : `target_team_id.is.null`
+        
       const { data: eventsData } = await supabase
         .from('events')
         .select('*')
         .eq('is_active', true)
+        .or(teamFilter)
         .order('created_at', { ascending: false })
       
       const allActive = eventsData || []
@@ -95,24 +102,48 @@ export default function UserReviews({ user }) {
     setMessage({ type: '', text: '' })
     
     try {
+      let uploadedPhotoUrl = null;
+      if (photoFile) {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('review_photos')
+          .upload(fileName, photoFile);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('review_photos')
+          .getPublicUrl(fileName);
+          
+        uploadedPhotoUrl = publicUrl;
+      }
+
       if (editingReviewId) {
+        const updateData = { title, context, status: 'pending', admin_feedback: null, updated_at: new Date().toISOString() };
+        if (uploadedPhotoUrl) updateData.photo_url = uploadedPhotoUrl;
+        
         const { error } = await supabase
           .from('reviews')
-          .update({ title, context, status: 'pending', admin_feedback: null, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq('id', editingReviewId)
           
         if (error) throw error
         setMessage({ type: 'success', text: 'Review updated successfully!' })
       } else {
+        const insertData = {
+          event_id: selectedEventId,
+          user_id: user.id,
+          team_id: profile?.team_id,
+          title,
+          context
+        };
+        if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
+        
         const { error } = await supabase
           .from('reviews')
-          .insert([{
-            event_id: selectedEventId,
-            user_id: user.id,
-            team_id: profile?.team_id,
-            title,
-            context
-          }])
+          .insert([insertData])
           
         if (error) throw error
         setMessage({ type: 'success', text: 'Review submitted successfully!' })
@@ -121,6 +152,8 @@ export default function UserReviews({ user }) {
       // Reset form
       setTitle('')
       setContext('')
+      setPhotoFile(null)
+      setPhotoPreview(null)
       setEditingReviewId(null)
       loadData()
     } catch (err) {
@@ -173,6 +206,8 @@ export default function UserReviews({ user }) {
     setEditingReviewId(null)
     setTitle('')
     setContext('')
+    setPhotoFile(null)
+    setPhotoPreview(null)
     
     // Reset selection to the first unreviewed event if available
     const reviewedEventIds = reviews.map(r => r.event_id)
@@ -195,6 +230,24 @@ export default function UserReviews({ user }) {
 
   const reviewedEventIds = reviews.map(r => r.event_id)
   const unreviewedEvents = activeEvents.filter(ev => !reviewedEventIds.includes(ev.id))
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File is too large! Maximum 5MB.")
+        return
+      }
+      setPhotoFile(file)
+      setPhotoPreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text)
+      .then(() => alert("Review copied to clipboard!"))
+      .catch(() => alert("Failed to copy."))
+  }
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -297,6 +350,22 @@ export default function UserReviews({ user }) {
                 style={{ resize: 'vertical' }}
               />
               <span style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'block' }}>Pasting text is disabled for this field.</span>
+            </div>
+            
+            <div>
+              <label className="apple-form-label">Attach Photo (Optional)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <label className="apple-btn apple-btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <Upload size={16} /> Choose Photo
+                  <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+                </label>
+                {photoPreview && (
+                  <div style={{ position: 'relative' }}>
+                    <img src={photoPreview} alt="Preview" style={{ height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />
+                    <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--apple-accent-red)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}>&times;</button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
@@ -424,6 +493,11 @@ export default function UserReviews({ user }) {
                 <p style={{ margin: 0, color: 'var(--apple-text-primary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
                   {review.context}
                 </p>
+                {review.photo_url && (
+                  <div style={{ marginTop: '16px' }}>
+                    <img src={review.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />
+                  </div>
+                )}
               </div>
 
               {review.status === 'feedback' && review.admin_feedback && (
@@ -436,27 +510,32 @@ export default function UserReviews({ user }) {
                 </div>
               )}
 
-              {/* Actions - Only if pending, feedback, or rejected */}
-              {(review.status === 'pending' || review.status === 'rejected' || review.status === 'feedback') && (
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--apple-border)', paddingTop: '16px' }}>
-                  {(review.status === 'pending' || review.status === 'rejected') && (
-                    <button 
-                      onClick={() => handleDelete(review.id)}
-                      className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Trash2 size={14} /> Delete
-                    </button>
-                  )}
-                  {(review.status === 'pending' || review.status === 'feedback') && (
-                    <button 
-                      onClick={() => handleEditClick(review)}
-                      className="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Edit size={14} /> Edit Review
-                    </button>
-                  )}
-                </div>
-              )}
+              {/* Actions - Always visible for Copy, conditional for others */}
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--apple-border)', paddingTop: '16px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => handleCopy(review.context)}
+                  className="apple-btn apple-btn-secondary" style={{ background: 'transparent', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Copy size={14} /> Copy Context
+                </button>
+                
+                {(review.status === 'pending' || review.status === 'rejected') && (
+                  <button 
+                    onClick={() => handleDelete(review.id)}
+                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                )}
+                {(review.status === 'pending' || review.status === 'feedback') && (
+                  <button 
+                    onClick={() => handleEditClick(review)}
+                    className="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Edit size={14} /> Edit Review
+                  </button>
+                )}
+              </div>
 
             </div>
           ))}

@@ -222,6 +222,11 @@ export default function AdminReviews() {
                 <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
                   {review.context}
                 </p>
+                {review.photo_url && (
+                  <div style={{ marginTop: '16px' }}>
+                    <img src={review.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />
+                  </div>
+                )}
               </div>
 
               {/* Admin Feedback Display */}
