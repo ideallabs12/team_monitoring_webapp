@@ -23,6 +23,7 @@ import Leaderboard from './pages/user/Leaderboard'
 import Milestones from './pages/user/Milestones'
 import TeamDisReport from './pages/user/TeamDisReport'
 import SalesExecutive from './pages/user/SalesExecutive'
+import UserReviews from './pages/user/UserReviews'
 
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
@@ -35,6 +36,8 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminUserControlPanel from './pages/admin/AdminUserControlPanel'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
+import AdminEvents from './pages/admin/AdminEvents'
+import AdminReviews from './pages/admin/AdminReviews'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -288,6 +291,7 @@ function App() {
           <Route path="/leaderboard" element={hasProfile && !isAdmin ? (systemSettings.show_leaderboard ? <Leaderboard user={user} /> : <Navigate to="/home" replace />) : <Navigate to="/complete-profile" replace />} />
           <Route path="/milestones" element={hasProfile && !isAdmin ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/sales-analytics" element={hasProfile && !isAdmin ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/reviews" element={hasProfile && !isAdmin ? <UserReviews user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
@@ -301,6 +305,8 @@ function App() {
           <Route path="revenue" element={<AdminRevenue />} />
           <Route path="dis" element={<AdminDis />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="events" element={<AdminEvents />} />
+          <Route path="reviews" element={<AdminReviews />} />
           <Route path="milestones" element={<Milestones user={user} />} />
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />

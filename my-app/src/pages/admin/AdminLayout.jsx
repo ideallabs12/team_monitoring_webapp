@@ -18,7 +18,9 @@ import {
   Crown,
   Network,
   Sun,
-  Moon
+  Moon,
+  Calendar,
+  Star
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -26,6 +28,8 @@ const NAV_ITEMS = [
   { path: '/admin/teams',     label: 'Teams',       icon: Network },
   { path: '/admin/users',     label: 'Users',       icon: User },
   { path: '/admin/dis',       label: 'DIS Reports', icon: FileText },
+  { path: '/admin/events',    label: 'Events',      icon: Calendar },
+  { path: '/admin/reviews',   label: 'Reviews',     icon: Star },
   { path: '/admin/revenue',   label: 'Revenue',     icon: DollarSign },
   { path: '/admin/analytics', label: 'Analytics',   icon: TrendingUp },
   { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },

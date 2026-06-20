@@ -64,6 +64,7 @@ export default function Navbar({ user }) {
   ]
   if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
   navLinks.push({ to: '/dis', label: 'My DIS' })
+  navLinks.push({ to: '/reviews', label: 'Reviews' })
 
   navLinks.push({ to: '/profile', label: 'Profile' })
 
