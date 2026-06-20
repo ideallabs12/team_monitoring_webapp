@@ -127,6 +127,9 @@ export default function AdminReviews() {
 
       {/* ===== FILTERS ===== */}
       <div className="apple-pill-tabs" style={{ marginBottom: '24px' }}>
+        <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
+          All Reviews
+        </button>
         <button className={`apple-pill-tab ${filterStatus === 'pending' ? 'active' : ''}`} onClick={() => setFilterStatus('pending')}>
           Pending
         </button>
@@ -138,9 +141,6 @@ export default function AdminReviews() {
         </button>
         <button className={`apple-pill-tab ${filterStatus === 'feedback' ? 'active' : ''}`} onClick={() => setFilterStatus('feedback')}>
           Needs Revision
-        </button>
-        <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
-          All Reviews
         </button>
       </div>
 
@@ -163,9 +163,9 @@ export default function AdminReviews() {
               }} />
 
               {/* Review Header Info */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Row 1: Name and Team */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.06)', padding: '8px 10px', borderRadius: '8px' }}>
                   <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {review.profiles?.first_name} {review.profiles?.last_name}
                   </div>
