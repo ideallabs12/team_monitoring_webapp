@@ -101,7 +101,12 @@ export default function TeamDisReport({ user }) {
       const memberIds = new Set(nonAdminProfiles.map(p => p.id))
 
       // Only care about reports from our team members
-      const teamReports = allReportsData.filter(r => memberIds.has(r.user_id))
+      const teamReports = allReportsData.filter(r => {
+        if (r.team_id) {
+          return r.team_id === profile.team_id
+        }
+        return memberIds.has(r.user_id)
+      })
       const teamMissing = allMissingData.filter(r => memberIds.has(r.user_id))
 
       const submittedUserIds = new Set(teamMissing.map(r => r.user_id))

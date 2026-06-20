@@ -130,8 +130,13 @@ export default function AdminDis() {
         const teamMemberIds = new Set(teamMems.map(m => m.id))
 
         const teamReps = reports.filter(r => {
+          if (r.team_id) {
+            return r.team_id === team.id
+          }
+
           const isCurrentMember = teamMemberIds.has(r.user_id)
           if (isCurrentMember) return true
+
           const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
           const hasHistRev = revenues.some(
             rv => rv.user_id === r.user_id &&
