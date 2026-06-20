@@ -163,23 +163,28 @@ export default function AdminReviews() {
               }} />
 
               {/* Review Header Info */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Row 1: Name and Team */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {review.profiles?.first_name} {review.profiles?.last_name}
+                  </div>
+                  <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px', flexShrink: 0 }}>
+                    {review.teams?.name || 'No Team'}
+                  </span>
+                </div>
+
+                {/* Row 2: Event Name and Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="apple-badge apple-badge-gray" style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.65rem', padding: '2px 6px' }}>
+                    <Star size={10} /> {review.events?.title || 'Unknown Event'}
+                  </span>
                   <span className={`apple-badge ${
                     review.status === 'approved' ? 'apple-badge-green' : 
                     review.status === 'rejected' ? 'apple-badge-red' : 
                     review.status === 'pending' ? 'apple-badge-orange' : 'apple-badge-blue'
-                  }`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                  }`} style={{ fontSize: '0.65rem', padding: '2px 8px', flexShrink: 0 }}>
                     {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
-                  </span>
-                </div>
-                <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {review.profiles?.first_name} {review.profiles?.last_name}
-                </div>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
-                  <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.6rem', padding: '2px 4px' }}>{review.teams?.name || 'No Team'}</span>
-                  <span className="apple-badge apple-badge-gray" style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.6rem', padding: '2px 4px' }}>
-                    <Star size={8} /> {review.events?.title || 'Unknown Event'}
                   </span>
                 </div>
               </div>
@@ -187,12 +192,14 @@ export default function AdminReviews() {
               {/* Review Content Snippet */}
               <div style={{ marginTop: '4px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <h4 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '0.9rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{review.title}</h4>
-                <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.8rem', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.8rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {review.context}
                 </p>
                 {review.photo_url && (
-                  <div style={{ marginTop: 'auto', paddingTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-blue)', fontSize: '0.75rem', fontWeight: '500' }}>
-                    <ImageIcon size={14} /> Has Attachment
+                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
+                    <div style={{ background: 'rgba(0, 113, 227, 0.1)', padding: '4px 8px', borderRadius: '8px' }}>
+                      <ImageIcon size={16} color="var(--apple-accent-blue)" />
+                    </div>
                   </div>
                 )}
               </div>
