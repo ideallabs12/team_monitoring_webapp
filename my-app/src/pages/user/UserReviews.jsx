@@ -442,10 +442,10 @@ export default function UserReviews({ user }) {
                   {review.status === 'pending' ? (
                     <>
                       <div style={{ 
-                        position: 'absolute', right: '-4px', top: '-6px', 
+                        position: 'absolute', left: '-12px', top: '-12px', 
                         background: 'rgba(255, 159, 10, 0.1)', border: '1px solid rgba(255, 159, 10, 0.2)',
                         color: 'var(--apple-accent-orange)', padding: '2px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
-                        transform: 'rotate(3deg)'
+                        transform: 'rotate(-4deg)'
                       }}>
                         Pending
                       </div>
