@@ -22,6 +22,7 @@ export default function UserReviews({ user }) {
   
   // Animation State
   const [snappingId, setSnappingId] = useState(null)
+  const [activeTab, setActiveTab] = useState('write') // 'write' or 'submissions'
 
   const loadData = async () => {
     if (!user) return
@@ -278,6 +279,16 @@ export default function UserReviews({ user }) {
         </p>
       </div>
 
+      {/* ===== TABS ===== */}
+      <div className="apple-pill-tabs" style={{ marginBottom: '24px' }}>
+        <button className={`apple-pill-tab ${activeTab === 'write' ? 'active' : ''}`} onClick={() => setActiveTab('write')}>
+          Write Review
+        </button>
+        <button className={`apple-pill-tab ${activeTab === 'submissions' ? 'active' : ''}`} onClick={() => setActiveTab('submissions')}>
+          My Submissions
+        </button>
+      </div>
+
       {message.text && (
         <div style={{
           padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
@@ -290,9 +301,11 @@ export default function UserReviews({ user }) {
         </div>
       )}
 
-      {/* ===== SUBMISSION FORM ===== */}
-      {unreviewedEvents.length > 0 || editingReviewId ? (
-        <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
+      {/* ===== WRITE REVIEW TAB ===== */}
+      {activeTab === 'write' && (
+        <>
+          {unreviewedEvents.length > 0 || editingReviewId ? (
+            <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {editingReviewId ? <Edit size={18} style={{ color: 'var(--apple-accent-blue)' }} /> : <Star size={18} style={{ color: 'var(--apple-accent-blue)' }} />}
             {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
@@ -336,7 +349,6 @@ export default function UserReviews({ user }) {
                 onChange={(e) => setTitle(e.target.value)}
                 onPaste={(e) => e.preventDefault()} // Anti-paste feature
               />
-              <span style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'block' }}>Pasting text is disabled for this field.</span>
             </div>
 
             <div>
@@ -351,7 +363,6 @@ export default function UserReviews({ user }) {
                 onPaste={(e) => e.preventDefault()} // Anti-paste feature
                 style={{ resize: 'vertical' }}
               />
-              <span style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'block' }}>Pasting text is disabled for this field.</span>
             </div>
             
             <div>
@@ -389,10 +400,15 @@ export default function UserReviews({ user }) {
           <p style={{ margin: 0 }}>You have submitted reviews for all currently active events.</p>
         </div>
       )}
-      {/* ===== MY REVIEWS LIST ===== */}
-      <h2 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>My Submissions</h2>
-      
-      {reviews.length > 0 ? (
+      </>
+      )}
+
+      {/* ===== MY SUBMISSIONS TAB ===== */}
+      {activeTab === 'submissions' && (
+        <>
+          <h2 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>My Submissions</h2>
+          
+          {reviews.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {reviews.map(review => (
             <div key={review.id} className={`apple-card ${snappingId === review.id ? 'thanos-snap' : ''}`} style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
@@ -546,10 +562,12 @@ export default function UserReviews({ user }) {
             </div>
           ))}
         </div>
-      ) : (
-        <div className="apple-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
-          You haven't submitted any reviews yet.
-        </div>
+        ) : (
+          <div className="apple-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
+            No reviews found. Select an event to write your first review!
+          </div>
+        )}
+        </>
       )}
     </div>
   )
