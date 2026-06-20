@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon } from 'lucide-react'
+import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon, Users, Clock, Calendar } from 'lucide-react'
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
@@ -148,58 +148,72 @@ export default function AdminReviews() {
       {filteredReviews.length > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
           {filteredReviews.map(review => (
-            <div key={review.id} onClick={() => setSelectedReview(review)} className="apple-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', height: '200px' }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)' }}
+            <div key={review.id} onClick={() => setSelectedReview(review)} style={{ 
+              background: '#ffffff', 
+              borderRadius: '16px', 
+              padding: '24px', 
+              display: 'flex', flexDirection: 'column', 
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+              cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)' }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)' }}
             >
               
-              {/* Status Side Indicator */}
-              <div style={{ 
-                position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', 
-                background: review.status === 'approved' ? 'var(--apple-accent-green)' 
-                          : review.status === 'rejected' ? 'var(--apple-accent-red)' 
-                          : review.status === 'feedback' ? 'var(--apple-accent-orange)'
-                          : 'var(--apple-accent-blue)' 
-              }} />
-
-              {/* Review Header Info */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {/* Row 1: Name and Team */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.06)', padding: '8px 10px', borderRadius: '8px' }}>
-                  <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {review.profiles?.first_name} {review.profiles?.last_name}
+              {/* Top Section */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                {/* Avatar and Name/Team */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#e8effd', color: '#1a73e8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 'bold', flexShrink: 0 }}>
+                    {review.profiles?.first_name ? review.profiles.first_name.charAt(0).toUpperCase() : 'U'}
+                    {review.profiles?.last_name ? review.profiles.last_name.charAt(0).toUpperCase() : ''}
                   </div>
-                  <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px', flexShrink: 0 }}>
-                    {review.teams?.name || 'No Team'}
-                  </span>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '1.2rem', marginBottom: '4px' }}>
+                      {review.profiles?.first_name} {review.profiles?.last_name}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#5f6368', fontSize: '0.9rem' }}>
+                      <Users size={16} color="#1a73e8" />
+                      <span style={{ border: '1px solid #d2e3fc', background: '#e8effd', color: '#1a73e8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        {review.teams?.name || 'No Team'}
+                      </span>
+                      <span>Team</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Row 2: Event Name and Status */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="apple-badge apple-badge-gray" style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.65rem', padding: '2px 6px' }}>
-                    <Star size={10} /> {review.events?.title || 'Unknown Event'}
-                  </span>
-                  <span className={`apple-badge ${
-                    review.status === 'approved' ? 'apple-badge-green' : 
-                    review.status === 'rejected' ? 'apple-badge-red' : 
-                    review.status === 'pending' ? 'apple-badge-orange' : 'apple-badge-blue'
-                  }`} style={{ fontSize: '0.65rem', padding: '2px 8px', flexShrink: 0 }}>
-                    {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
-                  </span>
+                {/* Status Badge */}
+                <div style={{ 
+                  border: review.status === 'approved' ? '1px solid #ceead6' : review.status === 'rejected' ? '1px solid #fad2cf' : review.status === 'pending' ? '1px solid #fce8b2' : '1px solid #d2e3fc', 
+                  background: review.status === 'approved' ? '#e6f4ea' : review.status === 'rejected' ? '#fce8e6' : review.status === 'pending' ? '#fef7e0' : '#e8effd', 
+                  color: review.status === 'approved' ? '#137333' : review.status === 'rejected' ? '#c5221f' : review.status === 'pending' ? '#f29900' : '#1a73e8', 
+                  padding: '6px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.85rem'
+                }}>
+                  {review.status === 'pending' ? <Clock size={16} /> : review.status === 'approved' ? <CheckCircle size={16} /> : review.status === 'rejected' ? <XCircle size={16} /> : <AlertCircle size={16} />}
+                  {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
                 </div>
               </div>
 
-              {/* Review Content Snippet */}
-              <div style={{ marginTop: '4px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <h4 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '0.9rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{review.title}</h4>
-                <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.8rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {review.context}
-                </p>
-                {review.photo_url && (
-                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
-                    <div style={{ background: 'rgba(0, 113, 227, 0.1)', padding: '4px 8px', borderRadius: '8px' }}>
-                      <ImageIcon size={16} color="var(--apple-accent-blue)" />
+              {/* Separator Line */}
+              <div style={{ height: '1px', background: '#f1f3f4', margin: '20px 0' }} />
+
+              {/* Bottom Section */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                  <Calendar size={32} color="#1a73e8" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                      {review.events?.title || 'General Review'}
                     </div>
+                    <p style={{ margin: 0, color: '#5f6368', fontSize: '0.9rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {review.context}
+                    </p>
+                  </div>
+                </div>
+                
+                {review.photo_url && (
+                  <div style={{ background: '#e8effd', borderRadius: '8px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '12px' }}>
+                    <ImageIcon size={20} color="#1a73e8" />
                   </div>
                 )}
               </div>
