@@ -146,7 +146,7 @@ export default function AdminReviews() {
 
       {/* ===== REVIEWS LIST ===== */}
       {filteredReviews.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
           {filteredReviews.map(review => (
             <div key={review.id} onClick={() => setSelectedReview(review)} style={{ 
               background: '#ffffff', 
@@ -163,21 +163,19 @@ export default function AdminReviews() {
               {/* Top Section */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 {/* Avatar and Name/Team */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#e8effd', color: '#1a73e8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 'bold', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e8effd', color: '#1a73e8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold', flexShrink: 0 }}>
                     {review.profiles?.first_name ? review.profiles.first_name.charAt(0).toUpperCase() : 'U'}
                     {review.profiles?.last_name ? review.profiles.last_name.charAt(0).toUpperCase() : ''}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '1.2rem', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '1.05rem', marginBottom: '4px' }}>
                       {review.profiles?.first_name} {review.profiles?.last_name}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#5f6368', fontSize: '0.9rem' }}>
-                      <Users size={16} color="#1a73e8" />
-                      <span style={{ border: '1px solid #d2e3fc', background: '#e8effd', color: '#1a73e8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#5f6368', fontSize: '0.85rem' }}>
+                      <span style={{ border: '1px solid #d2e3fc', background: '#e8effd', color: '#1a73e8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {review.teams?.name || 'No Team'}
                       </span>
-                      <span>Team</span>
                     </div>
                   </div>
                 </div>
@@ -187,7 +185,7 @@ export default function AdminReviews() {
                   border: review.status === 'approved' ? '1px solid #ceead6' : review.status === 'rejected' ? '1px solid #fad2cf' : review.status === 'pending' ? '1px solid #fce8b2' : '1px solid #d2e3fc', 
                   background: review.status === 'approved' ? '#e6f4ea' : review.status === 'rejected' ? '#fce8e6' : review.status === 'pending' ? '#fef7e0' : '#e8effd', 
                   color: review.status === 'approved' ? '#137333' : review.status === 'rejected' ? '#c5221f' : review.status === 'pending' ? '#f29900' : '#1a73e8', 
-                  padding: '6px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.85rem'
+                  padding: '6px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.85rem', marginTop: '6px'
                 }}>
                   {review.status === 'pending' ? <Clock size={16} /> : review.status === 'approved' ? <CheckCircle size={16} /> : review.status === 'rejected' ? <XCircle size={16} /> : <AlertCircle size={16} />}
                   {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
@@ -200,20 +198,20 @@ export default function AdminReviews() {
               {/* Bottom Section */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                  <Calendar size={32} color="#1a73e8" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <Calendar size={28} color="#1a73e8" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
                       {review.events?.title || 'General Review'}
                     </div>
-                    <p style={{ margin: 0, color: '#5f6368', fontSize: '0.9rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <p style={{ margin: 0, color: '#5f6368', fontSize: '0.85rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {review.context}
                     </p>
                   </div>
                 </div>
                 
                 {review.photo_url && (
-                  <div style={{ background: '#e8effd', borderRadius: '8px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '12px' }}>
-                    <ImageIcon size={20} color="#1a73e8" />
+                  <div style={{ background: '#e8effd', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '12px' }}>
+                    <ImageIcon size={18} color="#1a73e8" />
                   </div>
                 )}
               </div>
