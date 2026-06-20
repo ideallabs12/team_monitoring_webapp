@@ -133,11 +133,11 @@ export default function UserReviews({ user }) {
         setMessage({ type: 'success', text: 'Review updated successfully!' })
       } else {
         const insertData = {
-          event_id: selectedEventId || null,
+          event_id: selectedEventId,
           user_id: user.id,
           team_id: profile?.team_id,
-          title: title || null,
-          context: context || null
+          title,
+          context
         };
         if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
         
@@ -291,7 +291,8 @@ export default function UserReviews({ user }) {
       )}
 
       {/* ===== SUBMISSION FORM ===== */}
-      <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
+      {unreviewedEvents.length > 0 || editingReviewId ? (
+        <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {editingReviewId ? <Edit size={18} style={{ color: 'var(--apple-accent-blue)' }} /> : <Star size={18} style={{ color: 'var(--apple-accent-blue)' }} />}
             {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
@@ -308,14 +309,11 @@ export default function UserReviews({ user }) {
                   disabled={editingReviewId !== null} // Don't allow changing event while editing
                 >
                   {editingReviewId ? (
-                    <option value={selectedEventId || ''}>{reviews.find(r => r.id === editingReviewId)?.events?.title || 'General Individual Review (No Event)'}</option>
+                    <option value={selectedEventId}>{reviews.find(r => r.id === editingReviewId)?.events?.title}</option>
                   ) : (
-                    <>
-                      <option value="">General Individual Review (No Event)</option>
-                      {unreviewedEvents.map(ev => (
-                        <option key={ev.id} value={ev.id}>{ev.title}</option>
-                      ))}
-                    </>
+                    unreviewedEvents.map(ev => (
+                      <option key={ev.id} value={ev.id}>{ev.title}</option>
+                    ))
                   )}
                 </select>
               </div>
@@ -328,11 +326,12 @@ export default function UserReviews({ user }) {
             </div>
 
             <div>
-              <label className="apple-form-label">Review Title (Optional)</label>
+              <label className="apple-form-label">Review Title</label>
               <input
                 type="text"
                 className="apple-form-control"
                 placeholder="Summarize your review..."
+                required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onPaste={(e) => e.preventDefault()} // Anti-paste feature
@@ -341,10 +340,11 @@ export default function UserReviews({ user }) {
             </div>
 
             <div>
-              <label className="apple-form-label">Review Context (Optional)</label>
+              <label className="apple-form-label">Review Context</label>
               <textarea
                 className="apple-form-control"
                 placeholder="Write your detailed review here..."
+                required
                 rows={6}
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
@@ -376,13 +376,19 @@ export default function UserReviews({ user }) {
                   Cancel Edit
                 </button>
               )}
-              <button type="submit" disabled={submitting || (!title.trim() && !context.trim() && !photoFile)} className="apple-btn apple-btn-primary">
+              <button type="submit" disabled={submitting || !title.trim() || !context.trim()} className="apple-btn apple-btn-primary">
                 {submitting ? 'Submitting...' : editingReviewId ? 'Update Review' : 'Submit Review'}
               </button>
             </div>
           </form>
         </div>
-
+      ) : (
+        <div className="apple-card" style={{ padding: '30px', textAlign: 'center', marginBottom: '40px', color: 'var(--apple-text-secondary)' }}>
+          <Star size={32} style={{ color: 'var(--apple-text-secondary)', opacity: 0.5, marginBottom: '16px' }} />
+          <h3 style={{ margin: '0 0 8px 0', color: '#fff' }}>All Caught Up!</h3>
+          <p style={{ margin: 0 }}>You have submitted reviews for all currently active events.</p>
+        </div>
+      )}
       {/* ===== MY REVIEWS LIST ===== */}
       <h2 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>My Submissions</h2>
       
@@ -431,7 +437,7 @@ export default function UserReviews({ user }) {
                 <div>
                   <h3 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '700' }}>{review.title}</h3>
                   <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Star size={12} /> {review.events?.title || 'General Individual Review'}
+                    <Star size={12} /> {review.events?.title || 'Unknown Event'}
                     <span style={{ margin: '0 4px' }}>•</span>
                     {new Date(review.created_at).toLocaleDateString()}
                   </div>

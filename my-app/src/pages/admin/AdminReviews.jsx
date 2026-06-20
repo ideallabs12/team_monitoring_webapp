@@ -93,7 +93,6 @@ export default function AdminReviews() {
 
   const filteredReviews = useMemo(() => {
     if (filterStatus === 'all') return reviews
-    if (filterStatus === 'individuals') return reviews.filter(r => !r.event_id)
     return reviews.filter(r => r.status === filterStatus)
   }, [reviews, filterStatus])
 
@@ -139,9 +138,6 @@ export default function AdminReviews() {
         <button className={`apple-pill-tab ${filterStatus === 'feedback' ? 'active' : ''}`} onClick={() => setFilterStatus('feedback')}>
           Needs Revision
         </button>
-        <button className={`apple-pill-tab ${filterStatus === 'individuals' ? 'active' : ''}`} onClick={() => setFilterStatus('individuals')}>
-          INDIVIDUALs
-        </button>
         <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
           All Reviews
         </button>
@@ -176,7 +172,7 @@ export default function AdminReviews() {
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.75rem' }}>
                     <span className="apple-badge apple-badge-blue">{review.teams?.name || 'No Team'}</span>
                     <span className="apple-badge apple-badge-gray" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <Star size={10} /> {review.events?.title || 'General Individual Review'}
+                      <Star size={10} /> {review.events?.title || 'Unknown Event'}
                     </span>
                   </div>
                 </div>
