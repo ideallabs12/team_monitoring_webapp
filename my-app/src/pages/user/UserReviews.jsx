@@ -357,7 +357,8 @@ export default function UserReviews({ user }) {
                 position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', 
                 background: review.status === 'approved' ? 'var(--apple-accent-green)' 
                           : review.status === 'rejected' ? 'var(--apple-accent-red)' 
-                          : 'var(--apple-accent-orange)' 
+                          : review.status === 'feedback' ? 'var(--apple-accent-orange)'
+                          : 'var(--apple-accent-blue)' 
               }} />
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
@@ -399,13 +400,21 @@ export default function UserReviews({ user }) {
                     }}>
                       <CheckCircle size={12} /> Approved
                     </div>
+                  ) : review.status === 'feedback' ? (
+                    <div style={{ 
+                      background: 'rgba(255, 159, 10, 0.15)', border: '1px solid rgba(255, 159, 10, 0.3)',
+                      color: 'var(--apple-accent-orange)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
+                      display: 'flex', alignItems: 'center', gap: '4px'
+                    }}>
+                      <AlertCircle size={12} /> Needs Revision
+                    </div>
                   ) : (
                     <div style={{ 
                       background: 'rgba(255, 69, 58, 0.15)', border: '1px solid rgba(255, 69, 58, 0.3)',
                       color: 'var(--apple-accent-red)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
                       display: 'flex', alignItems: 'center', gap: '4px'
                     }}>
-                      <AlertCircle size={12} /> Rejected
+                      <XCircle size={12} /> Rejected
                     </div>
                   )}
                 </div>
@@ -417,32 +426,35 @@ export default function UserReviews({ user }) {
                 </p>
               </div>
 
-              {review.status === 'rejected' && review.admin_feedback && (
-                <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,69,58,0.05)', border: '1px solid rgba(255,69,58,0.2)', color: 'var(--apple-accent-red)', fontSize: '0.85rem', marginBottom: '16px' }}>
+              {review.status === 'feedback' && review.admin_feedback && (
+                <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,159,10,0.05)', border: '1px solid rgba(255,159,10,0.2)', color: 'var(--apple-accent-orange)', fontSize: '0.85rem', marginBottom: '16px' }}>
                   <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ display: 'block', marginBottom: '4px' }}>Admin Feedback / Suggested Changes:</strong>
+                    <strong style={{ display: 'block', marginBottom: '4px' }}>Requested Changes / Feedback:</strong>
                     {review.admin_feedback}
                   </div>
                 </div>
               )}
 
-              {/* Actions - Only if pending or rejected */}
-              {(review.status === 'pending' || review.status === 'rejected') && (
+              {/* Actions - Only if pending, feedback, or rejected */}
+              {(review.status === 'pending' || review.status === 'rejected' || review.status === 'feedback') && (
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--apple-border)', paddingTop: '16px' }}>
-                  <button 
-                    onClick={() => handleDelete(review.id)}
-                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                  {/* Allow edit only if the event is still active, or if it's rejected they can fix it even if event is over? Usually yes, but let's just let them edit */}
-                  <button 
-                    onClick={() => handleEditClick(review)}
-                    className="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Edit size={14} /> Edit Review
-                  </button>
+                  {(review.status === 'pending' || review.status === 'rejected') && (
+                    <button 
+                      onClick={() => handleDelete(review.id)}
+                      className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                  {(review.status === 'pending' || review.status === 'feedback') && (
+                    <button 
+                      onClick={() => handleEditClick(review)}
+                      className="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Edit size={14} /> Edit Review
+                    </button>
+                  )}
                 </div>
               )}
 

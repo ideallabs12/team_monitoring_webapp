@@ -8,7 +8,7 @@ export default function AdminReviews() {
   const [filterStatus, setFilterStatus] = useState('pending')
   
   // Modals for Actions
-  const [rejectModal, setRejectModal] = useState({ isOpen: false, reviewId: null, feedback: '' })
+  const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, reviewId: null, feedback: '' })
   const [editModal, setEditModal] = useState({ isOpen: false, reviewId: null, title: '', context: '' })
 
   const loadReviews = async () => {
@@ -52,25 +52,41 @@ export default function AdminReviews() {
     }
   }
 
-  const handleRejectSubmit = async (e) => {
+  const handleReject = async (id) => {
+    if (!window.confirm('Are you sure you want to completely reject this review without feedback?')) return
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .update({ status: 'rejected', admin_feedback: null, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        
+      if (error) throw error
+      setReviews(reviews.map(r => r.id === id ? { ...r, status: 'rejected', admin_feedback: null } : r))
+    } catch (err) {
+      console.error('Error rejecting review:', err)
+      alert('Failed to reject review.')
+    }
+  }
+
+  const handleFeedbackSubmit = async (e) => {
     e.preventDefault()
     try {
       const { error } = await supabase
         .from('reviews')
         .update({ 
-          status: 'rejected', 
-          admin_feedback: rejectModal.feedback, 
+          status: 'feedback', 
+          admin_feedback: feedbackModal.feedback, 
           updated_at: new Date().toISOString() 
         })
-        .eq('id', rejectModal.reviewId)
+        .eq('id', feedbackModal.reviewId)
         
       if (error) throw error
       
-      setReviews(reviews.map(r => r.id === rejectModal.reviewId ? { ...r, status: 'rejected', admin_feedback: rejectModal.feedback } : r))
-      setRejectModal({ isOpen: false, reviewId: null, feedback: '' })
+      setReviews(reviews.map(r => r.id === feedbackModal.reviewId ? { ...r, status: 'feedback', admin_feedback: feedbackModal.feedback } : r))
+      setFeedbackModal({ isOpen: false, reviewId: null, feedback: '' })
     } catch (err) {
-      console.error('Error rejecting review:', err)
-      alert('Failed to reject review.')
+      console.error('Error providing feedback:', err)
+      alert('Failed to provide feedback.')
     }
   }
 
@@ -149,6 +165,9 @@ export default function AdminReviews() {
         <button className={`apple-pill-tab ${filterStatus === 'rejected' ? 'active' : ''}`} onClick={() => setFilterStatus('rejected')}>
           Rejected
         </button>
+        <button className={`apple-pill-tab ${filterStatus === 'feedback' ? 'active' : ''}`} onClick={() => setFilterStatus('feedback')}>
+          Needs Revision
+        </button>
         <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
           All Reviews
         </button>
@@ -165,7 +184,8 @@ export default function AdminReviews() {
                 position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', 
                 background: review.status === 'approved' ? 'var(--apple-accent-green)' 
                           : review.status === 'rejected' ? 'var(--apple-accent-red)' 
-                          : 'var(--apple-accent-orange)' 
+                          : review.status === 'feedback' ? 'var(--apple-accent-orange)'
+                          : 'var(--apple-accent-blue)' 
               }} />
 
               {/* Review Header Info */}
@@ -189,9 +209,10 @@ export default function AdminReviews() {
                 
                 <span className={`apple-badge ${
                   review.status === 'approved' ? 'apple-badge-green' : 
-                  review.status === 'rejected' ? 'apple-badge-red' : 'apple-badge-orange'
+                  review.status === 'rejected' ? 'apple-badge-red' : 
+                  review.status === 'feedback' ? 'apple-badge-orange' : 'apple-badge-blue'
                 }`}>
-                  {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
+                  {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
                 </span>
               </div>
 
@@ -203,12 +224,12 @@ export default function AdminReviews() {
                 </p>
               </div>
 
-              {/* Admin Feedback Display (if rejected) */}
-              {review.status === 'rejected' && review.admin_feedback && (
-                <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,69,58,0.05)', border: '1px solid rgba(255,69,58,0.2)', color: 'var(--apple-accent-red)', fontSize: '0.85rem' }}>
+              {/* Admin Feedback Display */}
+              {review.status === 'feedback' && review.admin_feedback && (
+                <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,159,10,0.05)', border: '1px solid rgba(255,159,10,0.2)', color: 'var(--apple-accent-orange)', fontSize: '0.85rem' }}>
                   <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ display: 'block', marginBottom: '4px' }}>Suggested Changes / Reason for Rejection:</strong>
+                    <strong style={{ display: 'block', marginBottom: '4px' }}>Requested Changes / Feedback:</strong>
                     {review.admin_feedback}
                   </div>
                 </div>
@@ -218,10 +239,16 @@ export default function AdminReviews() {
               {review.status === 'pending' && (
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px', borderTop: '1px solid var(--apple-border)', paddingTop: '16px' }}>
                   <button 
-                    onClick={() => setRejectModal({ isOpen: true, reviewId: review.id, feedback: '' })}
-                    className="apple-btn apple-btn-danger" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    onClick={() => handleReject(review.id)}
+                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <XCircle size={16} /> Reject with Feedback
+                    <XCircle size={16} /> Reject
+                  </button>
+                  <button 
+                    onClick={() => setFeedbackModal({ isOpen: true, reviewId: review.id, feedback: '' })}
+                    className="apple-btn apple-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-orange)' }}
+                  >
+                    <AlertCircle size={16} /> Give Feedback
                   </button>
                   <button 
                     onClick={() => setEditModal({ isOpen: true, reviewId: review.id, title: review.title, context: review.context })}
@@ -246,36 +273,36 @@ export default function AdminReviews() {
         </div>
       )}
 
-      {/* ===== REJECT MODAL ===== */}
-      {rejectModal.isOpen && (
+      {/* ===== FEEDBACK MODAL ===== */}
+      {feedbackModal.isOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px'
         }}>
-          <div className="apple-card" style={{ width: '100%', maxWidth: '500px', padding: '24px', borderTop: '4px solid var(--apple-accent-red)' }}>
+          <div className="apple-card" style={{ width: '100%', maxWidth: '500px', padding: '24px', borderTop: '4px solid var(--apple-accent-orange)' }}>
             <h3 style={{ margin: '0 0 16px 0', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <XCircle size={20} style={{ color: 'var(--apple-accent-red)' }} /> Reject Review
+              <AlertCircle size={20} style={{ color: 'var(--apple-accent-orange)' }} /> Provide Feedback
             </h3>
-            <form onSubmit={handleRejectSubmit}>
+            <form onSubmit={handleFeedbackSubmit}>
               <div style={{ marginBottom: '20px' }}>
                 <label className="apple-form-label">Suggested Changes / Feedback</label>
                 <textarea
                   className="apple-form-control"
                   rows={4}
                   required
-                  placeholder="Explain why this review is being rejected and what needs to be changed..."
-                  value={rejectModal.feedback}
-                  onChange={(e) => setRejectModal({ ...rejectModal, feedback: e.target.value })}
+                  placeholder="Explain what needs to be changed..."
+                  value={feedbackModal.feedback}
+                  onChange={(e) => setFeedbackModal({ ...feedbackModal, feedback: e.target.value })}
                   style={{ resize: 'vertical' }}
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" onClick={() => setRejectModal({ isOpen: false, reviewId: null, feedback: '' })} className="apple-btn apple-btn-secondary">
+                <button type="button" onClick={() => setFeedbackModal({ isOpen: false, reviewId: null, feedback: '' })} className="apple-btn apple-btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="apple-btn apple-btn-danger">
-                  Confirm Rejection
+                <button type="submit" className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-orange)' }}>
+                  Send Feedback
                 </button>
               </div>
             </form>
