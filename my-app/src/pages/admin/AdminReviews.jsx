@@ -164,11 +164,11 @@ export default function AdminReviews() {
 
               {/* Review Header Info */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <span className={`apple-badge ${
                     review.status === 'approved' ? 'apple-badge-green' : 
                     review.status === 'rejected' ? 'apple-badge-red' : 
-                    review.status === 'feedback' ? 'apple-badge-orange' : 'apple-badge-blue'
+                    review.status === 'pending' ? 'apple-badge-orange' : 'apple-badge-blue'
                   }`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
                     {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
                   </span>

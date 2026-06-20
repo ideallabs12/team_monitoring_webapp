@@ -459,27 +459,16 @@ export default function UserReviews({ user }) {
                   </div>
                 </div>
 
-                {/* Overlaid Chips Design for Status */}
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: '26px' }}>
+                {/* Status Badge */}
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   {review.status === 'pending' ? (
-                    <>
-                      <div style={{ 
-                        position: 'absolute', left: '-12px', top: '-12px', 
-                        background: 'rgba(255, 159, 10, 0.1)', border: '1px solid rgba(255, 159, 10, 0.2)',
-                        color: 'var(--apple-accent-orange)', padding: '2px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
-                        transform: 'rotate(-4deg)'
-                      }}>
-                        Pending
-                      </div>
-                      <div style={{ 
-                        position: 'relative', zIndex: 1, 
-                        background: 'rgba(0, 113, 227, 0.15)', border: '1px solid rgba(0, 113, 227, 0.3)', backdropFilter: 'blur(8px)',
-                        color: 'var(--apple-accent-blue)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
-                        display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}>
-                        <CheckCircle size={12} /> Submitted
-                      </div>
-                    </>
+                    <div style={{ 
+                      background: 'rgba(255, 159, 10, 0.15)', border: '1px solid rgba(255, 159, 10, 0.3)',
+                      color: 'var(--apple-accent-orange)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
+                      display: 'flex', alignItems: 'center', gap: '4px'
+                    }}>
+                      Pending
+                    </div>
                   ) : review.status === 'approved' ? (
                     <div style={{ 
                       background: 'rgba(48, 213, 200, 0.15)', border: '1px solid rgba(48, 213, 200, 0.3)',
@@ -490,8 +479,8 @@ export default function UserReviews({ user }) {
                     </div>
                   ) : review.status === 'feedback' ? (
                     <div style={{ 
-                      background: 'rgba(255, 159, 10, 0.15)', border: '1px solid rgba(255, 159, 10, 0.3)',
-                      color: 'var(--apple-accent-orange)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
+                      background: 'rgba(0, 113, 227, 0.15)', border: '1px solid rgba(0, 113, 227, 0.3)',
+                      color: 'var(--apple-accent-blue)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em',
                       display: 'flex', alignItems: 'center', gap: '4px'
                     }}>
                       <AlertCircle size={12} /> Needs Revision
