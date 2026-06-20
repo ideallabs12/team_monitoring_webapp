@@ -133,11 +133,11 @@ export default function UserReviews({ user }) {
         setMessage({ type: 'success', text: 'Review updated successfully!' })
       } else {
         const insertData = {
-          event_id: selectedEventId,
+          event_id: selectedEventId || null,
           user_id: user.id,
           team_id: profile?.team_id,
-          title,
-          context
+          title: title || null,
+          context: context || null
         };
         if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
         
@@ -155,6 +155,7 @@ export default function UserReviews({ user }) {
       setPhotoFile(null)
       setPhotoPreview(null)
       setEditingReviewId(null)
+      setSelectedEventId('')
       loadData()
     } catch (err) {
       console.error('Error submitting review:', err)
@@ -191,7 +192,7 @@ export default function UserReviews({ user }) {
         setSnappingId(null)
         loadData()
       }
-    }, 1500)
+    }, 2500)
   }
 
   const handleEditClick = (review) => {
@@ -254,16 +255,17 @@ export default function UserReviews({ user }) {
       <style>{`
         @keyframes dissolve-card {
           0% { opacity: 1; filter: blur(0px); transform: scale(1); }
-          40% { opacity: 0.5; filter: blur(4px) sepia(0.5); transform: scale(0.98); }
-          100% { opacity: 0; filter: blur(12px) sepia(1); transform: scale(0.9) translateY(-20px); letter-spacing: 5px; }
+          20% { opacity: 0.8; filter: blur(2px) sepia(0.3); transform: scale(0.98); }
+          100% { opacity: 0; filter: blur(10px) sepia(0.8); transform: scale(0.95) translateY(-10px); }
         }
         .thanos-snap {
-          animation: dissolve-card 1.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+          animation: dissolve-card 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
           pointer-events: none;
         }
         @keyframes dust-particle {
-          0% { opacity: 1; transform: translate(0, 0) scale(1); }
-          100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+          0% { opacity: 0; transform: translate(0, 0) scale(1); }
+          10% { opacity: 1; }
+          100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0) rotate(var(--rot)); filter: blur(2px); }
         }
       `}</style>
 
@@ -289,8 +291,7 @@ export default function UserReviews({ user }) {
       )}
 
       {/* ===== SUBMISSION FORM ===== */}
-      {unreviewedEvents.length > 0 || editingReviewId ? (
-        <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
+      <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {editingReviewId ? <Edit size={18} style={{ color: 'var(--apple-accent-blue)' }} /> : <Star size={18} style={{ color: 'var(--apple-accent-blue)' }} />}
             {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
@@ -307,11 +308,14 @@ export default function UserReviews({ user }) {
                   disabled={editingReviewId !== null} // Don't allow changing event while editing
                 >
                   {editingReviewId ? (
-                    <option value={selectedEventId}>{reviews.find(r => r.id === editingReviewId)?.events?.title}</option>
+                    <option value={selectedEventId || ''}>{reviews.find(r => r.id === editingReviewId)?.events?.title || 'General Individual Review (No Event)'}</option>
                   ) : (
-                    unreviewedEvents.map(ev => (
-                      <option key={ev.id} value={ev.id}>{ev.title}</option>
-                    ))
+                    <>
+                      <option value="">General Individual Review (No Event)</option>
+                      {unreviewedEvents.map(ev => (
+                        <option key={ev.id} value={ev.id}>{ev.title}</option>
+                      ))}
+                    </>
                   )}
                 </select>
               </div>
@@ -324,12 +328,11 @@ export default function UserReviews({ user }) {
             </div>
 
             <div>
-              <label className="apple-form-label">Review Title</label>
+              <label className="apple-form-label">Review Title (Optional)</label>
               <input
                 type="text"
                 className="apple-form-control"
                 placeholder="Summarize your review..."
-                required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onPaste={(e) => e.preventDefault()} // Anti-paste feature
@@ -338,11 +341,10 @@ export default function UserReviews({ user }) {
             </div>
 
             <div>
-              <label className="apple-form-label">Review Context</label>
+              <label className="apple-form-label">Review Context (Optional)</label>
               <textarea
                 className="apple-form-control"
                 placeholder="Write your detailed review here..."
-                required
                 rows={6}
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
@@ -374,19 +376,12 @@ export default function UserReviews({ user }) {
                   Cancel Edit
                 </button>
               )}
-              <button type="submit" disabled={submitting || !title.trim() || !context.trim()} className="apple-btn apple-btn-primary">
+              <button type="submit" disabled={submitting || (!title.trim() && !context.trim() && !photoFile)} className="apple-btn apple-btn-primary">
                 {submitting ? 'Submitting...' : editingReviewId ? 'Update Review' : 'Submit Review'}
               </button>
             </div>
           </form>
         </div>
-      ) : (
-        <div className="apple-card" style={{ padding: '30px', textAlign: 'center', marginBottom: '40px', color: 'var(--apple-text-secondary)' }}>
-          <Star size={32} style={{ color: 'var(--apple-text-secondary)', opacity: 0.5, marginBottom: '16px' }} />
-          <h3 style={{ margin: '0 0 8px 0', color: '#fff' }}>All Caught Up!</h3>
-          <p style={{ margin: 0 }}>You have submitted reviews for all currently active events.</p>
-        </div>
-      )}
 
       {/* ===== MY REVIEWS LIST ===== */}
       <h2 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>My Submissions</h2>
@@ -399,22 +394,24 @@ export default function UserReviews({ user }) {
               {/* Thanos Dust Particles */}
               {snappingId === review.id && (
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, pointerEvents: 'none', overflow: 'hidden' }}>
-                  {[...Array(40)].map((_, i) => {
-                    const dx = (Math.random() * 200 - 100) + 'px';
-                    const dy = -(Math.random() * 200 + 50) + 'px';
+                  {[...Array(150)].map((_, i) => {
+                    const dx = (Math.random() * 400 - 200) + 'px';
+                    const dy = -(Math.random() * 300 + 50) + 'px';
+                    const rot = (Math.random() * 360) + 'deg';
                     return (
                       <div key={i} style={{
                         position: 'absolute',
                         left: Math.random() * 100 + '%',
                         top: Math.random() * 100 + '%',
-                        width: Math.random() * 4 + 2 + 'px',
-                        height: Math.random() * 4 + 2 + 'px',
-                        background: Math.random() > 0.5 ? 'var(--apple-accent-orange)' : 'var(--apple-text-secondary)',
+                        width: Math.random() * 6 + 2 + 'px',
+                        height: Math.random() * 6 + 2 + 'px',
+                        background: Math.random() > 0.4 ? 'var(--apple-accent-orange)' : Math.random() > 0.5 ? 'var(--apple-text-secondary)' : '#fff',
                         borderRadius: '50%',
                         opacity: 0,
                         '--dx': dx,
                         '--dy': dy,
-                        animation: `dust-particle 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${Math.random() * 0.3}s forwards`
+                        '--rot': rot,
+                        animation: `dust-particle 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${Math.random() * 0.5}s forwards`
                       }} />
                     )
                   })}
@@ -434,7 +431,7 @@ export default function UserReviews({ user }) {
                 <div>
                   <h3 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '700' }}>{review.title}</h3>
                   <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Star size={12} /> {review.events?.title || 'Unknown Event'}
+                    <Star size={12} /> {review.events?.title || 'General Individual Review'}
                     <span style={{ margin: '0 4px' }}>•</span>
                     {new Date(review.created_at).toLocaleDateString()}
                   </div>
@@ -490,9 +487,12 @@ export default function UserReviews({ user }) {
               </div>
 
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)', marginBottom: '16px' }}>
-                <p style={{ margin: 0, color: 'var(--apple-text-primary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                  {review.context}
-                </p>
+                {review.title && <h4 style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '1rem', fontWeight: '600' }}>{review.title}</h4>}
+                {review.context && (
+                  <p style={{ margin: 0, color: 'var(--apple-text-primary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                    {review.context}
+                  </p>
+                )}
                 {review.photo_url && (
                   <div style={{ marginTop: '16px' }}>
                     <img src={review.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />

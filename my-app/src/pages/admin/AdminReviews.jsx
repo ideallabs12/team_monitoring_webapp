@@ -9,7 +9,6 @@ export default function AdminReviews() {
   
   // Modals for Actions
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, reviewId: null, feedback: '' })
-  const [editModal, setEditModal] = useState({ isOpen: false, reviewId: null, title: '', context: '' })
 
   const loadReviews = async () => {
     setLoading(true)
@@ -90,39 +89,11 @@ export default function AdminReviews() {
     }
   }
 
-  const handleEditApproveSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      const { error } = await supabase
-        .from('reviews')
-        .update({ 
-          status: 'approved', 
-          title: editModal.title, 
-          context: editModal.context, 
-          admin_feedback: null,
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', editModal.reviewId)
-        
-      if (error) throw error
-      
-      setReviews(reviews.map(r => r.id === editModal.reviewId ? { 
-        ...r, 
-        status: 'approved', 
-        title: editModal.title, 
-        context: editModal.context, 
-        admin_feedback: null 
-      } : r))
-      
-      setEditModal({ isOpen: false, reviewId: null, title: '', context: '' })
-    } catch (err) {
-      console.error('Error updating and approving review:', err)
-      alert('Failed to update and approve review.')
-    }
-  }
+
 
   const filteredReviews = useMemo(() => {
     if (filterStatus === 'all') return reviews
+    if (filterStatus === 'individuals') return reviews.filter(r => !r.event_id)
     return reviews.filter(r => r.status === filterStatus)
   }, [reviews, filterStatus])
 
@@ -168,6 +139,9 @@ export default function AdminReviews() {
         <button className={`apple-pill-tab ${filterStatus === 'feedback' ? 'active' : ''}`} onClick={() => setFilterStatus('feedback')}>
           Needs Revision
         </button>
+        <button className={`apple-pill-tab ${filterStatus === 'individuals' ? 'active' : ''}`} onClick={() => setFilterStatus('individuals')}>
+          INDIVIDUALs
+        </button>
         <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
           All Reviews
         </button>
@@ -202,7 +176,7 @@ export default function AdminReviews() {
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.75rem' }}>
                     <span className="apple-badge apple-badge-blue">{review.teams?.name || 'No Team'}</span>
                     <span className="apple-badge apple-badge-gray" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <Star size={10} /> {review.events?.title || 'Unknown Event'}
+                      <Star size={10} /> {review.events?.title || 'General Individual Review'}
                     </span>
                   </div>
                 </div>
@@ -218,10 +192,12 @@ export default function AdminReviews() {
 
               {/* Review Content */}
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '1rem', fontWeight: '600' }}>{review.title}</h4>
-                <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                  {review.context}
-                </p>
+                {review.title && <h4 style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '1rem', fontWeight: '600' }}>{review.title}</h4>}
+                {review.context && (
+                  <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                    {review.context}
+                  </p>
+                )}
                 {review.photo_url && (
                   <div style={{ marginTop: '16px' }}>
                     <img src={review.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />
@@ -255,12 +231,7 @@ export default function AdminReviews() {
                   >
                     <AlertCircle size={16} /> Give Feedback
                   </button>
-                  <button 
-                    onClick={() => setEditModal({ isOpen: true, reviewId: review.id, title: review.title, context: review.context })}
-                    className="apple-btn apple-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Edit size={16} /> Edit & Approve
-                  </button>
+
                   <button 
                     onClick={() => handleApprove(review.id)}
                     className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)', padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -315,51 +286,7 @@ export default function AdminReviews() {
         </div>
       )}
 
-      {/* ===== EDIT & APPROVE MODAL ===== */}
-      {editModal.isOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px'
-        }}>
-          <div className="apple-card" style={{ width: '100%', maxWidth: '600px', padding: '24px', borderTop: '4px solid var(--apple-accent-blue)' }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Edit size={20} style={{ color: 'var(--apple-accent-blue)' }} /> Edit & Approve Review
-            </h3>
-            <form onSubmit={handleEditApproveSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label className="apple-form-label">Review Title</label>
-                <input
-                  type="text"
-                  className="apple-form-control"
-                  required
-                  value={editModal.title}
-                  onChange={(e) => setEditModal({ ...editModal, title: e.target.value })}
-                />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label className="apple-form-label">Review Context</label>
-                <textarea
-                  className="apple-form-control"
-                  rows={6}
-                  required
-                  value={editModal.context}
-                  onChange={(e) => setEditModal({ ...editModal, context: e.target.value })}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" onClick={() => setEditModal({ isOpen: false, reviewId: null, title: '', context: '' })} className="apple-btn apple-btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)' }}>
-                  Save & Approve
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }
