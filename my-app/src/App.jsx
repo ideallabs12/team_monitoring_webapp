@@ -6,6 +6,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 // Components
 import Layout from './components/Layout'
 import MaintenanceScreen from './components/MaintenanceScreen'
+import PageTracker from './components/PageTracker'
 import Login from './pages/homeprofile/Login'
 import UserHome from './pages/user/UserHome'
 import UserTeam from './pages/user/UserTeam'
@@ -116,6 +117,10 @@ function App() {
         setLoading(false)
         return
       }
+
+      // Mark user as being fetched immediately to prevent race conditions
+      // (e.g., getSession and onAuthStateChange firing simultaneously)
+      profileFetchedFor.current = currentUser.id
 
       // New user — do full check
       setLoading(true)
@@ -251,6 +256,7 @@ function App() {
   return (
     <PresenceProvider user={user}>
       <Router>
+        <PageTracker user={user} />
         <SpeedInsights />
         <Routes>
         {/* Login/Auth Routes */}

@@ -416,7 +416,7 @@ export default function UserReviews({ user }) {
               {/* Thanos Dust Particles */}
               {snappingId === review.id && (
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, pointerEvents: 'none', overflow: 'hidden' }}>
-                  {[...Array(150)].map((_, i) => {
+                  {[...Array(1500)].map((_, i) => {
                     const dx = (Math.random() * 400 - 200) + 'px';
                     const dy = -(Math.random() * 300 + 50) + 'px';
                     const rot = (Math.random() * 360) + 'deg';

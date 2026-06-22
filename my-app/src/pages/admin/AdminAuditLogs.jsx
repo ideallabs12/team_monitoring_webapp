@@ -9,6 +9,7 @@ const TABS = [
   { id: 'login', label: 'Login Activity', icon: LogIn },
   { id: 'active', label: 'Active Members', icon: Users },
   { id: 'admin', label: 'Admin Activity', icon: ShieldAlert },
+  { id: 'page_view', label: 'Page Activity', icon: Activity },
 ]
 
 export default function AdminAuditLogs() {
@@ -44,6 +45,8 @@ export default function AdminAuditLogs() {
       actionFilter = ['login']
     } else if (activeTab === 'admin') {
       actionFilter = ['admin_activity']
+    } else if (activeTab === 'page_view') {
+      actionFilter = ['page_view']
     }
 
     if (activeTab !== 'active') {
@@ -84,6 +87,8 @@ export default function AdminAuditLogs() {
       actionFilter = ['login']
     } else if (activeTab === 'admin') {
       actionFilter = ['admin_activity']
+    } else if (activeTab === 'page_view') {
+      actionFilter = ['page_view']
     }
 
     if (actionFilter.length > 0) {
@@ -140,6 +145,9 @@ export default function AdminAuditLogs() {
     if (action_type === 'admin_activity') {
       const dev = details.device ? ` from ${details.device}` : ''
       return (details.description || JSON.stringify(details)) + dev
+    }
+    if (action_type === 'page_view') {
+      return `Navigated to ${details.page_name}`
     }
     return JSON.stringify(details)
   }
