@@ -1,12 +1,74 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Sparkles, Activity, Users, DollarSign, MessageSquare, Loader2 } from 'lucide-react'
+import { Sparkles, Activity, MessageSquare, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+
+// Helper functions for analytical pre-processing
+const parseMonthYear = (dateString) => {
+  const d = new Date(dateString)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+const calculateTrends = (revenues, disReports, profiles) => {
+  const now = new Date()
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
+
+  // Group by month
+  const revByMonth = revenues.reduce((acc, r) => {
+    const m = r.revenue_month.substring(0, 7) // 'YYYY-MM'
+    acc[m] = (acc[m] || 0) + Number(r.amount)
+    return acc
+  }, {})
+
+  const leadsByMonth = disReports.reduce((acc, d) => {
+    const m = parseMonthYear(d.report_date)
+    acc[m] = (acc[m] || 0) + Number(d.positive_leads)
+    return acc
+  }, {})
+
+  const currentRev = revByMonth[currentMonthStr] || 0
+  const prevRev = revByMonth[prevMonthStr] || 0
+  const revGrowth = prevRev === 0 ? (currentRev > 0 ? 100 : 0) : ((currentRev - prevRev) / prevRev) * 100
+
+  const currentLeads = leadsByMonth[currentMonthStr] || 0
+  const prevLeads = leadsByMonth[prevMonthStr] || 0
+  const leadsGrowth = prevLeads === 0 ? (currentLeads > 0 ? 100 : 0) : ((currentLeads - prevLeads) / prevLeads) * 100
+
+  // Top Performers (All Time)
+  const userPerformance = profiles.map(u => {
+    const uRevs = revenues.filter(r => r.user_id === u.id).reduce((sum, r) => sum + Number(r.amount), 0)
+    const uLeads = disReports.filter(d => d.user_id === u.id).reduce((sum, d) => sum + Number(d.positive_leads), 0)
+    return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown', revenue: uRevs, leads: uLeads }
+  })
+
+  // Sort by revenue
+  userPerformance.sort((a, b) => b.revenue - a.revenue)
+  const top20Count = Math.max(1, Math.ceil(userPerformance.length * 0.2))
+  const topPerformers = userPerformance.slice(0, top20Count)
+  const top20Rev = topPerformers.reduce((sum, u) => sum + u.revenue, 0)
+  const totalAllRev = userPerformance.reduce((sum, u) => sum + u.revenue, 0)
+  const top20Concentration = totalAllRev === 0 ? 0 : (top20Rev / totalAllRev) * 100
+
+  return {
+    currentRev,
+    prevRev,
+    revGrowth: revGrowth.toFixed(1),
+    currentLeads,
+    prevLeads,
+    leadsGrowth: leadsGrowth.toFixed(1),
+    topPerformers: topPerformers.map(u => `${u.name} ($${u.revenue.toFixed(2)})`).join(', '),
+    top20Concentration: top20Concentration.toFixed(1),
+    totalUsers: profiles.length
+  }
+}
 
 export default function AdminAiAnalytics() {
   const [loading, setLoading] = useState(false)
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [stats, setStats] = useState(null)
+  const [analyticsStory, setAnalyticsStory] = useState(null)
   
   const [customQuestion, setCustomQuestion] = useState('')
   const [aiResponse, setAiResponse] = useState('')
@@ -25,37 +87,16 @@ export default function AdminAiAnalytics() {
         const [usersRes, teamsRes, revRes, disRes] = await Promise.all([
           supabase.from('profiles').select('id, first_name, last_name, platform_role'),
           supabase.from('teams').select('id, name'),
-          supabase.from('monthly_revenues').select('amount, user_id'),
-          supabase.from('dis_reports').select('positive_leads, expected_revenue, user_id')
+          supabase.from('monthly_revenues').select('amount, user_id, revenue_month'),
+          supabase.from('dis_reports').select('positive_leads, expected_revenue, user_id, report_date')
         ])
 
-        const totalRevenue = revRes.data?.reduce((acc, r) => acc + Number(r.amount), 0) || 0
-        const totalLeads = disRes.data?.reduce((acc, d) => acc + Number(d.positive_leads), 0) || 0
-        const expectedPipeline = disRes.data?.reduce((acc, d) => acc + Number(d.expected_revenue), 0) || 0
-
-        const userStatsList = (usersRes.data || []).map(u => {
-          const uRevs = (revRes.data || []).filter(r => r.user_id === u.id)
-          const uDis = (disRes.data || []).filter(d => d.user_id === u.id)
-          
-          const rev = uRevs.reduce((acc, r) => acc + Number(r.amount), 0)
-          const leads = uDis.reduce((acc, d) => acc + Number(d.positive_leads), 0)
-          
-          return {
-            name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown',
-            role: u.platform_role,
-            revenue: rev,
-            leads: leads
-          }
-        })
-
-        setStats({
-          users: usersRes.data?.length || 0,
-          teams: teamsRes.data?.length || 0,
-          totalRevenue,
-          totalLeads,
-          expectedPipeline,
-          disCount: disRes.data?.length || 0,
-          userStatsList
+        const trends = calculateTrends(revRes.data || [], disRes.data || [], usersRes.data || [])
+        
+        setAnalyticsStory({
+          ...trends,
+          teamsCount: teamsRes.data?.length || 0,
+          disCount: disRes.data?.length || 0
         })
         setDataLoaded(true)
       } catch (err) {
@@ -71,53 +112,53 @@ export default function AdminAiAnalytics() {
     setAiResponse('')
     
     try {
-      let prompt = ''
-      
-      const userBreakdown = stats.userStatsList
-        ? stats.userStatsList.map(u => `- ${u.name} (${u.role}): $${u.revenue.toFixed(2)} revenue, ${u.leads} leads`).join('\n          ')
-        : 'No user data available'
+      const systemInstruction = `
+        You are an elite Business Analyst and Strategic Advisor for "Ideallabs", a SaaS operations platform. 
+        Do NOT simply restate the numbers provided. Your job is to analyze the trends, highlight critical anomalies, 
+        and provide 3 highly actionable, strategic recommendations to the executive team based on the patterns in this data. 
+        Format your response in Markdown with clear headings and bullet points. Be concise and professional.
+      `
+
+      const dataStoryContext = `
+        DATA STORY & PRE-PROCESSED INSIGHTS:
+        - Total Employees: ${analyticsStory.totalUsers} across ${analyticsStory.teamsCount} teams.
+        - Month-over-Month Revenue Growth: ${analyticsStory.revGrowth}% (Current Month: $${analyticsStory.currentRev.toFixed(2)} vs Prev Month: $${analyticsStory.prevRev.toFixed(2)})
+        - Month-over-Month Lead Growth: ${analyticsStory.leadsGrowth}% (Current: ${analyticsStory.currentLeads} vs Prev: ${analyticsStory.prevLeads})
+        - Performance Concentration: The top 20% of performers generated ${analyticsStory.top20Concentration}% of total all-time revenue.
+        - Top Performers List: ${analyticsStory.topPerformers}
+        - Total DIS Reports Logged: ${analyticsStory.disCount}
+      `
+
+      let finalPrompt = ''
 
       if (type === 'health') {
-        prompt = `
-          Analyze the following platform statistics and provide a brief, actionable "Platform Health Report".
-          Highlight areas of success and potential areas for improvement.
+        finalPrompt = `
+          ${systemInstruction}
           
-          Data:
-          - Total Users: ${stats.users}
-          - Total Teams: ${stats.teams}
-          - Total Actual Revenue: $${stats.totalRevenue.toFixed(2)}
-          - Total Expected Pipeline (from DIS): $${stats.expectedPipeline.toFixed(2)}
-          - Total Positive Leads Generated: ${stats.totalLeads}
-          - Total DIS Reports Submitted: ${stats.disCount}
-
-          User Breakdown:
-          ${userBreakdown}
+          ${dataStoryContext}
+          
+          TASK: Provide a brief, actionable "Platform Health Report". Highlight areas of success and potential areas for improvement.
         `
       } else {
         if (!customQuestion.trim()) {
           setGenerating(false)
           return
         }
-        prompt = `
-          Context about our platform:
-          - Total Users: ${stats.users}
-          - Total Teams: ${stats.teams}
-          - Total Actual Revenue: $${stats.totalRevenue.toFixed(2)}
-          - Total Expected Pipeline (from DIS): $${stats.expectedPipeline.toFixed(2)}
-          - Total Positive Leads Generated: ${stats.totalLeads}
-          - Total DIS Reports Submitted: ${stats.disCount}
-
-          User Breakdown:
-          ${userBreakdown}
+        finalPrompt = `
+          ${systemInstruction}
           
-          Question: ${customQuestion}
+          ${dataStoryContext}
+          
+          USER QUESTION: ${customQuestion}
+          
+          TASK: Answer the user's question directly and strategically based on the data provided.
         `
       }
 
       const response = await fetch('https://tohlagjzvjoqrutolcwf.supabase.co/functions/v1/ai-analytics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompt: finalPrompt })
       })
 
       const data = await response.json()
@@ -166,10 +207,10 @@ export default function AdminAiAnalytics() {
         <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
             <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Activity size={18} style={{ color: '#10b981' }} /> Generate Reports
+              <Activity size={18} style={{ color: '#10b981' }} /> Generate Strategic Reports
             </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
-              Run a complete analysis of your platform's revenue, lead generation, and user activity.
+              Run a complete analysis of your platform's growth trends, top performers, and overall health.
             </p>
             <button
               onClick={() => handleGenerate('health')}
@@ -186,12 +227,12 @@ export default function AdminAiAnalytics() {
 
           <div>
             <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MessageSquare size={18} style={{ color: '#38bdf8' }} /> Ask AI About Your Data
+              <MessageSquare size={18} style={{ color: '#38bdf8' }} /> Ask AI About Growth & Trends
             </h3>
             <textarea
               value={customQuestion}
               onChange={(e) => setCustomQuestion(e.target.value)}
-              placeholder="e.g., 'What is our lead conversion rate?' or 'How can we improve revenue next month?'"
+              placeholder="e.g., 'What should we do to improve our lead generation compared to last month?'"
               className="apple-input"
               style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '12px', marginBottom: '12px', resize: 'vertical' }}
             />
@@ -201,7 +242,7 @@ export default function AdminAiAnalytics() {
               className="apple-btn-secondary"
               style={{ width: '100%' }}
             >
-              {generating && customQuestion ? <Loader2 size={18} className="spin" style={{ marginRight: '8px' }} /> : 'Ask AI'}
+              {generating && customQuestion ? <Loader2 size={18} className="spin" style={{ marginRight: '8px' }} /> : 'Ask AI Analyst'}
             </button>
           </div>
         </div>
@@ -209,7 +250,7 @@ export default function AdminAiAnalytics() {
         {/* Results Card */}
         <div className="apple-card" style={{ padding: '24px' }}>
           <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={18} style={{ color: '#8b5cf6' }} /> AI Insights
+            <Sparkles size={18} style={{ color: '#8b5cf6' }} /> Strategic AI Insights
           </h3>
           
           <div style={{ 
@@ -226,7 +267,7 @@ export default function AdminAiAnalytics() {
             {generating ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--apple-text-secondary)', gap: '16px', paddingTop: '40px' }}>
                 <Loader2 size={32} className="spin" style={{ color: '#8b5cf6' }} />
-                <span>AI is analyzing your data...</span>
+                <span>AI is analyzing MoM trends and performance data...</span>
               </div>
             ) : aiResponse ? (
               <div className="markdown-content">
@@ -234,7 +275,7 @@ export default function AdminAiAnalytics() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--apple-text-secondary)', fontStyle: 'italic', paddingTop: '40px' }}>
-                Click 'Generate' to see AI insights here.
+                Click 'Generate' to receive strategic AI insights.
               </div>
             )}
           </div>
