@@ -97,6 +97,27 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!user) return
+
+    const profileChannel = supabase.channel(`user_profile_${user.id}`)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'profiles',
+        filter: `id=eq.${user.id}`
+      }, payload => {
+        if (payload.new && typeof payload.new.is_deactivated !== 'undefined') {
+          setIsDeactivated(payload.new.is_deactivated === true)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(profileChannel)
+    }
+  }, [user])
+
   const handleSession = async (session, event) => {
     try {
       const currentUser = session?.user ?? null

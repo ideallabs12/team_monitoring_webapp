@@ -61,13 +61,27 @@ export default function AdminDis() {
         .select('holiday_date')
         .eq('holiday_date', selectedDate)
 
-      const [teamsRes, profilesRes, revenuesRes, reportsRes, selectedDateReportsRes, holidaysRes] = await Promise.all([
+      const monthPrefix = selectedDate.substring(0, 7)
+      const startOfMonth = `${monthPrefix}-01`
+      const mNum = parseInt(monthPrefix.substring(5, 7))
+      const nextMonthStr = mNum === 12 
+        ? `${parseInt(monthPrefix.substring(0, 4)) + 1}-01-01` 
+        : `${monthPrefix.substring(0, 4)}-${String(mNum + 1).padStart(2, '0')}-01`
+
+      const monthReportsQuery = supabase
+        .from('dis_reports')
+        .select('positive_leads, expected_revenue, user_id, team_id, report_date')
+        .gte('report_date', startOfMonth)
+        .lt('report_date', nextMonthStr)
+
+      const [teamsRes, profilesRes, revenuesRes, reportsRes, selectedDateReportsRes, holidaysRes, monthReportsRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
         supabase.from('monthly_revenues').select('*'),
         query,
         missingReportsQuery,
-        holidaysQuery
+        holidaysQuery,
+        monthReportsQuery
       ])
 
       const teamsData = teamsRes.data || []
@@ -80,6 +94,8 @@ export default function AdminDis() {
 
       const submittedUserIds = new Set(selectedDateReports.map(r => r.user_id))
       const holidayFlag = holidaysRes.data && holidaysRes.data.length > 0
+
+      const monthReportsData = monthReportsRes.data || []
 
       setTeams(teamsData)
       setProfiles(nonAdminProfiles)
@@ -94,7 +110,8 @@ export default function AdminDis() {
         profiles: nonAdminProfiles,
         revenues: revenuesData,
         reports: reportsData || [],
-        submittedToday: submittedUserIds
+        submittedToday: submittedUserIds,
+        monthReports: monthReportsData
       }
     } catch (err) {
       console.error("Error loading admin DIS data:", err)
@@ -107,30 +124,42 @@ export default function AdminDis() {
     loadData()
   }, [selectedDate])
 
-  // Global totals for selected date (used only for "All Teams" view)
-  const globalSummary = useMemo(() => {
-    let totalLeads = 0
-    let totalExpected = 0
-    const userLatestRevenue = {}
-
-    for (const r of reports) {
-      totalLeads += Number(r.positive_leads)
-      totalExpected += Number(r.expected_revenue)
-
-      if (userLatestRevenue[r.user_id] === undefined) {
-        const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
-        const userMonthRevs = revenues.filter(rv => rv.user_id === r.user_id && rv.revenue_month === monthStr)
-        userLatestRevenue[r.user_id] = userMonthRevs.reduce((sum, rv) => sum + Number(rv.amount), 0)
-      }
-    }
-
-    const totalRevenue = Object.values(userLatestRevenue).reduce((acc, val) => acc + val, 0)
-    return { totalRevenue, totalLeads, totalExpected }
-  }, [reports, revenues])
-
   // Group reports and missing list by team
   const teamData = useMemo(() => {
     const nonAdminIds = new Set(profiles.map(p => p.id))
+
+    // Calculate the 7-day window bound by the start of the month
+    const [yy, mm, dd] = selectedDate.split('-').map(Number)
+    const dObj = new Date(yy, mm - 1, dd)
+    dObj.setDate(dObj.getDate() - 6)
+    
+    const yy7 = dObj.getFullYear()
+    const mm7 = String(dObj.getMonth() + 1).padStart(2, '0')
+    const dd7 = String(dObj.getDate()).padStart(2, '0')
+    const sevenDaysAgoStr = `${yy7}-${mm7}-${dd7}`
+    
+    const startOfMonthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
+    const windowStartStr = sevenDaysAgoStr > startOfMonthStr ? sevenDaysAgoStr : startOfMonthStr
+
+    // First, compute User Averages (EAR and Average Leads per user) for the rolling window
+    const mReportsRaw = adminDisCache.monthReports || []
+    const mReports = mReportsRaw.filter(r => r.report_date >= windowStartStr && r.report_date <= selectedDate)
+
+    const userAverages = {}
+    for (const r of mReports) {
+      if (!userAverages[r.user_id]) {
+        userAverages[r.user_id] = { sumExp: 0, sumLeads: 0, count: 0 }
+      }
+      userAverages[r.user_id].sumExp += Number(r.expected_revenue)
+      userAverages[r.user_id].sumLeads += Number(r.positive_leads)
+      userAverages[r.user_id].count += 1
+    }
+
+    for (const uid in userAverages) {
+      const stats = userAverages[uid]
+      stats.ear = stats.count > 0 ? stats.sumExp / stats.count : 0
+      stats.avgLeads = stats.count > 0 ? stats.sumLeads / stats.count : 0
+    }
 
     return teams
       .map(team => {
@@ -154,25 +183,25 @@ export default function AdminDis() {
           return hasHistRev
         })
 
-        const teamUserLatestRevenue = {}
-        let teamTotalLeads = 0
-        let teamTotalExpected = 0
+        const monthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
+        
+        // Revenue for this specific team across all members for this month
+        const teamTotalRevenue = revenues
+          .filter(rv => teamMemberIds.has(rv.user_id) && rv.revenue_month === monthStr)
+          .reduce((sum, rv) => sum + Number(rv.amount), 0)
 
-        for (const r of teamReps) {
-          teamTotalLeads += Number(r.positive_leads)
-          teamTotalExpected += Number(r.expected_revenue)
-          if (teamUserLatestRevenue[r.user_id] === undefined) {
-            const monthStr = `${r.report_date.split('-')[0]}-${r.report_date.split('-')[1]}-01`
-            const revRecord = revenues.find(
-              rv => rv.user_id === r.user_id &&
-                    rv.team_id === team.id &&
-                    rv.revenue_month === monthStr
-            )
-            teamUserLatestRevenue[r.user_id] = revRecord ? Number(revRecord.amount) : 0
+        // Sum up the average expected revenue of team members
+        let teamEarSum = 0
+        let teamLeadsSum = 0
+        for (const uid of teamMemberIds) {
+          if (userAverages[uid]) {
+            teamEarSum += userAverages[uid].ear
+            teamLeadsSum += userAverages[uid].avgLeads
           }
         }
 
-        const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
+        const teamTotalExpected = teamEarSum
+        const teamTotalLeads = Math.round(teamLeadsSum)
 
         // Missing users: active members who haven't submitted, with team info
         const missing = isHoliday ? [] : teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
@@ -200,7 +229,32 @@ export default function AdminDis() {
         }
       })
       .filter(t => t.membersCount > 0)
-  }, [teams, profiles, reports, submittedToday, revenues])
+  }, [teams, profiles, reports, submittedToday, revenues, selectedDate])
+
+  // Global totals for selected date/month (used only for "All Teams" view)
+  const globalSummary = useMemo(() => {
+    const monthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
+    
+    // Total Revenue (all users, for this month)
+    const totalRevenue = revenues
+      .filter(rv => rv.revenue_month === monthStr)
+      .reduce((sum, rv) => sum + Number(rv.amount), 0)
+
+    // Calculate global EAR by dividing the sum of team EARs by number of teams
+    const teamCount = teamData.length || 1
+    let globalEarSum = 0
+    let globalLeadsSum = 0
+
+    for (const t of teamData) {
+      globalEarSum += t.totalExpected
+      globalLeadsSum += t.totalLeads
+    }
+
+    const avgExpected = globalEarSum / teamCount
+    const avgLeads = Math.round(globalLeadsSum / teamCount)
+
+    return { totalRevenue, totalLeads: avgLeads, totalExpected: avgExpected }
+  }, [selectedDate, revenues, teamData])
 
   // Derived data for current view
   const isAllTeams = selectedTeamId === 'all'
@@ -347,7 +401,7 @@ export default function AdminDis() {
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-green)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
-              {isAllTeams ? 'All Teams Revenue (MTD)' : `${activeTeam?.name || ''} Revenue`}
+              {isAllTeams ? 'Revenue Generated Till Date' : `${activeTeam?.name || ''} Revenue Till Date`}
             </h3>
             <TrendingUp size={16} style={{ color: 'var(--apple-accent-green)' }} />
           </div>
@@ -356,12 +410,12 @@ export default function AdminDis() {
           </div>
         </div>
 
-        {/* Expected Revenue */}
+        {/* Expected Average Revenue */}
         <div className="apple-card" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-blue)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
-              Expected Revenue (MTD)
+              Expected Average Revenue (EAR)
             </h3>
             <DollarSign size={16} style={{ color: 'var(--apple-accent-blue)' }} />
           </div>
@@ -370,12 +424,12 @@ export default function AdminDis() {
           </div>
         </div>
 
-        {/* Positive Leads */}
+        {/* Average Positive Leads */}
         <div className="apple-card" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-orange)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <h3 style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, fontWeight: '700' }}>
-              Positive Leads
+              Average Positive Leads
             </h3>
             <Zap size={16} style={{ color: 'var(--apple-accent-orange)' }} />
           </div>

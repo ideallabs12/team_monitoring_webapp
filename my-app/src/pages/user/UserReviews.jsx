@@ -40,7 +40,7 @@ export default function UserReviews({ user }) {
       // 3. Load user's reviews FIRST to filter out already reviewed events
       const { data: reviewsData } = await supabase
         .from('reviews')
-        .select('*, events(title, is_active)')
+        .select('*, events(title, description, is_active)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         
@@ -337,6 +337,26 @@ export default function UserReviews({ user }) {
                 </div>
               </div>
             </div>
+
+            {(() => {
+              const selectedEventDetails = editingReviewId 
+                ? reviews.find(r => r.id === editingReviewId)?.events
+                : unreviewedEvents.find(ev => ev.id === selectedEventId)
+                
+              if (selectedEventDetails && selectedEventDetails.description) {
+                return (
+                  <div style={{ padding: '16px', background: 'rgba(0, 113, 227, 0.05)', border: '1px solid rgba(0, 113, 227, 0.2)', borderRadius: '12px', color: 'var(--apple-text-primary)' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--apple-accent-blue)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <AlertCircle size={14} /> Instructions
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5', whiteSpace: 'pre-wrap', color: 'var(--apple-text-secondary)' }}>
+                      {selectedEventDetails.description}
+                    </p>
+                  </div>
+                )
+              }
+              return null
+            })()}
 
             <div>
               <label className="apple-form-label">Review Title</label>
