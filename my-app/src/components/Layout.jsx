@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
 import Navbar from './Navbar'
+import UserSidebarLayout from './UserSidebarLayout'
 
 function RestrictedAccessView() {
   return (
@@ -16,9 +19,35 @@ function RestrictedAccessView() {
 }
 
 export default function Layout({ user, isDeactivated }) {
+  const [navPref, setNavPref] = useState(null) // 'navbar' or 'sidebar'
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('nav_preference').eq('id', user.id).single()
+        .then(({ data }) => {
+          setNavPref(data?.nav_preference || 'navbar')
+          setLoading(false)
+        })
+    } else {
+      setLoading(false)
+    }
+  }, [user])
+
   if (!user) {
     return <Navigate to="/" replace />
   }
+
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading layout...</div>
+  }
+
+  // Sidebar Layout Mode
+  if (navPref === 'sidebar') {
+    return <UserSidebarLayout user={user} isDeactivated={isDeactivated} RestrictedAccessView={RestrictedAccessView} />
+  }
+
+  // Default Top Navbar Layout Mode
 
   return (
     <div className="apple-theme-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

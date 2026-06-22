@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 
-export default function ComplianceHeatmap({ disReports, profiles, memberships, teams, currentDateStr }) {
+export default function ComplianceHeatmap({ disReports, profiles, memberships, teams, currentDateStr, holidays = [] }) {
   // currentDateStr is 'YYYY-MM-DD'
   const [tooltip, setTooltip] = useState(null)
+
+  const holidaySet = useMemo(() => new Set(holidays.map(h => h.holiday_date || h)), [holidays])
 
   // 1. Calculate the date range for the last 3 months
   // We want to show about 13 weeks of data ending at currentDateStr.
@@ -55,7 +57,8 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
     dateRange.dates.forEach(dateStr => {
       const d = new Date(dateStr)
       const dayOfWeek = d.getDay()
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+      const isWeekend = dayOfWeek === 0
+      const isHoliday = holidaySet.has(dateStr)
       const count = reportsByDate[dateStr] || 0
       const rate = expectedCount > 0 ? (count / expectedCount) * 100 : 0
       
@@ -64,7 +67,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
         if (rate < 50) level = 1 // red
         else if (rate < 80) level = 2 // yellow
         else level = 3 // green
-      } else if (!isWeekend && expectedCount > 0) {
+      } else if (!isWeekend && !isHoliday && expectedCount > 0) {
         level = 1 // weekday with 0 submission is red
       }
 
@@ -87,7 +90,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
     }
     
     return [...paddedData, ...data]
-  }, [dateRange, disReports, expectedCount])
+  }, [dateRange, disReports, expectedCount, holidaySet])
 
   // 4. Calculate Team Compliance Rates (last 30 business days)
   const teamCompliance = useMemo(() => {
@@ -100,11 +103,14 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
     const current = new Date(start)
     while (current <= today) {
       const dayOfWeek = current.getDay()
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      if (dayOfWeek !== 0) {
         const year = current.getFullYear()
         const month = String(current.getMonth() + 1).padStart(2, '0')
         const day = String(current.getDate()).padStart(2, '0')
-        weekdays.push(`${year}-${month}-${day}`)
+        const dateStr = `${year}-${month}-${day}`
+        if (!holidaySet.has(dateStr)) {
+          weekdays.push(dateStr)
+        }
       }
       current.setDate(current.getDate() + 1)
     }
@@ -132,7 +138,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
         rate
       }
     }).sort((a, b) => b.rate - a.rate)
-  }, [teams, memberships, activeUsers, disReports, currentDateStr])
+  }, [teams, memberships, activeUsers, disReports, currentDateStr, holidaySet])
 
   // 5. Calculate Users with Missing Streak (consecutive 3+ weekdays missed)
   const missingStreaks = useMemo(() => {
@@ -151,19 +157,22 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
       let weekdaysChecked = 0
       while (weekdaysChecked < 10) {
         const dayOfWeek = current.getDay()
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        if (dayOfWeek !== 0) {
           const year = current.getFullYear()
           const month = String(current.getMonth() + 1).padStart(2, '0')
           const day = String(current.getDate()).padStart(2, '0')
           const checkDateStr = `${year}-${month}-${day}`
+          const isHoliday = holidaySet.has(checkDateStr)
           
-          if (!userReports.has(checkDateStr)) {
-            missingDays++
-          } else {
-            // Submitted, streak broken
-            break
+          if (!isHoliday) {
+            if (!userReports.has(checkDateStr)) {
+              missingDays++
+            } else {
+              // Submitted, streak broken
+              break
+            }
+            weekdaysChecked++
           }
-          weekdaysChecked++
         }
         current.setDate(current.getDate() - 1)
       }
@@ -185,7 +194,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
     })
 
     return list.sort((a, b) => b.missingDays - a.missingDays)
-  }, [activeUsers, disReports, teams, memberships, currentDateStr])
+  }, [activeUsers, disReports, teams, memberships, currentDateStr, holidaySet])
 
   // Month header helper labels
   const monthLabels = useMemo(() => {

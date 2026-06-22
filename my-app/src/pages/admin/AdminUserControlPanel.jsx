@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
-import { Shield, Key, AlertTriangle, Activity, Trash2, ArrowLeft, User as UserIcon } from 'lucide-react'
+import { Shield, Key, AlertTriangle, Activity, Trash2, ArrowLeft, User as UserIcon, PhoneCall } from 'lucide-react'
 
 export default function AdminUserControlPanel() {
   const { user: adminUser } = useOutletContext() || {}
@@ -12,6 +12,8 @@ export default function AdminUserControlPanel() {
   const [teams, setTeams] = useState([])
   const [revenues, setRevenues] = useState([])
   const [disReports, setDisReports] = useState([])
+  const [auditLogs, setAuditLogs] = useState([])
+  const [salesLogs, setSalesLogs] = useState([])
 
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -22,11 +24,13 @@ export default function AdminUserControlPanel() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [profileRes, teamsRes, revRes, disRes] = await Promise.all([
+        const [profileRes, teamsRes, revRes, disRes, auditRes, salesRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', id).single(),
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('monthly_revenues').select('*').eq('user_id', id),
-          supabase.from('dis_reports').select('*').eq('user_id', id)
+          supabase.from('dis_reports').select('*').eq('user_id', id),
+          supabase.from('audit_logs').select('*').eq('user_id', id).order('created_at', { ascending: false }).limit(50),
+          supabase.from('sales_analytics').select('*, teams(name), profiles:member_id(first_name, last_name)').eq('entered_by', id).order('call_date', { ascending: false })
         ])
 
         if (profileRes.error) throw profileRes.error
@@ -35,6 +39,8 @@ export default function AdminUserControlPanel() {
         setTeams(teamsRes.data || [])
         setRevenues(revRes.data || [])
         setDisReports(disRes.data || [])
+        setAuditLogs(auditRes.data || [])
+        setSalesLogs(salesRes.data || [])
         setNewTeamId(profileRes.data.team_id || '')
       } catch (err) {
         console.error('Error loading user data:', err)
@@ -252,8 +258,37 @@ export default function AdminUserControlPanel() {
       })
     }
 
+    for (const log of auditLogs) {
+      if (log.action_type === 'page_view') {
+        activities.push({
+          id: `log-${log.id}`,
+          type: 'page_view',
+          date: new Date(log.created_at),
+          description: `Navigated to ${log.details?.page_name || log.details?.path || 'a page'}`,
+          icon: '👀'
+        })
+      } else if (log.action_type === 'login') {
+        const dev = log.details?.device ? ` from ${log.details.device}` : ''
+        activities.push({
+          id: `log-${log.id}`,
+          type: 'login',
+          date: new Date(log.created_at),
+          description: `Logged in successfully${dev}`,
+          icon: '🔑'
+        })
+      } else if (log.action_type === 'admin_activity') {
+        activities.push({
+          id: `log-${log.id}`,
+          type: 'admin',
+          date: new Date(log.created_at),
+          description: log.details?.description || 'Performed admin activity',
+          icon: '⚙️'
+        })
+      }
+    }
+
     return activities.sort((a, b) => b.date - a.date)
-  }, [user, revenues, disReports, teams])
+  }, [user, revenues, disReports, teams, auditLogs])
 
   if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading user profile...</div>
   if (!user) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>User not found.</div>
@@ -492,6 +527,60 @@ export default function AdminUserControlPanel() {
             )}
           </div>
         </div>
+
+        {/* Sales Analytics (Only if is_sales_executive) */}
+        {user.is_sales_executive && (
+          <div className="apple-card" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+            <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <PhoneCall size={18} style={{ color: '#4ade80' }} /> Sales Executive Analytics
+            </h3>
+            
+            {/* Summary Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Calls Logged</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fff' }}>{salesLogs.length}</div>
+              </div>
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Revenue Generated</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: '#4ade80' }}>
+                  ${salesLogs.reduce((sum, log) => sum + Number(log.sales_revenue), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
+
+            {/* List */}
+            <div style={{ maxHeight: '400px', overflowY: 'auto', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+              {salesLogs.length > 0 ? (
+                <div style={{ minWidth: '600px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr auto', padding: '12px 16px', borderBottom: '1px solid var(--apple-border)', fontSize: '0.75rem', fontWeight: '600', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div>Date</div>
+                    <div>Team & Member</div>
+                    <div>Speaker</div>
+                    <div style={{ textAlign: 'right' }}>Revenue</div>
+                  </div>
+                  {salesLogs.map(log => (
+                    <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr auto', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' }}>
+                      <div style={{ fontSize: '0.9rem' }}>{new Date(log.call_date).toLocaleDateString()}</div>
+                      <div>
+                        <div style={{ fontSize: '0.9rem' }}>{log.teams?.name || 'Unknown'}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.first_name} {log.profiles?.last_name}</div>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{log.speaker_name}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: '600', color: Number(log.sales_revenue) > 0 ? '#4ade80' : 'var(--apple-text-secondary)', textAlign: 'right' }}>
+                        ${Number(log.sales_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
+                  No call logs found for this executive.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

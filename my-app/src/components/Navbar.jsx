@@ -66,6 +66,7 @@ export default function Navbar({ user }) {
   navLinks.push({ to: '/dis', label: 'My DIS' })
 
   navLinks.push({ to: '/profile', label: 'Profile' })
+  navLinks.push({ to: '/settings', label: 'Settings' })
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [

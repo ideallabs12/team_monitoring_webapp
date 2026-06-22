@@ -39,6 +39,7 @@ export default function TeamManagement({ user }) {
   const [revenues, setRevenues] = useState([])
   const [targets, setTargets] = useState([])
   const [disReports, setDisReports] = useState([])
+  const [holidays, setHolidays] = useState([])
   
   // Target states
   const [selectedMonth, setSelectedMonth] = useState(getTargetAssignmentMonths(0, 0)[0])
@@ -152,7 +153,10 @@ export default function TeamManagement({ user }) {
         } else {
           setDisReports([])
         }
-        
+        // 5. Fetch holidays
+        const { data: holData, error: holErr } = await supabase.from('holidays').select('holiday_date')
+        if (!holErr && holData) setHolidays(holData.map(h => h.holiday_date))
+
       } catch (err) {
         console.error("Error fetching team management data:", err)
       } finally {
@@ -410,6 +414,7 @@ export default function TeamManagement({ user }) {
   const disDayBoard = useMemo(() => {
     const selectedDateStr = selectedDisDate
     const reportsForDay = disReports.filter(r => r.report_date === selectedDateStr)
+    const isHoliday = holidays.includes(selectedDateStr)
     const submittedMap = {}
     reportsForDay.forEach(r => {
       submittedMap[r.user_id] = r
@@ -430,7 +435,7 @@ export default function TeamManagement({ user }) {
           revenueGenerated: report.revenue_generated,
           rawReport: report
         })
-      } else {
+      } else if (!isHoliday) {
         missing.push({
           memberId: member.id,
           name: `${member.first_name} ${member.last_name}`,
@@ -439,8 +444,8 @@ export default function TeamManagement({ user }) {
       }
     })
     
-    return { submitted, missing }
-  }, [disReports, teamMembers, selectedDisDate])
+    return { submitted, missing, isHoliday }
+  }, [disReports, teamMembers, selectedDisDate, holidays])
 
   // DIS Form handlers
   const handleOpenEditModal = (sub) => {
@@ -763,10 +768,12 @@ export default function TeamManagement({ user }) {
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--apple-accent-green)' }} />
             <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{disDayBoard.submitted.length}</strong> Submitted</span>
           </div>
-          <div style={{ background: 'rgba(255, 69, 58, 0.06)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '10px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--apple-accent-red)' }} />
-            <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{disDayBoard.missing.length}</strong> Missing</span>
-          </div>
+          {!disDayBoard.isHoliday && (
+            <div style={{ background: 'rgba(255, 69, 58, 0.06)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '10px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--apple-accent-red)' }} />
+              <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{disDayBoard.missing.length}</strong> Missing</span>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

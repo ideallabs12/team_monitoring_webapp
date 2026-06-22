@@ -683,9 +683,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* Scrollbar styling for sidebar */
-.admin-sidebar::-webkit-scrollbar { width: 4px; }
-.admin-sidebar::-webkit-scrollbar-track { background: transparent; }
-.admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+.admin-sidebar::-webkit-scrollbar { display: none; }
+.admin-sidebar-nav::-webkit-scrollbar { display: none; }
+.admin-sidebar-nav { scrollbar-width: none; }
 
 /* ── Brand ── */
 .admin-sidebar-brand {

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { 
   Database, Users, Activity, FileText, Download, ShieldAlert,
-  Lock, AlertTriangle, Trash2, CheckCircle2, Megaphone, Settings 
+  Lock, AlertTriangle, Trash2, CheckCircle2, Megaphone, Settings,
+  Calendar, Plus, X
 } from 'lucide-react'
 import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
 import ThemeSwitch from '../../components/ThemeSwitch'
@@ -17,6 +18,15 @@ export default function AdminSettings() {
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(true)
   const [theme, setTheme] = useState(getSystemTheme)
+  
+  // DIS settings state
+  const [disLocked, setDisLocked] = useState(false)
+  const [disAllowPast, setDisAllowPast] = useState(false)
+  const [holidays, setHolidays] = useState([])
+  
+  // New Holiday form
+  const [newHolidayDate, setNewHolidayDate] = useState('')
+  const [newHolidayDesc, setNewHolidayDesc] = useState('')
 
   useEffect(() => {
     const handleThemeChange = () => {
@@ -54,6 +64,18 @@ export default function AdminSettings() {
       if (settingsData) {
         setMaintenanceMode(settingsData.maintenance_mode || false)
         setShowLeaderboard(settingsData.show_leaderboard ?? true)
+        setDisLocked(settingsData.dis_locked || false)
+        setDisAllowPast(settingsData.dis_allow_past || false)
+      }
+
+      // Load Holidays
+      const { data: holidaysData, error: holidaysError } = await supabase
+        .from('holidays')
+        .select('*')
+        .order('holiday_date', { ascending: false })
+      
+      if (!holidaysError && holidaysData) {
+        setHolidays(holidaysData)
       }
 
       // Load DB Size
@@ -93,6 +115,8 @@ export default function AdminSettings() {
         .update({ 
           maintenance_mode: maintenanceMode,
           show_leaderboard: showLeaderboard,
+          dis_locked: disLocked,
+          dis_allow_past: disAllowPast,
           updated_at: new Date().toISOString()
         })
         .eq('id', 1)
@@ -102,6 +126,47 @@ export default function AdminSettings() {
     } catch (err) {
       console.error('Error saving settings:', err)
       setErrorMsg('Failed to save settings: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ---- Holidays Logic ----
+  const handleAddHoliday = async () => {
+    if (!newHolidayDate) {
+      setErrorMsg('Please select a date for the holiday.')
+      return
+    }
+    setSaving(true)
+    setErrorMsg('')
+    try {
+      const { error } = await supabase.from('holidays').insert({
+        holiday_date: newHolidayDate,
+        description: newHolidayDesc || 'Declared Holiday'
+      })
+      if (error) throw error
+      setSuccessMsg('Holiday added successfully.')
+      setNewHolidayDate('')
+      setNewHolidayDesc('')
+      loadSettingsAndStats()
+    } catch (err) {
+      setErrorMsg('Failed to add holiday: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleRemoveHoliday = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this holiday?')) return
+    setSaving(true)
+    setErrorMsg('')
+    try {
+      const { error } = await supabase.from('holidays').delete().eq('id', id)
+      if (error) throw error
+      setSuccessMsg('Holiday removed successfully.')
+      loadSettingsAndStats()
+    } catch (err) {
+      setErrorMsg('Failed to remove holiday: ' + err.message)
     } finally {
       setSaving(false)
     }
@@ -317,139 +382,239 @@ export default function AdminSettings() {
         </div>
       </div>
 
+      {/* DIS Management (Full Width Row) */}
+      <div className="apple-card" style={{ padding: '24px', marginBottom: '32px' }}>
+        <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FileText size={18} style={{ color: '#3b82f6' }} /> DIS Management
+        </h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+          {/* Settings Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--apple-text-primary)', margin: 0 }}>DIS Configurations</h4>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Lock DIS Submissions</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Freezes all DIS submissions and edits.</div>
+              </div>
+              <button
+                onClick={() => setDisLocked(!disLocked)}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: disLocked ? '#ef4444' : '#475569',
+                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                }}
+              >
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: disLocked ? '23px' : '3px', transition: 'left 0.3s' }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Allow Past Submissions</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Allows users to submit/edit DIS for previous days.</div>
+              </div>
+              <button
+                onClick={() => setDisAllowPast(!disAllowPast)}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: disAllowPast ? '#4ade80' : '#475569',
+                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                }}
+              >
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: disAllowPast ? '23px' : '3px', transition: 'left 0.3s' }} />
+              </button>
+            </div>
+
+            <button 
+              onClick={handleSaveSettings} 
+              disabled={saving}
+              className="apple-btn apple-btn-primary" 
+              style={{ width: '100%', marginTop: 'auto' }}
+            >
+              {saving ? 'Saving...' : 'Save DIS Configurations'}
+            </button>
+          </div>
+
+          {/* Holidays Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--apple-text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calendar size={16} /> Declared Holidays
+            </h4>
+            <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>Users cannot submit DIS on holidays, and these dates are excluded from missing compliance analytics.</div>
+            
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <input 
+                type="date" 
+                value={newHolidayDate}
+                onChange={e => setNewHolidayDate(e.target.value)}
+                className="apple-form-control"
+                style={{ flex: 1 }}
+              />
+              <input 
+                type="text" 
+                value={newHolidayDesc}
+                onChange={e => setNewHolidayDesc(e.target.value)}
+                placeholder="Description (Optional)"
+                className="apple-form-control"
+                style={{ flex: 2 }}
+              />
+              <button 
+                onClick={handleAddHoliday}
+                disabled={saving || !newHolidayDate}
+                className="apple-btn apple-btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Plus size={16} /> Add
+              </button>
+            </div>
+
+            <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+              {holidays.length > 0 ? holidays.map(h => (
+                <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--apple-border)' }}>
+                  <div>
+                    <div style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--apple-text-primary)' }}>{h.holiday_date}</div>
+                    {h.description && <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>{h.description}</div>}
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveHoliday(h.id)}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                    title="Remove Holiday"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )) : (
+                <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontStyle: 'italic', padding: '10px' }}>No holidays declared.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '28px' }}>
         
-        {/* Left Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        {/* Global Configuration */}
+        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Megaphone size={18} style={{ color: '#a78bfa' }} /> Global Configurations
+          </h3>
           
-          {/* Global Configuration */}
-          <div className="apple-card" style={{ padding: '24px' }}>
-            <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Megaphone size={18} style={{ color: '#a78bfa' }} /> Global Configurations
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <div>
-                  <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>App Theme</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Toggle between dark and light modes.</div>
-                </div>
-                <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>App Theme</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Toggle between dark and light modes.</div>
               </div>
+              <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <div>
-                  <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Show Leaderboard</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Allow standard users to view the global leaderboard.</div>
-                </div>
-                <button
-                  onClick={() => setShowLeaderboard(!showLeaderboard)}
-                  style={{
-                    width: '44px', height: '24px', borderRadius: '12px',
-                    background: showLeaderboard ? '#4ade80' : '#475569',
-                    border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                  }}
-                >
-                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: showLeaderboard ? '23px' : '3px', transition: 'left 0.3s' }} />
-                </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Show Leaderboard</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Allow standard users to view the global leaderboard.</div>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <div>
-                  <div style={{ fontSize: '0.95rem', color: '#f87171', fontWeight: '600' }}>Maintenance Mode</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Locks out all non-admins from accessing the platform.</div>
-                </div>
-                <button
-                  onClick={() => setMaintenanceMode(!maintenanceMode)}
-                  style={{
-                    width: '44px', height: '24px', borderRadius: '12px',
-                    background: maintenanceMode ? '#ef4444' : '#475569',
-                    border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                  }}
-                >
-                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: maintenanceMode ? '23px' : '3px', transition: 'left 0.3s' }} />
-                </button>
-              </div>
-
-              <button 
-                onClick={handleSaveSettings} 
-                disabled={saving}
-                className="apple-btn apple-btn-primary" 
-                style={{ width: '100%', marginTop: '8px' }}
+              <button
+                onClick={() => setShowLeaderboard(!showLeaderboard)}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: showLeaderboard ? '#4ade80' : '#475569',
+                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                }}
               >
-                {saving ? 'Saving...' : 'Save Configurations'}
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: showLeaderboard ? '23px' : '3px', transition: 'left 0.3s' }} />
               </button>
             </div>
-          </div>
 
-          {/* Security & Maintenance */}
-          <div className="apple-card" style={{ padding: '24px' }}>
-            <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldAlert size={18} style={{ color: '#10b981' }} /> Security & Maintenance
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <button onClick={handleLockdown} className="apple-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <Lock size={16} /> Platform Lockdown (Deactivate All)
-              </button>
-              <button onClick={handleCleanupInactiveUsers} className="apple-btn apple-btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <Users size={16} /> Deactivate Inactive Users (&gt;90 days)
-              </button>
-              <button onClick={handleCleanupAuditLogs} className="apple-btn apple-btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <Activity size={16} /> Delete Old Audit Logs (&gt;30 days)
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: '#f87171', fontWeight: '600' }}>Maintenance Mode</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Locks out all non-admins from accessing the platform.</div>
+              </div>
+              <button
+                onClick={() => setMaintenanceMode(!maintenanceMode)}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: maintenanceMode ? '#ef4444' : '#475569',
+                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                }}
+              >
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: maintenanceMode ? '23px' : '3px', transition: 'left 0.3s' }} />
               </button>
             </div>
-          </div>
 
+            <button 
+              onClick={handleSaveSettings} 
+              disabled={saving}
+              className="apple-btn apple-btn-primary" 
+              style={{ width: '100%', marginTop: 'auto' }}
+            >
+              {saving ? 'Saving...' : 'Save Configurations'}
+            </button>
+          </div>
         </div>
 
-        {/* Right Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        {/* Data Exports */}
+        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Download size={18} style={{ color: '#38bdf8' }} /> Data Exports (CSV)
+          </h3>
           
-          {/* Data Exports */}
-          <div className="apple-card" style={{ padding: '24px' }}>
-            <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Download size={18} style={{ color: '#38bdf8' }} /> Data Exports (CSV)
-            </h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <button onClick={handleExportUsers} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
-                <Users size={24} style={{ color: '#818cf8' }} />
-                <span style={{ fontSize: '0.85rem' }}>Users Directory</span>
-              </button>
-              <button onClick={handleExportRevenue} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
-                <Activity size={24} style={{ color: '#4ade80' }} />
-                <span style={{ fontSize: '0.85rem' }}>Revenue Data</span>
-              </button>
-              <button onClick={handleExportDIS} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
-                <FileText size={24} style={{ color: '#f59e0b' }} />
-                <span style={{ fontSize: '0.85rem' }}>DIS Reports</span>
-              </button>
-              {/* Could add more exports here */}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexGrow: 1, alignContent: 'start' }}>
+            <button onClick={handleExportUsers} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
+              <Users size={24} style={{ color: '#818cf8' }} />
+              <span style={{ fontSize: '0.85rem' }}>Users Directory</span>
+            </button>
+            <button onClick={handleExportRevenue} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
+              <Activity size={24} style={{ color: '#4ade80' }} />
+              <span style={{ fontSize: '0.85rem' }}>Revenue Data</span>
+            </button>
+            <button onClick={handleExportDIS} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
+              <FileText size={24} style={{ color: '#f59e0b' }} />
+              <span style={{ fontSize: '0.85rem' }}>DIS Reports</span>
+            </button>
           </div>
-
-          {/* Danger Zone */}
-          <div className="apple-card" style={{ padding: '24px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-            <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
-              <AlertTriangle size={18} /> Danger Zone
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
-              The actions below are irreversible and will permanently delete data from the database. Ensure you have exported backups before proceeding.
-            </p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <button onClick={handleWipeDIS} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <Trash2 size={16} /> Wipe All DIS Reports
-              </button>
-              <button onClick={handleWipeSalesLogs} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <Trash2 size={16} /> Wipe All Sales Call Logs
-              </button>
-            </div>
-          </div>
-
         </div>
-        
+
+        {/* Security & Maintenance */}
+        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldAlert size={18} style={{ color: '#10b981' }} /> Security & Maintenance
+          </h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'flex-start' }}>
+            <button onClick={handleLockdown} className="apple-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <Lock size={16} /> Platform Lockdown (Deactivate All)
+            </button>
+            <button onClick={handleCleanupInactiveUsers} className="apple-btn apple-btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <Users size={16} /> Deactivate Inactive Users (&gt;90 days)
+            </button>
+            <button onClick={handleCleanupAuditLogs} className="apple-btn apple-btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <Activity size={16} /> Delete Old Audit Logs (&gt;30 days)
+            </button>
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="apple-card" style={{ padding: '24px', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', flexDirection: 'column' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+            <AlertTriangle size={18} /> Danger Zone
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+            The actions below are irreversible and will permanently delete data from the database. Ensure you have exported backups before proceeding.
+          </p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'flex-start' }}>
+            <button onClick={handleWipeDIS} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <Trash2 size={16} /> Wipe All DIS Reports
+            </button>
+            <button onClick={handleWipeSalesLogs} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <Trash2 size={16} /> Wipe All Sales Call Logs
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>

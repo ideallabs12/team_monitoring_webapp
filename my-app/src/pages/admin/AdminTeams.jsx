@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient'
 import {
   normalizeMonth,
   filterRevenuesByPeriod,
+  filterRevenuesByCompletedPeriod,
   sumRevenues,
   getLastNMonths,
   formatRevenueMonth,
@@ -66,6 +67,11 @@ export default function AdminTeams() {
   // Teams Overview states
   const [showPastData, setShowPastData] = useState(false)
   const [pastDataPeriod, setPastDataPeriod] = useState(6) // 2, 3, 4, 6
+  
+  // Team Member Average state
+  const [averagePeriod, setAveragePeriod] = useState(6)
+  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(true)
+
   useEffect(() => {
     async function loadData() {
       const [teamsRes, profilesRes, revRes] = await Promise.all([
@@ -1135,6 +1141,111 @@ export default function AdminTeams() {
             </table>
           </div>
         </div>
+
+        {/* ===== TEAM MEMBERS AVERAGE REVENUE ===== */}
+        {(() => {
+          const COLORS = ['#0071e3', '#30d5c8', '#ff9f0a', '#af52de', '#ff2d55', '#ffcc00', '#5ac8fa']
+          const averagePeriodOptions = [
+            { label: '2M', value: 2 },
+            { label: '3M', value: 3 },
+            { label: '6M', value: 6 },
+            { label: '12M', value: 12 },
+            { label: 'All Time', value: 0 },
+          ]
+          
+          const filtered = includeCurrentMonth 
+            ? filterRevenuesByPeriod(revenues, averagePeriod)
+            : filterRevenuesByCompletedPeriod(revenues, averagePeriod)
+
+          const teamMembers = [...activeProfiles, ...historicalProfilesUnfiltered]
+          
+          const memberAverages = teamMembers.map(member => {
+            const memberRevs = filtered.filter(r => r.user_id === member.id && r.team_id === activeTeam.id)
+            const sum = sumRevenues(memberRevs)
+            
+            const uniqueMonths = new Set(memberRevs.map(r => normalizeMonth(r.revenue_month))).size
+            const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+            
+            return {
+              memberId: member.id,
+              memberName: `${member.first_name} ${member.last_name}`,
+              average: Number(average.toFixed(2))
+            }
+          }).filter(m => m.average > 0).sort((a, b) => b.average - a.average)
+
+          return (
+            <div className="apple-card" style={{ marginTop: '28px', padding: '24px !important' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#ffffff', fontWeight: '700' }}>Team Members Average Revenue</h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
+                    Average monthly revenue per member in this team. Select a period to compare.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={includeCurrentMonth}
+                      onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
+                    />
+                    Include Current Month
+                  </label>
+
+                  <div className="apple-pill-tabs" style={{ padding: '3px', background: 'var(--apple-bg-secondary)', borderRadius: '999px', display: 'flex' }}>
+                    {averagePeriodOptions.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setAveragePeriod(opt.value)}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '0.75rem',
+                          fontWeight: averagePeriod === opt.value ? '700' : '600',
+                          background: averagePeriod === opt.value ? 'var(--apple-accent-blue)' : 'transparent',
+                          color: averagePeriod === opt.value ? '#fff' : 'var(--apple-text-secondary)',
+                          border: 'none',
+                          borderRadius: '999px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+                {memberAverages.map((mem, idx) => (
+                   <div key={mem.memberId} style={{
+                     background: 'rgba(255, 255, 255, 0.02)',
+                     border: '1px solid var(--apple-border)',
+                     borderRadius: '16px',
+                     padding: '20px',
+                     display: 'flex',
+                     flexDirection: 'column',
+                     position: 'relative',
+                     overflow: 'hidden'
+                   }}>
+                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: COLORS[idx % COLORS.length] }} />
+                     <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', fontWeight: '600', marginBottom: '8px', paddingLeft: '8px' }}>
+                       {mem.memberName}
+                     </div>
+                     <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', paddingLeft: '8px' }}>
+                       ${mem.average.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                     </div>
+                   </div>
+                ))}
+                {memberAverages.length === 0 && (
+                  <div style={{ color: 'var(--apple-text-secondary)', padding: '10px' }}>No members with revenue in this period</div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
       </div>
     )
   }

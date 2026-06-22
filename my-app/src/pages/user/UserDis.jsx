@@ -11,7 +11,7 @@ let globalDisCache = {
 }
 
 // ─── Reusable DIS Form Component ─────────────────────────────────────────────
-function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-accent-blue)' }) {
+function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-accent-blue)', systemSettings, holidays = [] }) {
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0])
   const [positiveLeads, setPositiveLeads] = useState('')
   const [expectedRevenue, setExpectedRevenue] = useState('')
@@ -115,6 +115,14 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
     }
   }
 
+  const todayDateStr = new Date().toISOString().split('T')[0]
+  const isLocked = systemSettings?.dis_locked || false
+  const allowPast = systemSettings?.dis_allow_past || false
+  const isHoliday = holidays.includes(reportDate)
+  const isWeekend = new Date(reportDate).getDay() === 0 // Block Sundays by default
+  const isInvalidDate = !allowPast && reportDate !== todayDateStr
+  const isSubmitDisabled = submitting || isLocked || isHoliday || isWeekend || isInvalidDate
+
   return (
     <div className="apple-card" style={{ borderTop: `3px solid ${accentColor}` }}>
       {/* Form header with team label */}
@@ -160,6 +168,36 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
         </div>
       )}
 
+      {isLocked && (
+        <div style={{
+          padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
+          background: 'rgba(255,69,58,0.08)', border: '1px solid var(--apple-accent-red)',
+          color: 'var(--apple-accent-red)', fontSize: '0.88rem', fontWeight: '500'
+        }}>
+          🔒 DIS submissions are currently locked by the administrator.
+        </div>
+      )}
+
+      {(isHoliday || isWeekend) && !isLocked && (
+        <div style={{
+          padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
+          background: 'rgba(255,159,10,0.08)', border: '1px solid var(--apple-accent-orange)',
+          color: 'var(--apple-accent-orange)', fontSize: '0.88rem', fontWeight: '500'
+        }}>
+          🌴 {isWeekend ? 'This date is a Sunday (default weekend).' : 'This date is a declared holiday.'} DIS submission is not required.
+        </div>
+      )}
+
+      {isInvalidDate && !isLocked && !isHoliday && !isWeekend && (
+        <div style={{
+          padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
+          background: 'rgba(255,69,58,0.08)', border: '1px solid var(--apple-accent-red)',
+          color: 'var(--apple-accent-red)', fontSize: '0.88rem', fontWeight: '500'
+        }}>
+          ⏳ Submitting reports for past dates is currently disabled.
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Auto-filled info row */}
         <div style={{
@@ -192,9 +230,11 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
             value={reportDate}
             onChange={(e) => setReportDate(e.target.value)}
             onClick={(e) => { try { e.target.showPicker() } catch (_) {} }}
-            max={new Date().toISOString().split('T')[0]}
+            max={todayDateStr}
+            min={!allowPast ? todayDateStr : undefined}
             required
             className="apple-form-control"
+            disabled={isLocked}
           />
         </div>
 
@@ -207,6 +247,7 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
               value={positiveLeads}
               onChange={(e) => setPositiveLeads(e.target.value)}
               required className="apple-form-control"
+              disabled={isLocked || isHoliday || isWeekend || isInvalidDate}
             />
           </div>
           <div>
@@ -216,15 +257,16 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
               value={expectedRevenue}
               onChange={(e) => setExpectedRevenue(e.target.value)}
               required className="apple-form-control"
+              disabled={isLocked || isHoliday || isWeekend || isInvalidDate}
             />
           </div>
         </div>
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={isSubmitDisabled}
           className="apple-btn apple-btn-primary"
-          style={{ width: '100%', padding: '14px', fontSize: '1rem', background: accentColor }}
+          style={{ width: '100%', padding: '14px', fontSize: '1rem', background: isSubmitDisabled ? 'var(--apple-border)' : accentColor }}
         >
           {submitting ? 'Submitting...' : isEditMode ? '🔄 Update DIS Report' : '🚀 Log DIS Report'}
         </button>
@@ -250,6 +292,9 @@ export default function UserDis() {
   // Data Filters
   const [filterYear, setFilterYear] = useState('All')
   const [filterMonth, setFilterMonth] = useState('All')
+  
+  const [systemSettings, setSystemSettings] = useState(null)
+  const [holidays, setHolidays] = useState([])
 
   const availableYears = useMemo(() => {
     const years = [...new Set(history.map(r => new Date(r.report_date).getFullYear()))]
@@ -313,6 +358,16 @@ export default function UserDis() {
       }
     }
     getUserData()
+
+    async function fetchSystemSettings() {
+      const [settingsRes, holidaysRes] = await Promise.all([
+        supabase.from('system_settings').select('dis_locked, dis_allow_past').eq('id', 1).single(),
+        supabase.from('holidays').select('holiday_date')
+      ])
+      if (settingsRes.data) setSystemSettings(settingsRes.data)
+      if (holidaysRes.data) setHolidays(holidaysRes.data.map(h => h.holiday_date))
+    }
+    fetchSystemSettings()
   }, [])
 
   // Load History
@@ -402,6 +457,8 @@ export default function UserDis() {
             team={primaryTeam}
             teamLabel={`Primary Team · ${primaryTeam?.name}`}
             accentColor="var(--apple-accent-blue)"
+            systemSettings={systemSettings}
+            holidays={holidays}
           />
           {secondaryTeam && (
             <DisForm
@@ -409,6 +466,8 @@ export default function UserDis() {
               team={secondaryTeam}
               teamLabel={`Secondary Team · ${secondaryTeam?.name}`}
               accentColor="#a78bfa"
+              systemSettings={systemSettings}
+              holidays={holidays}
             />
           )}
         </div>

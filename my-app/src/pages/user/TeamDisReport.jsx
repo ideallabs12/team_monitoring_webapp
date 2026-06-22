@@ -27,6 +27,7 @@ export default function TeamDisReport({ user }) {
   const [revenues, setRevenues] = useState([])
   const [reports, setReports] = useState([])
   const [submittedToday, setSubmittedToday] = useState(new Set())
+  const [isHoliday, setIsHoliday] = useState(false)
 
   // Filter States
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -76,10 +77,10 @@ export default function TeamDisReport({ user }) {
     try {
       const monthStr = `${selectedDate.split('-')[0]}-${selectedDate.split('-')[1]}-01`
 
-      const [profilesRes, revenuesRes, reportsRes, missingReportsRes] = await Promise.all([
+      const [profilesRes, revenuesRes, reportsRes, missingReportsRes, holidaysRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('team_id', profile.team_id),
         supabase.from('monthly_revenues').select('*').eq('team_id', profile.team_id).eq('revenue_month', monthStr),
-        supabase.from('dis_reports').select(`
+         supabase.from('dis_reports').select(`
           *,
           profiles (
             first_name,
@@ -88,13 +89,15 @@ export default function TeamDisReport({ user }) {
             team_id
           )
         `).eq('report_date', selectedDate),
-        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate)
+        supabase.from('dis_reports').select('user_id').eq('report_date', selectedDate),
+        supabase.from('holidays').select('holiday_date').eq('holiday_date', selectedDate)
       ])
 
       const profilesData = profilesRes.data || []
       const revenuesData = revenuesRes.data || []
       const allReportsData = reportsRes.data || []
       const allMissingData = missingReportsRes.data || []
+      const holidayFlag = holidaysRes.data && holidaysRes.data.length > 0
 
       // Filter out admins from team members
       const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin')
@@ -115,6 +118,7 @@ export default function TeamDisReport({ user }) {
       setRevenues(revenuesData)
       setReports(teamReports)
       setSubmittedToday(submittedUserIds)
+      setIsHoliday(holidayFlag)
 
     } catch (err) {
       console.error("Error loading team DIS data:", err)
@@ -149,14 +153,14 @@ export default function TeamDisReport({ user }) {
     const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
 
     // Missing users
-    const missing = profiles.filter(m => !submittedToday.has(m.id)).map(m => ({
+    const missing = isHoliday ? [] : profiles.filter(m => !submittedToday.has(m.id)).map(m => ({
       id: m.id,
       name: `${m.first_name} ${m.last_name}`,
       email: m.email,
       teamName: team.name
     }))
 
-    const submittedCount = profiles.length - missing.length
+    const submittedCount = isHoliday ? profiles.length : profiles.length - missing.length
     const progress = profiles.length > 0 ? Math.round((submittedCount / profiles.length) * 100) : 0
 
     return {
@@ -430,12 +434,18 @@ export default function TeamDisReport({ user }) {
         <div className="dis-section-title">
           <AlertCircle size={18} style={{ color: '#f87171' }} />
           <span>Missing DIS Reports</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500', background: 'rgba(239, 68, 68, 0.05)', padding: '2px 8px', borderRadius: '10px' }}>
-            {filteredMissing.length} pending
-          </span>
+          {!isHoliday && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500', background: 'rgba(239, 68, 68, 0.05)', padding: '2px 8px', borderRadius: '10px' }}>
+              {filteredMissing.length} pending
+            </span>
+          )}
         </div>
 
-        {filteredMissing.length > 0 ? (
+        {isHoliday ? (
+          <div className="card dis-card-glass" style={{ padding: '24px', textAlign: 'center', color: '#fbbf24', fontStyle: 'italic', border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.05)' }}>
+            🌴 Holiday Declared: No missing reports for this date.
+          </div>
+        ) : filteredMissing.length > 0 ? (
           <div className="dis-grid-cols">
             {filteredMissing.map((item, idx) => (
               <div 

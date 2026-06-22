@@ -18,7 +18,7 @@ export default function AdminUsers() {
 
   // Profile Detail View State
   const [viewingProfileUser, setViewingProfileUser] = useState(null)
-  const [activeTab, setActiveTab] = useState('control_panel')
+  const [activeTab, setActiveTab] = useState('profile')
   const [userDisReports, setUserDisReports] = useState([])
   const [loadingDis, setLoadingDis] = useState(false)
 
@@ -28,6 +28,7 @@ export default function AdminUsers() {
   const [newTeamId, setNewTeamId] = useState('')
   const [newSecondaryTeamId, setNewSecondaryTeamId] = useState('')
   const [userRevenues, setUserRevenues] = useState([])
+  const [userSalesLogs, setUserSalesLogs] = useState([])
   const [loadingRevenues, setLoadingRevenues] = useState(false)
 
   // Load Details dynamically for the selected profile
@@ -38,7 +39,7 @@ export default function AdminUsers() {
       setNewTeamId('')
       setErrorMsg('')
       setSuccessMsg('')
-      setActiveTab('control_panel')
+      setActiveTab('profile')
       return
     }
 
@@ -51,7 +52,7 @@ export default function AdminUsers() {
       setLoadingDis(true)
       setLoadingRevenues(true)
       try {
-        const [disRes, revRes] = await Promise.all([
+        const [disRes, revRes, salesRes] = await Promise.all([
           supabase
             .from('dis_reports')
             .select('*')
@@ -60,7 +61,12 @@ export default function AdminUsers() {
           supabase
             .from('monthly_revenues')
             .select('*')
-            .eq('user_id', viewingProfileUser.id)
+            .eq('user_id', viewingProfileUser.id),
+          supabase
+            .from('sales_analytics')
+            .select('*, teams(name), profiles:member_id(first_name, last_name)')
+            .eq('entered_by', viewingProfileUser.id)
+            .order('call_date', { ascending: false })
         ])
 
         if (disRes.error) throw disRes.error
@@ -68,6 +74,7 @@ export default function AdminUsers() {
 
         setUserDisReports(disRes.data || [])
         setUserRevenues(revRes.data || [])
+        setUserSalesLogs(salesRes.data || [])
       } catch (err) {
         console.error("Error loading user profile details:", err)
         setErrorMsg('Failed to load profile details.')
@@ -415,22 +422,6 @@ export default function AdminUsers() {
             border: '1px solid var(--apple-border)'
           }}>
             <button
-              onClick={() => setActiveTab('control_panel')}
-              style={{
-                padding: '8px 24px',
-                borderRadius: '12px',
-                border: 'none',
-                background: activeTab === 'control_panel' ? 'var(--apple-accent-blue)' : 'transparent',
-                color: activeTab === 'control_panel' ? '#fff' : 'var(--apple-text-secondary)',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s var(--apple-ease)'
-              }}
-            >
-              Control Panel
-            </button>
-            <button
               onClick={() => setActiveTab('profile')}
               style={{
                 padding: '8px 24px',
@@ -445,6 +436,22 @@ export default function AdminUsers() {
               }}
             >
               Profile & Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('control_panel')}
+              style={{
+                padding: '8px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                background: activeTab === 'control_panel' ? 'var(--apple-accent-blue)' : 'transparent',
+                color: activeTab === 'control_panel' ? '#fff' : 'var(--apple-text-secondary)',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s var(--apple-ease)'
+              }}
+            >
+              Control Panel
             </button>
           </div>
         </div>
@@ -773,6 +780,58 @@ export default function AdminUsers() {
           <div>
             <UserRevenue user={viewingProfileUser} isAdminView={true} />
           </div>
+
+          {/* Sales Analytics (Only if is_sales_executive) */}
+          {viewingProfileUser.is_sales_executive && (
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Phone size={18} style={{ color: '#4ade80' }} /> Sales Executive Analytics
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Calls Logged</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fff' }}>{userSalesLogs.length}</div>
+                </div>
+                <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Revenue Generated</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#4ade80' }}>
+                    ${userSalesLogs.reduce((sum, log) => sum + Number(log.sales_revenue), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ maxHeight: '400px', overflowY: 'auto', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
+                {userSalesLogs.length > 0 ? (
+                  <div style={{ minWidth: '600px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr auto', padding: '12px 16px', borderBottom: '1px solid var(--apple-border)', fontSize: '0.75rem', fontWeight: '600', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <div>Date</div>
+                      <div>Team & Member</div>
+                      <div>Speaker</div>
+                      <div style={{ textAlign: 'right' }}>Revenue</div>
+                    </div>
+                    {userSalesLogs.map(log => (
+                      <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr auto', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.9rem' }}>{new Date(log.call_date).toLocaleDateString()}</div>
+                        <div>
+                          <div style={{ fontSize: '0.9rem' }}>{log.teams?.name || 'Unknown'}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.first_name} {log.profiles?.last_name}</div>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{log.speaker_name}</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: '600', color: Number(log.sales_revenue) > 0 ? '#4ade80' : 'var(--apple-text-secondary)', textAlign: 'right' }}>
+                          ${Number(log.sales_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
+                    No call logs found for this executive.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Activity Timeline */}
           <div className="apple-card" style={{ padding: '24px' }}>

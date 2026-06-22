@@ -98,46 +98,37 @@ export default function ProfileSettings({ user }) {
 
 
 
-  const handleSave = async (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault()
     setSaving(true)
     setMessage({ type: '', text: '' })
-
     try {
-      // 1. Update Database Profile (First Name, Last Name, Phone)
-      const { error: profileError } = await supabase
+      const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          phone: phone,
-        })
+        .update({ first_name: firstName, last_name: lastName, phone: phone })
         .eq('id', user.id)
+      if (error) throw error
+      setMessage({ type: 'success', text: 'Personal information updated successfully!' })
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
 
-      if (profileError) throw profileError
-
-      // 2. Update Auth Settings (Email, Password)
-      const authUpdates = {}
-      if (email !== user.email) {
-        authUpdates.email = email
-      }
-      if (password) {
-        authUpdates.password = password
-      }
-
-      if (Object.keys(authUpdates).length > 0) {
-        const { error: authError } = await supabase.auth.updateUser(authUpdates)
-        if (authError) throw authError
-        
-        if (authUpdates.email) {
-          setMessage({ type: 'success', text: 'Profile updated! Check your new email address for a confirmation link.' })
-          setSaving(false)
-          return
-        }
-      }
-
-      setMessage({ type: 'success', text: 'Profile settings saved successfully!' })
-      setPassword('') // Clear password field after save
+  const handleSaveSecurity = async (e) => {
+    e.preventDefault()
+    if (!password) {
+      setMessage({ type: 'error', text: 'Please enter a new password to update.' })
+      return
+    }
+    setSaving(true)
+    setMessage({ type: '', text: '' })
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+      setMessage({ type: 'success', text: 'Password updated successfully!' })
+      setPassword('')
     } catch (err) {
       setMessage({ type: 'error', text: err.message })
     } finally {
@@ -178,85 +169,79 @@ export default function ProfileSettings({ user }) {
         
         {/* LEFT COLUMN: Manage Settings */}
         <div className="apple-right-pane" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div className="apple-card">
-              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Personal Information</h3>
-              
-              <div className="apple-two-col-grid" style={{ marginBottom: '16px' }}>
-                <div>
-                  <label className="apple-form-label">First Name</label>
-                  <input 
-                    type="text" 
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="apple-form-control"
-                  />
-                </div>
-                <div>
-                  <label className="apple-form-label">Last Name</label>
-                  <input 
-                    type="text" 
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="apple-form-control"
-                  />
-                </div>
-              </div>
-
+          
+          <form onSubmit={handleSaveProfile} className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Personal Information</h3>
+            
+            <div className="apple-two-col-grid" style={{ marginBottom: '16px' }}>
               <div>
-                <label className="apple-form-label">Phone Number</label>
+                <label className="apple-form-label">First Name</label>
                 <input 
-                  type="tel" 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  type="text" 
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   className="apple-form-control"
                 />
               </div>
-            </div>
-
-            <div className="apple-card">
-              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Security & Login</h3>
-              
-              <div style={{ marginBottom: '16px' }}>
-                <label className="apple-form-label">Email Address</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="apple-form-control"
-                />
-              </div>
-
               <div>
-                <label className="apple-form-label">New Password (leave blank to keep current)</label>
+                <label className="apple-form-label">Last Name</label>
                 <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  type="text" 
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   className="apple-form-control"
                 />
               </div>
             </div>
 
-            <div className="apple-card">
-              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>App Preferences</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <div>
-                  <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>App Theme</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Toggle between dark and light modes.</div>
-                </div>
-                <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
-              </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label className="apple-form-label">Phone Number</label>
+              <input 
+                type="tel" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="apple-form-control"
+              />
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="apple-btn apple-btn-primary" disabled={saving} style={{ width: '100%' }}>
-                {saving ? 'Saving changes...' : 'Save Changes'}
-              </button>
-            </div>
+            
+            <button type="submit" className="apple-btn apple-btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Confirm Details'}
+            </button>
           </form>
+
+          <form onSubmit={handleSaveSecurity} className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Security & Login</h3>
+            <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', marginBottom: '16px' }}>
+              For security reasons, email changes must be processed through your administrator. You can update your password below.
+            </p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label className="apple-form-label">New Password</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="apple-form-control"
+              />
+            </div>
+            
+            <button type="submit" className="apple-btn apple-btn-primary" disabled={saving || !password}>
+              {saving ? 'Updating...' : 'Change Password'}
+            </button>
+          </form>
+
+          <div className="apple-card">
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>App Preferences</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>App Theme</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Toggle between dark and light modes.</div>
+              </div>
+              <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+            </div>
+          </div>
         </div>
 
         {/* RIGHT COLUMN: Extra Profile Stats & Achievements */}

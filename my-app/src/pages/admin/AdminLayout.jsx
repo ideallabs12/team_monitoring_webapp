@@ -20,7 +20,8 @@ import {
   Sun,
   Moon,
   Calendar,
-  Star
+  Star,
+  Sparkles
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { path: '/admin/reviews',   label: 'Reviews',     icon: Star },
   { path: '/admin/revenue',   label: 'Revenue',     icon: DollarSign },
   { path: '/admin/analytics', label: 'Analytics',   icon: TrendingUp },
+  { path: '/admin/ai-analytics', label: 'AI Analytics', icon: Sparkles },
   { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },
   { path: '/admin/milestones', label: 'Milestones',  icon: Crown },
   { path: '/admin/auditlogs', label: 'Audit Logs',  icon: ClipboardList },
@@ -143,7 +145,7 @@ export default function AdminLayout({ user, isDeactivated }) {
 
         {/* ── Navigation ── */}
         <nav className="admin-sidebar-nav" style={{ padding: collapsed ? '0 8px' : '0 10px' }}>
-          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+          {NAV_ITEMS.filter(item => item.path !== '/admin/ai-analytics' || user?.email?.includes('signatureglobalconferences')).map(({ path, label, icon: Icon }) => {
             const active = isActive(path)
             return (
               <Link

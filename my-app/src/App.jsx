@@ -25,6 +25,7 @@ import Milestones from './pages/user/Milestones'
 import TeamDisReport from './pages/user/TeamDisReport'
 import SalesExecutive from './pages/user/SalesExecutive'
 import UserReviews from './pages/user/UserReviews'
+import UserSettings from './pages/user/UserSettings'
 
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
@@ -39,6 +40,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminEvents from './pages/admin/AdminEvents'
 import AdminReviews from './pages/admin/AdminReviews'
+import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -299,6 +301,7 @@ function App() {
           <Route path="/sales-analytics" element={hasProfile && !isAdmin ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/reviews" element={hasProfile && !isAdmin ? <UserReviews user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
         {/* Admin Routes */}
@@ -311,6 +314,8 @@ function App() {
           <Route path="revenue" element={<AdminRevenue />} />
           <Route path="dis" element={<AdminDis />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="ai-analytics" element={<AdminAiAnalytics />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
           <Route path="events" element={<AdminEvents />} />
           <Route path="reviews" element={<AdminReviews />} />
           <Route path="milestones" element={<Milestones user={user} />} />

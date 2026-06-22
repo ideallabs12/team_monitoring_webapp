@@ -27,6 +27,7 @@ let adminAnalyticsCache = {
   revenues: [],
   disReports: [],
   targets: [],
+  holidays: [],
 }
 
 export default function AdminAnalytics() {
@@ -36,6 +37,7 @@ export default function AdminAnalytics() {
   const [revenues, setRevenues] = useState(adminAnalyticsCache.revenues)
   const [disReports, setDisReports] = useState(adminAnalyticsCache.disReports)
   const [targets, setTargets] = useState(adminAnalyticsCache.targets)
+  const [holidays, setHolidays] = useState(adminAnalyticsCache.holidays)
 
   // Performer tab toggle
   const [performerTab, setPerformerTab] = useState('top')
@@ -63,12 +65,13 @@ export default function AdminAnalytics() {
   // ── LOAD DATA ──────────────────────────────────────────────────
   const loadAllData = async () => {
     try {
-      const [teamsRes, profilesRes, revRes, disRes, targetsRes] = await Promise.all([
+      const [teamsRes, profilesRes, revRes, disRes, targetsRes, holidaysRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
         supabase.from('monthly_revenues').select('*'),
         supabase.from('dis_reports').select('*').order('report_date', { ascending: false }),
         supabase.from('monthly_targets').select('*'),
+        supabase.from('holidays').select('*'),
       ])
 
       if (teamsRes.data) setTeams(teamsRes.data)
@@ -76,6 +79,8 @@ export default function AdminAnalytics() {
       if (revRes.data) setRevenues(revRes.data)
       if (disRes.data) setDisReports(disRes.data)
       if (targetsRes.data) setTargets(targetsRes.data)
+      const fetchedHolidays = holidaysRes?.data || []
+      setHolidays(fetchedHolidays)
 
       adminAnalyticsCache = {
         loaded: true,
@@ -84,6 +89,7 @@ export default function AdminAnalytics() {
         revenues: revRes.data || [],
         disReports: disRes.data || [],
         targets: targetsRes.data || [],
+        holidays: fetchedHolidays,
       }
     } catch (err) {
       console.error('Error loading analytics data:', err)
@@ -189,14 +195,14 @@ export default function AdminAnalytics() {
 
   // ── TEAM RADAR ─────────────────────────────────────────────────
   const radarData = useMemo(() =>
-    calculateTeamRadarScores(teams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths),
-    [teams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths]
+    calculateTeamRadarScores(teams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths, holidays),
+    [teams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths, holidays]
   )
 
   // ── PERFORMER RANKINGS ─────────────────────────────────────────
   const performerData = useMemo(() =>
-    calculatePerformerStatus(nonAdminRevenues, profiles, disReports, memberships, teams, defaultActiveMonths, currentDateStr),
-    [nonAdminRevenues, profiles, disReports, memberships, teams, defaultActiveMonths, currentDateStr]
+    calculatePerformerStatus(nonAdminRevenues, profiles, disReports, memberships, teams, defaultActiveMonths, currentDateStr, holidays),
+    [nonAdminRevenues, profiles, disReports, memberships, teams, defaultActiveMonths, currentDateStr, holidays]
   )
 
   const topPerformers = useMemo(() =>
@@ -414,6 +420,7 @@ export default function AdminAnalytics() {
           memberships={memberships}
           teams={teams}
           currentDateStr={currentDateStr}
+          holidays={holidays}
         />
       </div>
 

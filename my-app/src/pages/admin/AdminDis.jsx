@@ -26,6 +26,7 @@ export default function AdminDis() {
   const [revenues, setRevenues] = useState(adminDisCache.revenues)
   const [reports, setReports] = useState(adminDisCache.reports)
   const [submittedToday, setSubmittedToday] = useState(adminDisCache.submittedToday)
+  const [isHoliday, setIsHoliday] = useState(false)
 
   // Filter States
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -55,12 +56,18 @@ export default function AdminDis() {
         .select('user_id')
         .eq('report_date', selectedDate)
 
-      const [teamsRes, profilesRes, revenuesRes, reportsRes, selectedDateReportsRes] = await Promise.all([
+      const holidaysQuery = supabase
+        .from('holidays')
+        .select('holiday_date')
+        .eq('holiday_date', selectedDate)
+
+      const [teamsRes, profilesRes, revenuesRes, reportsRes, selectedDateReportsRes, holidaysRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
         supabase.from('monthly_revenues').select('*'),
         query,
-        missingReportsQuery
+        missingReportsQuery,
+        holidaysQuery
       ])
 
       const teamsData = teamsRes.data || []
@@ -69,16 +76,17 @@ export default function AdminDis() {
       const reportsData = reportsRes.data || []
       const selectedDateReports = selectedDateReportsRes.data || []
 
-      // Filter out admins
       const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin')
 
       const submittedUserIds = new Set(selectedDateReports.map(r => r.user_id))
+      const holidayFlag = holidaysRes.data && holidaysRes.data.length > 0
 
       setTeams(teamsData)
       setProfiles(nonAdminProfiles)
       setRevenues(revenuesData)
       setReports(reportsData)
       setSubmittedToday(submittedUserIds)
+      setIsHoliday(holidayFlag)
 
       adminDisCache = {
         loaded: true,
@@ -167,7 +175,7 @@ export default function AdminDis() {
         const teamTotalRevenue = Object.values(teamUserLatestRevenue).reduce((acc, val) => acc + val, 0)
 
         // Missing users: active members who haven't submitted, with team info
-        const missing = teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
+        const missing = isHoliday ? [] : teamMems.filter(m => !submittedToday.has(m.id)).map(m => {
           return {
             id: m.id,
             name: `${m.first_name} ${m.last_name}`,
@@ -208,11 +216,11 @@ export default function AdminDis() {
   const globalStats = useMemo(() => {
     const activeProfiles = profiles.filter(p => p.has_dis_reporting !== false)
     const totalMembers = activeProfiles.length
-    const submittedCount = activeProfiles.filter(m => submittedToday.has(m.id)).length
+    const submittedCount = isHoliday ? totalMembers : activeProfiles.filter(m => submittedToday.has(m.id)).length
     const missedCount = totalMembers - submittedCount
     const progress = totalMembers > 0 ? Math.round((submittedCount / totalMembers) * 100) : 0
     return { totalMembers, submittedCount, missedCount, progress }
-  }, [profiles, submittedToday])
+  }, [profiles, submittedToday, isHoliday])
 
   // Submissions to display
   const displayedSubmissions = useMemo(() => {
@@ -621,13 +629,19 @@ export default function AdminDis() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <AlertCircle size={18} style={{ color: 'var(--apple-accent-red)' }} />
             <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Missing DIS Reports</h3>
-            <span className="apple-badge apple-badge-red" style={{ fontSize: '0.75rem' }}>
-              {filteredMissing.length}
-            </span>
+            {!isHoliday && (
+              <span className="apple-badge apple-badge-red" style={{ fontSize: '0.75rem' }}>
+                {filteredMissing.length}
+              </span>
+            )}
           </div>
         </div>
 
-        {filteredMissing.length > 0 ? (
+        {isHoliday ? (
+          <div className="apple-card" style={{ padding: '28px', textAlign: 'center', color: 'var(--apple-accent-orange)', fontStyle: 'italic', border: '1px solid rgba(255,159,10,0.3)', background: 'rgba(255,159,10,0.05)' }}>
+            🌴 Holiday Declared: No missing reports for this date.
+          </div>
+        ) : filteredMissing.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {filteredMissing.map((item, idx) => (
               <div 

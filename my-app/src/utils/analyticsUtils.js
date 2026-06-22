@@ -136,7 +136,8 @@ export function calculateTargetVsActual(targets, revenues, months, selectedTeamI
  * Section 3 - DIS Compliance Tracker (Calendar Heatmap)
  * Prepares GitHub-style contribution grid for the specified range.
  */
-export function buildCalendarHeatmapData(disReports, profiles, memberships, startDate, endDate) {
+export function buildCalendarHeatmapData(disReports, profiles, memberships, startDate, endDate, holidays = []) {
+  const holidaySet = new Set(holidays.map(h => h.holiday_date || h))
   const activeUserIds = new Set(
     memberships
       .filter(m => {
@@ -165,7 +166,8 @@ export function buildCalendarHeatmapData(disReports, profiles, memberships, star
     const dateStr = `${year}-${month}-${day}`
     
     const dayOfWeek = d.getDay()
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const isWeekend = dayOfWeek === 0
+    const isHoliday = holidaySet.has(dateStr)
     
     const count = reportsByDate[dateStr] || 0
     const rate = expectedCount > 0 ? (count / expectedCount) * 100 : 0
@@ -175,7 +177,7 @@ export function buildCalendarHeatmapData(disReports, profiles, memberships, star
       if (rate < 50) level = 1
       else if (rate < 80) level = 2
       else level = 3
-    } else if (!isWeekend && expectedCount > 0) {
+    } else if (!isWeekend && !isHoliday && expectedCount > 0) {
       level = 1
     }
     
@@ -196,17 +198,21 @@ export function buildCalendarHeatmapData(disReports, profiles, memberships, star
  * Section 3 - Team Compliance bar charts
  * Calculate overall compliance rates (%) per team.
  */
-export function calculateTeamComplianceRates(teams, disReports, memberships, profiles, startDate, endDate) {
+export function calculateTeamComplianceRates(teams, disReports, memberships, profiles, startDate, endDate, holidays = []) {
+  const holidaySet = new Set(holidays.map(h => h.holiday_date || h))
   const weekdays = []
   const start = new Date(startDate)
   const end = new Date(endDate)
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dayOfWeek = d.getDay()
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+    if (dayOfWeek !== 0) {
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      weekdays.push(`${year}-${month}-${day}`)
+      const dateStr = `${year}-${month}-${day}`
+      if (!holidaySet.has(dateStr)) {
+        weekdays.push(dateStr)
+      }
     }
   }
   
@@ -241,7 +247,8 @@ export function calculateTeamComplianceRates(teams, disReports, memberships, pro
  * Section 4 - Team Comparison Radar
  * Returns normalized 0-100 scores for 5 axes: Revenue, Growth, DIS Compliance, Leads, Efficiency.
  */
-export function calculateTeamRadarScores(teams, revenues, disReports, memberships, profiles, months) {
+export function calculateTeamRadarScores(teams, revenues, disReports, memberships, profiles, months, holidays = []) {
+  const holidaySet = new Set(holidays.map(h => h.holiday_date || h))
   const nonAdminProfiles = profiles.filter(p => p.platform_role !== 'admin')
   const nonAdminIds = new Set(nonAdminProfiles.map(p => p.id))
   
@@ -258,11 +265,14 @@ export function calculateTeamRadarScores(teams, revenues, disReports, membership
   
   const weekdaySet = new Set()
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() !== 0 && d.getDay() !== 6) {
+    if (d.getDay() !== 0) {
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      weekdaySet.add(`${year}-${month}-${day}`)
+      const dateStr = `${year}-${month}-${day}`
+      if (!holidaySet.has(dateStr)) {
+        weekdaySet.add(dateStr)
+      }
     }
   }
   
@@ -412,7 +422,8 @@ function getConcentrationPercentage(sortedUsers, totalSum, fraction) {
 /**
  * Calculates current DIS submission streak for a user.
  */
-export function calculateDISStreak(disReports, userId, currentDateStr) {
+export function calculateDISStreak(disReports, userId, currentDateStr, holidays = []) {
+  const holidaySet = new Set(holidays.map(h => h.holiday_date || h))
   const userReports = new Set(
     disReports
       .filter(r => r.user_id === userId)
@@ -437,11 +448,12 @@ export function calculateDISStreak(disReports, userId, currentDateStr) {
     const checkDateStr = `${year}-${month}-${day}`
     
     const dayOfWeek = d.getDay()
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const isWeekend = dayOfWeek === 0
+    const isHoliday = holidaySet.has(checkDateStr)
     
     if (userReports.has(checkDateStr)) {
       streak++
-    } else if (!isWeekend) {
+    } else if (!isWeekend && !isHoliday) {
       break
     }
     
@@ -455,7 +467,8 @@ export function calculateDISStreak(disReports, userId, currentDateStr) {
  * Section 6 - Performer Rankings
  * Calculates performance lists (top performers and those needing attention).
  */
-export function calculatePerformerStatus(revenues, profiles, disReports, memberships, teams, months, currentDateStr) {
+export function calculatePerformerStatus(revenues, profiles, disReports, memberships, teams, months, currentDateStr, holidays = []) {
+  const holidaySet = new Set(holidays.map(h => h.holiday_date || h))
   const chronological = [...months].sort()
   const m1 = chronological[chronological.length - 1]
   const m2 = chronological.length > 1 ? chronological[chronological.length - 2] : null
@@ -475,11 +488,14 @@ export function calculatePerformerStatus(revenues, profiles, disReports, members
   start.setDate(start.getDate() - 29)
   
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() !== 0 && d.getDay() !== 6) {
+    if (d.getDay() !== 0) {
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      last30Days.push(`${year}-${month}-${day}`)
+      const dateStr = `${year}-${month}-${day}`
+      if (!holidaySet.has(dateStr)) {
+        last30Days.push(dateStr)
+      }
     }
   }
   const weekdaysCount = last30Days.length
@@ -510,7 +526,7 @@ export function calculatePerformerStatus(revenues, profiles, disReports, members
         .reduce((sum, r) => sum + Number(r.amount || 0), 0)
     })
     
-    const streak = calculateDISStreak(disReports, p.id, currentDateStr)
+    const streak = calculateDISStreak(disReports, p.id, currentDateStr, holidays)
     
     const userReports = disReports.filter(r => r.user_id === p.id && last30Days.includes(r.report_date))
     const complianceRate = weekdaysCount > 0 ? Math.round((userReports.length / weekdaysCount) * 100) : 0
