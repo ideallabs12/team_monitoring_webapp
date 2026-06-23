@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Calendar, Plus, Trash2, Power, RefreshCw } from 'lucide-react'
+import { Calendar, Plus, Trash2, Power, RefreshCw, Edit } from 'lucide-react'
 
 export default function AdminWriteUps() {
   const [events, setEvents] = useState([])
@@ -10,6 +10,9 @@ export default function AdminWriteUps() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [targetTeamId, setTargetTeamId] = useState('all')
+  const [socialPlatform, setSocialPlatform] = useState('')
+  const [socialUrl, setSocialUrl] = useState('')
+  const [editingEventId, setEditingEventId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
@@ -46,39 +49,77 @@ export default function AdminWriteUps() {
     loadEvents()
   }, [])
 
-  const handleCreateEvent = async (e) => {
+  const handleSubmitEvent = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setMessage({ type: '', text: '' })
     
     try {
-      const insertData = {
+      const eventData = {
         title,
         description,
-        is_active: true,
-        target_team_id: targetTeamId === 'all' ? null : targetTeamId
+        target_team_id: targetTeamId === 'all' ? null : targetTeamId,
+        social_platform: socialPlatform || null,
+        social_url: socialPlatform ? socialUrl : null
       }
       
-      const { data, error } = await supabase
-        .from('events')
-        .insert([insertData])
-        .select('*, teams(name)')
-        .single()
+      if (editingEventId) {
+        // Update existing
+        const { data, error } = await supabase
+          .from('events')
+          .update(eventData)
+          .eq('id', editingEventId)
+          .select('*, teams(name)')
+          .single()
+          
+        if (error) throw error
         
-      if (error) throw error
+        setEvents(events.map(ev => ev.id === editingEventId ? data : ev))
+        setMessage({ type: 'success', text: 'Write-Up updated successfully!' })
+      } else {
+        // Insert new
+        eventData.is_active = true
+        
+        const { data, error } = await supabase
+          .from('events')
+          .insert([eventData])
+          .select('*, teams(name)')
+          .single()
+          
+        if (error) throw error
+        
+        setEvents([data, ...events])
+        setMessage({ type: 'success', text: 'Write-Up created successfully!' })
+      }
       
-      setEvents([data, ...events])
-      setTitle('')
-      setDescription('')
-      setTargetTeamId('all')
-      setShowCreate(false)
-      setMessage({ type: 'success', text: 'Event created successfully!' })
+      handleCancelEdit()
     } catch (err) {
-      console.error('Error creating event:', err)
-      setMessage({ type: 'error', text: 'Failed to create event.' })
+      console.error('Error saving event:', err)
+      setMessage({ type: 'error', text: 'Failed to save write-up.' })
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleEditClick = (ev) => {
+    setEditingEventId(ev.id)
+    setTitle(ev.title)
+    setDescription(ev.description || '')
+    setTargetTeamId(ev.target_team_id || 'all')
+    setSocialPlatform(ev.social_platform || '')
+    setSocialUrl(ev.social_url || '')
+    setShowCreate(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancelEdit = () => {
+    setTitle('')
+    setDescription('')
+    setTargetTeamId('all')
+    setSocialPlatform('')
+    setSocialUrl('')
+    setEditingEventId(null)
+    setShowCreate(false)
   }
 
   const toggleEventStatus = async (id, currentStatus) => {
@@ -137,7 +178,13 @@ export default function AdminWriteUps() {
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
-            onClick={() => setShowCreate(!showCreate)}
+            onClick={() => {
+              if (showCreate) {
+                handleCancelEdit()
+              } else {
+                setShowCreate(true)
+              }
+            }}
             className="apple-btn apple-btn-primary"
             style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
@@ -162,9 +209,9 @@ export default function AdminWriteUps() {
       {showCreate && (
         <div className="apple-card" style={{ padding: '24px', marginBottom: '30px', borderTop: '3px solid var(--apple-accent-blue)' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={18} style={{ color: 'var(--apple-accent-blue)' }} /> New Write-Up
+            <Calendar size={18} style={{ color: 'var(--apple-accent-blue)' }} /> {editingEventId ? 'Edit Write-Up' : 'New Write-Up'}
           </h3>
-          <form onSubmit={handleCreateEvent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <form onSubmit={handleSubmitEvent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
               <label className="apple-form-label">Write-Up Title</label>
               <input
@@ -200,10 +247,53 @@ export default function AdminWriteUps() {
                 style={{ resize: 'vertical' }}
               />
             </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label className="apple-form-label">Social Media Target (Optional)</label>
+                <select
+                  className="apple-form-control"
+                  value={socialPlatform}
+                  onChange={(e) => {
+                    const platform = e.target.value;
+                    setSocialPlatform(platform);
+                    if (platform === 'Facebook') setSocialUrl('https://facebook.com');
+                    else if (platform === 'Instagram') setSocialUrl('https://instagram.com');
+                    else if (platform === 'LinkedIn') setSocialUrl('https://linkedin.com');
+                    else if (platform === 'Reddit') setSocialUrl('https://reddit.com');
+                    else if (platform === 'Twitter') setSocialUrl('https://twitter.com');
+                    else if (platform === 'Website') setSocialUrl('https://');
+                    else setSocialUrl('');
+                  }}
+                >
+                  <option value="">None</option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Reddit">Reddit</option>
+                  <option value="Twitter">Twitter</option>
+                  <option value="Website">Website URL</option>
+                </select>
+              </div>
+              
+              {socialPlatform && (
+                <div>
+                  <label className="apple-form-label">{socialPlatform} URL</label>
+                  <input
+                    type="url"
+                    value={socialUrl}
+                    onChange={(e) => setSocialUrl(e.target.value)}
+                    placeholder="https://..."
+                    required
+                    className="apple-form-control"
+                  />
+                </div>
+              )}
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
               <button
                 type="button"
-                onClick={() => setShowCreate(false)}
+                onClick={handleCancelEdit}
                 className="apple-btn apple-btn-secondary"
               >
                 Cancel
@@ -213,7 +303,7 @@ export default function AdminWriteUps() {
                 disabled={submitting || !title.trim()}
                 className="apple-btn apple-btn-primary"
               >
-                {submitting ? 'Saving...' : 'Save Write-Up'}
+                {submitting ? 'Saving...' : editingEventId ? 'Update Write-Up' : 'Save Write-Up'}
               </button>
             </div>
           </form>
@@ -242,17 +332,36 @@ export default function AdminWriteUps() {
               </span>
             </div>
 
+            {ev.social_platform && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--apple-accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem' }}>
+                  Target: {ev.social_platform}
+                </span>
+                <a href={ev.social_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--apple-accent-blue)', textDecoration: 'underline' }}>
+                  {ev.social_url.length > 30 ? ev.social_url.substring(0, 30) + '...' : ev.social_url}
+                </a>
+              </div>
+            )}
+
             {ev.description && (
               <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.85rem', lineHeight: '1.5', flexGrow: 1 }}>
                 {ev.description}
               </p>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--apple-border)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--apple-border)' }}>
+              <button
+                onClick={() => handleEditClick(ev)}
+                className="apple-btn apple-btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
+              >
+                <Edit size={14} /> Edit
+              </button>
+              
               <button
                 onClick={() => toggleEventStatus(ev.id, ev.is_active)}
                 className={`apple-btn ${ev.is_active ? 'apple-btn-secondary' : 'apple-btn-primary'}`}
-                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
               >
                 <Power size={14} /> {ev.is_active ? 'Turn Off' : 'Turn On'}
               </button>
@@ -260,7 +369,7 @@ export default function AdminWriteUps() {
               <button
                 onClick={() => handleDeleteEvent(ev.id)}
                 className="apple-btn apple-btn-danger"
-                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--apple-accent-red)' }}
+                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--apple-accent-red)', flex: '1 1 auto', justifyContent: 'center' }}
               >
                 <Trash2 size={14} /> Delete
               </button>

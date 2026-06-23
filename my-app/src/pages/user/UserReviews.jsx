@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { RefreshCw, Star, Edit, Trash2, CheckCircle, AlertCircle, Clock, XCircle, Copy, Upload } from 'lucide-react'
+import { RefreshCw, Star, Edit, Trash2, CheckCircle, AlertCircle, Clock, XCircle, Copy, Upload, ExternalLink } from 'lucide-react'
 
 export default function UserReviews({ user }) {
   const [profile, setProfile] = useState(null)
@@ -40,7 +40,7 @@ export default function UserReviews({ user }) {
       // 3. Load user's reviews FIRST to filter out already reviewed events
       const { data: reviewsData } = await supabase
         .from('reviews')
-        .select('*, events(title, description, is_active)')
+        .select('*, events(title, description, is_active, social_platform, social_url)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         
@@ -565,6 +565,17 @@ export default function UserReviews({ user }) {
                   >
                     <Edit size={14} /> Edit Review
                   </button>
+                )}
+                {review.status === 'approved' && review.events?.social_platform && review.events?.social_url && (
+                  <a 
+                    href={review.events.social_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="apple-btn apple-btn-primary" 
+                    style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                  >
+                    <ExternalLink size={14} /> Post on {review.events.social_platform}
+                  </a>
                 )}
               </div>
 

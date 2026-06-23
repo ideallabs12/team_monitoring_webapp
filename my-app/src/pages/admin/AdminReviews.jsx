@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon, Users, Clock, Calendar } from 'lucide-react'
+import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon, Users, Clock, Calendar, Trash2 } from 'lucide-react'
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
@@ -65,6 +65,22 @@ export default function AdminReviews() {
     } catch (err) {
       console.error('Error rejecting review:', err)
       alert('Failed to reject review.')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to permanently delete this review? The user will need to write a new one.')) return
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', id)
+        
+      if (error) throw error
+      setReviews(reviews.filter(r => r.id !== id))
+    } catch (err) {
+      console.error('Error deleting review:', err)
+      alert('Failed to delete review.')
     }
   }
 
@@ -290,29 +306,37 @@ export default function AdminReviews() {
             )}
 
             {/* Action Buttons */}
-            {selectedReview.status === 'pending' && (
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px', borderTop: '1px solid var(--apple-border)', paddingTop: '20px' }}>
-                <button 
-                  onClick={() => { handleReject(selectedReview.id); setSelectedReview(null); }}
-                  className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <XCircle size={18} /> Reject
-                </button>
-                <button 
-                  onClick={() => setFeedbackModal({ isOpen: true, reviewId: selectedReview.id, feedback: '' })}
-                  className="apple-btn apple-btn-secondary" style={{ padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-orange)' }}
-                >
-                  <AlertCircle size={18} /> Give Feedback
-                </button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px', borderTop: '1px solid var(--apple-border)', paddingTop: '20px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => { handleDelete(selectedReview.id); setSelectedReview(null); }}
+                className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', marginRight: 'auto' }}
+              >
+                <Trash2 size={18} /> Delete Review
+              </button>
 
-                <button 
-                  onClick={() => { handleApprove(selectedReview.id); setSelectedReview(null); }}
-                  className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <CheckCircle size={18} /> Approve
-                </button>
-              </div>
-            )}
+              {selectedReview.status === 'pending' && (
+                <>
+                  <button 
+                    onClick={() => { handleReject(selectedReview.id); setSelectedReview(null); }}
+                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <XCircle size={18} /> Reject
+                  </button>
+                  <button 
+                    onClick={() => setFeedbackModal({ isOpen: true, reviewId: selectedReview.id, feedback: '' })}
+                    className="apple-btn apple-btn-secondary" style={{ padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-orange)' }}
+                  >
+                    <AlertCircle size={18} /> Give Feedback
+                  </button>
+                  <button 
+                    onClick={() => { handleApprove(selectedReview.id); setSelectedReview(null); }}
+                    className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <CheckCircle size={18} /> Approve
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
