@@ -245,9 +245,10 @@ export default function Leaderboard({ user }) {
             <Medal size={24} color="var(--apple-text-secondary)" />
             Team Rankings
           </h2>
-      <div className="apple-card" style={{ padding: '0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
+      <div className="apple-card" style={{ padding: '0 !important' }}>
+        <div style={{ width: '100%', overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
             <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)', fontSize: '0.85rem' }}>
               <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', width: '80px', textAlign: 'center' }}>Rank</th>
               <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Team Name</th>
@@ -300,6 +301,7 @@ export default function Leaderboard({ user }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
         </>
       )}
@@ -311,9 +313,10 @@ export default function Leaderboard({ user }) {
             <Award size={24} color="var(--apple-text-secondary)" />
             Individual Rankings (Top 10)
           </h2>
-      <div className="apple-card" style={{ padding: '0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
+      <div className="apple-card" style={{ padding: '0 !important' }}>
+        <div style={{ width: '100%', overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
             <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)', fontSize: '0.85rem' }}>
               <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600', width: '80px', textAlign: 'center' }}>Rank</th>
               <th style={{ padding: '16px 24px', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Name</th>
@@ -371,6 +374,7 @@ export default function Leaderboard({ user }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
         </>
       )}

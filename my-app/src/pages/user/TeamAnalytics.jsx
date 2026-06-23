@@ -336,7 +336,7 @@ export default function TeamAnalytics({ user }) {
       </div>
 
       {/* PERFORMANCE OVERVIEW CARDS (Always for current month) */}
-      <div className="apple-two-col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+      <div className="apple-two-col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px', marginBottom: '32px' }}>
         {/* Actual Revenue Card */}
         <div className="apple-card" style={{ 
           background: 'linear-gradient(135deg, rgba(48, 213, 200, 0.08) 0%, rgba(30, 41, 59, 0.4) 100%)', 
@@ -421,7 +421,7 @@ export default function TeamAnalytics({ user }) {
         {/* Inner Grid for Charts */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', 
           gap: '24px'
         }}>
           {/* Trend Line Chart */}
@@ -507,12 +507,12 @@ export default function TeamAnalytics({ user }) {
             </div>
             
             {pieData.length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '280px', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '280px', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
                 No contribution data in this timeframe.
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', height: '280px', gap: '24px', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 180px', height: '100%', minWidth: '150px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: '280px', gap: '24px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 200px', height: '200px', minWidth: '150px' }}>
                   <ResponsiveContainer>
                     <PieChart>
                       <Pie
@@ -560,7 +560,7 @@ export default function TeamAnalytics({ user }) {
       {/* Monthly Revenue Breakdown Grid */}
       <div className="apple-card" style={{ padding: '24px !important', marginBottom: '32px' }}>
           <div style={{ width: '100%', textAlign: 'center', margin: '16px 0 24px 0' }}>
-            <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)' }}>
+            <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {(() => {
                 const options = [
                   { label: '3M', value: 3 },
@@ -591,8 +591,8 @@ export default function TeamAnalytics({ user }) {
                         style={{
                           position: 'relative',
                           zIndex: 1,
-                          padding: '6px 18px',
-                          fontSize: '0.82rem',
+                          padding: '6px clamp(8px, 2vw, 18px)',
+                          fontSize: 'clamp(0.7rem, 2.5vw, 0.82rem)',
                           fontWeight: breakdownPeriod === opt.value ? '700' : '600',
                           color: breakdownPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--text-secondary)',
                           background: 'transparent',
@@ -601,7 +601,7 @@ export default function TeamAnalytics({ user }) {
                           borderRadius: '999px',
                           transition: 'color 0.2s',
                           flex: 1,
-                          minWidth: '70px'
+                          minWidth: 'clamp(40px, 10vw, 70px)'
                         }}
                       >
                         {opt.label}

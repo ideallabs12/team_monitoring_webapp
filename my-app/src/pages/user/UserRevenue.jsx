@@ -710,7 +710,7 @@ export default function UserRevenue({ user, isAdminView }) {
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <h3 className="apple-title-small" style={{ margin: '0 0 16px 0' }}>My Teams Breakdown</h3>
           
-          <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)' }}>
+          <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {(() => {
               const options = [
                 { label: '3M', value: 3 },
@@ -741,8 +741,8 @@ export default function UserRevenue({ user, isAdminView }) {
                       style={{
                         position: 'relative',
                         zIndex: 1,
-                        padding: '6px 18px',
-                        fontSize: '0.82rem',
+                        padding: '6px clamp(8px, 2vw, 18px)',
+                        fontSize: 'clamp(0.7rem, 2.5vw, 0.82rem)',
                         fontWeight: breakdownPeriod === opt.value ? '700' : '600',
                         color: breakdownPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--text-secondary)',
                         background: 'transparent',
@@ -751,7 +751,7 @@ export default function UserRevenue({ user, isAdminView }) {
                         borderRadius: '999px',
                         transition: 'color 0.2s',
                         flex: 1,
-                        minWidth: '70px'
+                        minWidth: 'clamp(40px, 10vw, 70px)'
                       }}
                     >
                       {opt.label}

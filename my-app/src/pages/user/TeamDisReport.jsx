@@ -351,11 +351,11 @@ export default function TeamDisReport({ user }) {
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ background: 'rgba(48, 213, 200, 0.06)', border: '1px solid rgba(48, 213, 200, 0.2)', borderRadius: '10px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                    <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{teamData.submittedCount}</strong> Submitted</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--apple-accent-green)' }}><strong>{teamData.submittedCount}</strong> Submitted</span>
                 </div>
                 <div style={{ background: 'rgba(255, 69, 58, 0.06)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '10px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
-                    <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{teamData.missing.length}</strong> Missing</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--apple-accent-red)' }}><strong>{teamData.missing.length}</strong> Missing</span>
                 </div>
             </div>
           </div>

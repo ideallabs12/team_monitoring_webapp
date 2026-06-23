@@ -266,11 +266,11 @@ export default function RevenueHistory({ user }) {
         </div>
 
         {/* Filter Dropdowns Row */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
           {/* Year */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Year</label>
-            <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="apple-input" style={{ minWidth: '100px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+            <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="apple-input" style={{ width: '100%', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
               <option value="All">All</option>
               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -279,7 +279,7 @@ export default function RevenueHistory({ user }) {
           {/* Month */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Month</label>
-            <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="apple-input" style={{ minWidth: '120px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+            <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="apple-input" style={{ width: '100%', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
               <option value="All">All Months</option>
               {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
@@ -289,7 +289,7 @@ export default function RevenueHistory({ user }) {
           {availableTeams.length > 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Team</label>
-              <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)} className="apple-input" style={{ minWidth: '130px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+              <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)} className="apple-input" style={{ width: '100%', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
                 <option value="All">All Teams</option>
                 {availableTeams.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
               </select>
@@ -299,7 +299,7 @@ export default function RevenueHistory({ user }) {
           {/* Week */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Week</label>
-            <select value={filterWeek} onChange={e => setFilterWeek(e.target.value)} className="apple-input" style={{ minWidth: '110px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+            <select value={filterWeek} onChange={e => setFilterWeek(e.target.value)} className="apple-input" style={{ width: '100%', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
               <option value="All">All Weeks</option>
               <option value="1">Week 1</option>
               <option value="2">Week 2</option>
@@ -312,7 +312,7 @@ export default function RevenueHistory({ user }) {
           {/* Source */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Source</label>
-            <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="apple-input" style={{ minWidth: '140px', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
+            <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="apple-input" style={{ width: '100%', padding: '8px 32px 8px 12px', fontSize: '0.85rem' }}>
               {SOURCE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>

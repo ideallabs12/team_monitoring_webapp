@@ -317,7 +317,7 @@ export default function TeamManagement({ user }) {
   }
 
   const targetRevMonthForHistory = toRevenueMonthString(revenueYear, revenueMonth)
-  const historicalRevenues = revenues.filter(r => r.user_id === selectedMemberId && normalizeMonth(r.revenue_month) === targetRevMonthForHistory)
+  const historicalRevenues = revenues.filter(r => String(r.user_id) === String(selectedMemberId) && normalizeMonth(r.revenue_month) === targetRevMonthForHistory)
 
 
 
@@ -576,7 +576,7 @@ export default function TeamManagement({ user }) {
                 setSelectedMonth(e.target.value)
                 cancelEditingTarget()
               }}
-              className="form-control"
+              className="apple-form-control"
             >
               {monthOptions.map(month => (
                 <option key={month} value={month}>{formatRevenueMonth(month)}</option>
@@ -585,150 +585,88 @@ export default function TeamManagement({ user }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Target — {formatRevenueMonth(selectedMonth)}</div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#60a5fa' }}>${summary.expected.toFixed(2)}</div>
-          </div>
-          <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.08)' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Reached — {formatRevenueMonth(selectedMonth)}</div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#4ade80' }}>${summary.reached.toFixed(2)}</div>
-          </div>
-          <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Achievement</div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#fbbf24' }}>{summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}</div>
-          </div>
-        </div>
-
         {(() => {
           const activeTargets = memberTargets.filter(m => m.isActiveInTeam)
-          const historicalTargets = memberTargets.filter(m => !m.isActiveInTeam)
 
-          if (activeTargets.length === 0 && historicalTargets.length === 0) {
-            return <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>No historical or active non-admin members found for this team in this period.</p>
+          if (activeTargets.length === 0) {
+            return <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>No active non-admin members found for this team in this period.</p>
           }
 
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {activeTargets.length > 0 && (
-                <div style={{ overflowX: 'auto' }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#fff' }}>Active Members</h4>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Current Target</th>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Applies From</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Edit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeTargets.map(member => {
-                        const isEditing = editingUserId === member.id
-                        const isSaving = savingUserId === member.id
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Active Members</h4>
+              {activeTargets.map(member => {
+                const isEditing = editingUserId === member.id
+                const isSaving = savingUserId === member.id
 
-                        return (
-                          <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '12px 8px' }}>
-                              <div style={{ color: '#fff', fontWeight: '700' }}>{member.first_name} {member.last_name}</div>
-                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{member.email}</div>
-                            </td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  inputMode="decimal"
-                                  pattern="[0-9]*\.?[0-9]*"
-                                  className="form-control"
-                                  value={editAmount}
-                                  onChange={(e) => {
-                                    const val = e.target.value
-                                    if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
-                                  }}
-                                  placeholder="0.00"
-                                  style={{ width: '140px', marginLeft: 'auto', textAlign: 'right' }}
-                                  autoFocus
-                                />
-                              ) : (
-                                <span style={{ color: '#60a5fa', fontWeight: '800' }}>${member.currentTarget.toFixed(2)}</span>
-                              )}
-                            </td>
-                            <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
-                              {member.targetSourceMonth ? formatRevenueMonth(member.targetSourceMonth) : 'Not assigned'}
-                            </td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right', color: '#4ade80', fontWeight: '700' }}>
-                              ${member.reached.toFixed(2)}
-                            </td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right', color: '#fbbf24', fontWeight: '700' }}>
-                              {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                            </td>
-                            <td style={{ padding: '12px 8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                {isEditing ? (
-                                  <>
-                                    <button type="button" className="btn" onClick={() => handleSaveTarget(member.id)} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <Check size={16} />
-                                    </button>
-                                    <button type="button" className="btn btn-secondary" onClick={cancelEditingTarget} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <X size={16} />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button type="button" className="btn btn-secondary" onClick={() => startEditingTarget(member)} style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Edit2 size={16} />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {historicalTargets.length > 0 && (
-                <div style={{ overflowX: 'auto', opacity: 0.85, padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Historical Members</h4>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                        <th style={{ textAlign: 'left', padding: '10px 8px' }}>Member</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Target</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Reached</th>
-                        <th style={{ textAlign: 'right', padding: '10px 8px' }}>Achievement</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historicalTargets.map(member => (
-                        <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 8px' }}>
-                            <div style={{ color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {member.first_name} {member.last_name}
-                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff' }}>
-                                {member.is_deactivated ? 'Former' : 'Transferred'}
-                              </span>
-                            </div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '2px' }}>{member.email}</div>
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            ${member.currentTarget.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            ${member.reached.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                            {member.currentTarget > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                return (
+                  <div key={member.id} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '16px 20px',
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid var(--apple-border)',
+                    borderRadius: '16px',
+                    gap: '12px',
+                    transition: 'border-color 0.2s ease'
+                  }}>
+                    <div style={{ flex: '1 1 0', minWidth: 0 }}>
+                      <div style={{ color: 'var(--apple-text-primary)', fontWeight: '600', fontSize: '1.05rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {member.first_name} {member.last_name}
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {member.email}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '600', letterSpacing: '0.04em' }}>
+                          Target
+                        </div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
+                            className="form-control"
+                            value={editAmount}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
+                            }}
+                            placeholder="0.00"
+                            style={{ width: '100px', textAlign: 'right', padding: '6px 10px', fontSize: '1rem', height: '36px' }}
+                            autoFocus
+                          />
+                        ) : (
+                          <div style={{ color: '#60a5fa', fontWeight: '700', fontSize: '1.15rem' }}>
+                            ${member.currentTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {isEditing ? (
+                          <>
+                            <button type="button" className="btn" onClick={() => handleSaveTarget(member.id)} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
+                              <Check size={18} />
+                            </button>
+                            <button type="button" className="btn btn-secondary" onClick={cancelEditingTarget} disabled={isSaving} style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: 'none' }}>
+                              <X size={18} />
+                            </button>
+                          </>
+                        ) : (
+                          <button type="button" className="btn btn-secondary" onClick={() => startEditingTarget(member)} style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--apple-text-primary)' }}>
+                            <Edit2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )
         })()}
@@ -766,12 +704,12 @@ export default function TeamManagement({ user }) {
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
           <div style={{ background: 'rgba(48, 213, 200, 0.06)', border: '1px solid rgba(48, 213, 200, 0.2)', borderRadius: '10px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--apple-accent-green)' }} />
-            <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{disDayBoard.submitted.length}</strong> Submitted</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--apple-accent-green)' }}><strong>{disDayBoard.submitted.length}</strong> Submitted</span>
           </div>
           {!disDayBoard.isHoliday && (
             <div style={{ background: 'rgba(255, 69, 58, 0.06)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '10px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--apple-accent-red)' }} />
-              <span style={{ fontSize: '0.85rem', color: '#ffffff' }}><strong>{disDayBoard.missing.length}</strong> Missing</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--apple-accent-red)' }}><strong>{disDayBoard.missing.length}</strong> Missing</span>
             </div>
           )}
         </div>
@@ -899,9 +837,11 @@ export default function TeamManagement({ user }) {
                 style={{ fontWeight: '500', color: selectedMemberId ? '#fff' : 'var(--apple-text-secondary)' }}
               >
                 <option value="" disabled>Select team member</option>
-                {activeTeamMembers.map(m => (
-                  <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
-                ))}
+                {activeTeamMembers.map(m => {
+                  const fullName = `${m.first_name} ${m.last_name}`;
+                  const displayName = fullName.length > 22 ? fullName.substring(0, 20) + '...' : fullName;
+                  return <option key={m.id} value={m.id}>{displayName}</option>;
+                })}
               </select>
             </div>
 

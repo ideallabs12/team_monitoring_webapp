@@ -268,6 +268,12 @@ export default function Navbar({ user }) {
             </button>
 
             {/* ── Mobile Drawer ── */}
+            {isOpen && (
+              <div 
+                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 104, backdropFilter: 'blur(4px)' }} 
+                onClick={() => setIsOpen(false)} 
+              />
+            )}
             <div className={`apple-mobile-menu-drawer ${isOpen ? 'open' : ''}`}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '20px' }}>
                 {navLinks.map((link, idx) => (

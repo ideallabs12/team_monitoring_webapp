@@ -204,7 +204,7 @@ export default function UserTeam({ user }) {
                           flexWrap: 'wrap',
                           gap: '16px'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '240px', flex: '1' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '200px', flex: '1 1 auto' }}>
                             <div style={{ 
                               width: '44px', 
                               height: '44px', 
@@ -231,7 +231,7 @@ export default function UserTeam({ user }) {
                                 )}
                               </div>
                               <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
-                                <span>{member.email}</span>
+                                <span style={{ wordBreak: 'break-all' }}>{member.email}</span>
                                 <span style={{ color: 'var(--apple-border-strong)' }}>•</span>
                                 <span className={member.platform_role === 'teamlead' ? 'apple-badge apple-badge-orange' : 'apple-badge apple-badge-green'} style={{ padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}>
                                   {member.platform_role === 'teamlead' ? 'lead' : 'member'}
@@ -240,7 +240,7 @@ export default function UserTeam({ user }) {
                             </div>
                           </div>
                           
-                          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginLeft: 'auto', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: 'clamp(16px, 4vw, 24px)', flexWrap: 'wrap', marginLeft: 'auto', textAlign: 'right', justifyContent: 'flex-end', flex: '1 1 auto' }}>
                             <div>
                               <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target</div>
                               <div style={{ fontWeight: '700', fontSize: '1.15rem', color: '#60a5fa' }}>
