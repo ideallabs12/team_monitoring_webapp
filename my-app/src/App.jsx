@@ -38,7 +38,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminUserControlPanel from './pages/admin/AdminUserControlPanel'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
-import AdminEvents from './pages/admin/AdminEvents'
+import AdminWriteUps from './pages/admin/AdminWriteUps'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
 import { PresenceProvider } from './components/PresenceProvider'
@@ -337,7 +337,7 @@ function App() {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="ai-analytics" element={<AdminAiAnalytics />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
-          <Route path="events" element={<AdminEvents />} />
+          <Route path="write-ups" element={<AdminWriteUps />} />
           <Route path="reviews" element={<AdminReviews />} />
           <Route path="milestones" element={<Milestones user={user} />} />
           <Route path="leaderboard" element={<Leaderboard user={user} />} />

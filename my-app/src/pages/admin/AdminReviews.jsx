@@ -112,9 +112,9 @@ export default function AdminReviews() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(24px, 5vw, 40px)', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div className="apple-kicker">Review System</div>
-          <h1 className="apple-title-large">User Reviews</h1>
+          <h1 className="apple-title-large">Review Approvals</h1>
           <p className="apple-lead">
-            Moderate, edit, and approve event reviews submitted by your team.
+            Moderate, edit, and approve review write-ups submitted by your team.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>

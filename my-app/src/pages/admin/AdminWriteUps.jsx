@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { Calendar, Plus, Trash2, Power, RefreshCw } from 'lucide-react'
 
-export default function AdminEvents() {
+export default function AdminWriteUps() {
   const [events, setEvents] = useState([])
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
@@ -130,9 +130,9 @@ export default function AdminEvents() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(24px, 5vw, 40px)', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div className="apple-kicker">Review System</div>
-          <h1 className="apple-title-large">Manage Events</h1>
+          <h1 className="apple-title-large">Manage Review Write-Ups</h1>
           <p className="apple-lead">
-            Create events, toggle their active status, or delete them.
+            Create review write-ups, toggle their active status, or delete them.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -141,7 +141,7 @@ export default function AdminEvents() {
             className="apple-btn apple-btn-primary"
             style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            {showCreate ? 'Cancel' : <><Plus size={16} /> Create Event</>}
+            {showCreate ? 'Cancel' : <><Plus size={16} /> Create Write-Up</>}
           </button>
         </div>
       </div>
@@ -162,11 +162,11 @@ export default function AdminEvents() {
       {showCreate && (
         <div className="apple-card" style={{ padding: '24px', marginBottom: '30px', borderTop: '3px solid var(--apple-accent-blue)' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={18} style={{ color: 'var(--apple-accent-blue)' }} /> New Event
+            <Calendar size={18} style={{ color: 'var(--apple-accent-blue)' }} /> New Write-Up
           </h3>
           <form onSubmit={handleCreateEvent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label className="apple-form-label">Event Title</label>
+              <label className="apple-form-label">Write-Up Title</label>
               <input
                 type="text"
                 value={title}
@@ -213,7 +213,7 @@ export default function AdminEvents() {
                 disabled={submitting || !title.trim()}
                 className="apple-btn apple-btn-primary"
               >
-                {submitting ? 'Saving...' : 'Save Event'}
+                {submitting ? 'Saving...' : 'Save Write-Up'}
               </button>
             </div>
           </form>
@@ -270,7 +270,7 @@ export default function AdminEvents() {
 
         {events.length === 0 && !loading && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--apple-text-secondary)', fontStyle: 'italic', background: 'var(--apple-card)', borderRadius: '16px', border: '1px solid var(--apple-border)' }}>
-            No events created yet. Click "Create Event" to get started.
+            No review write-ups created yet. Click "Create Write-Up" to get started.
           </div>
         )}
       </div>

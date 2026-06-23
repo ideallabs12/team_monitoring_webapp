@@ -876,9 +876,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   padding: 14px 20px;
   background: var(--apple-card);
   border-bottom: 1px solid var(--apple-border);
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 30;
+  left: 0;
+  right: 0;
+  z-index: 100;
 }
 
 .admin-mobile-menu-btn {
@@ -918,12 +920,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* ── Responsive: mobile breakpoint ── */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .admin-sidebar-wrapper { display: none; }
   .admin-mobile-topbar { display: flex !important; }
   .admin-sidebar-mobile { display: block; }
   .admin-sidebar-overlay { display: block; }
-  .admin-content { padding: 24px 20px; }
+  .admin-content { padding: 84px 20px 24px 20px; }
 }
 
 /* ── Placeholder page styles ── */
