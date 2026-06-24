@@ -238,8 +238,8 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
           {/* Pie Chart */}
-          <div style={{ flex: '1 1 350px', height: 350, minWidth: '300px' }}>
-            <ResponsiveContainer>
+          <div style={{ flex: '1 1 350px', height: 350, minWidth: '300px', minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={pieData}

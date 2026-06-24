@@ -219,8 +219,8 @@ export default function TargetVsActualChart({
           <span>No revenue or target data for this period.</span>
         </div>
       ) : (
-        <div style={{ width: '100%', height: 340 }}>
-          <ResponsiveContainer>
+        <div style={{ width: '100%', height: 340, minWidth: 0, minHeight: 0 }}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
               margin={{ top: 30, right: 16, left: 8, bottom: 5 }}

@@ -21,8 +21,8 @@ export default function Sparkline({ data, width = 80, height = 20 }) {
         : '#fbbf24' // amber (stable)
 
   return (
-    <div style={{ width, height, display: 'inline-block', verticalAlign: 'middle' }}>
-      <ResponsiveContainer>
+    <div style={{ width, height, display: 'inline-block', verticalAlign: 'middle', minWidth: 0, minHeight: 0 }}>
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 2, bottom: 2, left: 2, right: 2 }}>
           <Line
             type="monotone"

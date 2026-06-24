@@ -633,8 +633,8 @@ export default function AdminHome() {
               </span>
             </div>
 
-            <div style={{ flex: 1, minHeight: '240px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ flex: 1, minHeight: '240px', width: '100%', minWidth: 0, minHeight: 0 }}>
+              <ResponsiveContainer width="99%" height={240}>
                 <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
                   <defs>
                     <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
@@ -849,8 +849,8 @@ export default function AdminHome() {
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: '220px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ flex: 1, minHeight: '220px', width: '100%', minWidth: 0, minHeight: 0 }}>
+            <ResponsiveContainer width="99%" height={220}>
               <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" vertical={false} />
                 <XAxis
@@ -910,8 +910,8 @@ export default function AdminHome() {
 
           {revenueShareData.length > 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <div style={{ flex: 1, minHeight: '200px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
+              <div style={{ flex: 1, minHeight: '200px', width: '100%', minWidth: 0, minHeight: 0 }}>
+                <ResponsiveContainer width="99%" height={200}>
                   <PieChart>
                     <Pie
                       data={revenueShareData}

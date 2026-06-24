@@ -12,6 +12,7 @@ export default function UserReviews({ user }) {
   const [selectedEventId, setSelectedEventId] = useState('')
   const [title, setTitle] = useState('')
   const [context, setContext] = useState('')
+  const [penname, setPenname] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [photoFile, setPhotoFile] = useState(null)
@@ -122,7 +123,7 @@ export default function UserReviews({ user }) {
       }
 
       if (editingReviewId) {
-        const updateData = { title, context, status: 'pending', admin_feedback: null, updated_at: new Date().toISOString() };
+        const updateData = { title, context, penname, status: 'pending', admin_feedback: null, updated_at: new Date().toISOString() };
         if (uploadedPhotoUrl) updateData.photo_url = uploadedPhotoUrl;
         
         const { error } = await supabase
@@ -138,7 +139,8 @@ export default function UserReviews({ user }) {
           user_id: user.id,
           team_id: profile?.team_id,
           title,
-          context
+          context,
+          penname
         };
         if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
         
@@ -153,6 +155,7 @@ export default function UserReviews({ user }) {
       // Reset form
       setTitle('')
       setContext('')
+      setPenname('')
       setPhotoFile(null)
       setPhotoPreview(null)
       setEditingReviewId(null)
@@ -201,6 +204,7 @@ export default function UserReviews({ user }) {
     setSelectedEventId(review.event_id)
     setTitle(review.title)
     setContext(review.context)
+    setPenname(review.penname || '')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -208,6 +212,7 @@ export default function UserReviews({ user }) {
     setEditingReviewId(null)
     setTitle('')
     setContext('')
+    setPenname('')
     setPhotoFile(null)
     setPhotoPreview(null)
     
@@ -359,6 +364,18 @@ export default function UserReviews({ user }) {
             })()}
 
             <div>
+              <label className="apple-form-label">Pen Name</label>
+              <input
+                type="text"
+                className="apple-form-control"
+                placeholder="Name to display on your review..."
+                required
+                value={penname}
+                onChange={(e) => setPenname(e.target.value)}
+              />
+            </div>
+
+            <div>
               <label className="apple-form-label">Review Title</label>
               <input
                 type="text"
@@ -407,7 +424,7 @@ export default function UserReviews({ user }) {
                   Cancel Edit
                 </button>
               )}
-              <button type="submit" disabled={submitting || !title.trim() || !context.trim()} className="apple-btn apple-btn-primary">
+              <button type="submit" disabled={submitting || !title.trim() || !context.trim() || !penname.trim()} className="apple-btn apple-btn-primary">
                 {submitting ? 'Submitting...' : editingReviewId ? 'Update Review' : 'Submit Review'}
               </button>
             </div>
@@ -476,6 +493,12 @@ export default function UserReviews({ user }) {
                     <Star size={12} /> {review.events?.title || 'Unknown Event'}
                     <span style={{ margin: '0 4px' }}>•</span>
                     {new Date(review.created_at).toLocaleDateString()}
+                    {review.penname && (
+                      <>
+                        <span style={{ margin: '0 4px' }}>•</span>
+                        by {review.penname}
+                      </>
+                    )}
                   </div>
                 </div>
 

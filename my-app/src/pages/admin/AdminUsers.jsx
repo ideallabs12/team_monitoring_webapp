@@ -917,55 +917,176 @@ export default function AdminUsers() {
         </div>
       </div>
 
+      <style>{`
+        .users-table-container {
+          display: block;
+        }
+        .users-grid-container {
+          display: none;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 850px) {
+          .users-table-container {
+            display: none;
+          }
+          .users-grid-container {
+            display: grid;
+          }
+        }
+        .truncate-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      `}</style>
+
       {/* Users List Card */}
       <div className="card" style={{ padding: '24px' }}>
         <h3 style={{ marginBottom: '20px', fontSize: '1.2rem', color: '#fff' }}>Registered Users Directory</h3>
 
         {filteredUsers.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th style={{ padding: '12px' }}>Name & Email</th>
-                  <th style={{ padding: '12px' }}>Platform Role</th>
-                  <th style={{ padding: '12px' }}>Active Teams</th>
-                  <th style={{ padding: '12px' }}>Account Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map(user => {
-                  const isDeactivated = !!user.is_deactivated
+          <>
+            {/* Desktop Table View */}
+            <div className="users-table-container" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <th style={{ padding: '12px' }}>Name & Email</th>
+                    <th style={{ padding: '12px' }}>Platform Role</th>
+                    <th style={{ padding: '12px' }}>Active Teams</th>
+                    <th style={{ padding: '12px' }}>Account Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map(user => {
+                    const isDeactivated = !!user.is_deactivated
 
-                  return (
-                    <tr
-                      key={user.id}
-                      className="watchlist-row"
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', opacity: isDeactivated ? 0.6 : 1, cursor: 'pointer' }}
-                      onClick={() => setViewingProfileUser(user)}
-                    >
-                      <td style={{ padding: '14px 12px' }}>
-                        <div style={{ fontWeight: '600', color: '#fff' }}>
+                    return (
+                      <tr
+                        key={user.id}
+                        className="watchlist-row"
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', opacity: isDeactivated ? 0.6 : 1, cursor: 'pointer' }}
+                        onClick={() => setViewingProfileUser(user)}
+                      >
+                        <td style={{ padding: '14px 12px', maxWidth: '200px' }}>
+                          <div className="truncate-text" style={{ fontWeight: '600', color: '#fff' }}>
+                            {user.first_name} {user.last_name}
+                          </div>
+                          <div className="truncate-text" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{user.email}</div>
+                        </td>
+                        <td style={{ padding: '14px 12px' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(99, 102, 241, 0.12)',
+                            border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
+                            color: user.platform_role === 'admin' ? '#f87171' : '#818cf8'
+                          }}>
+                            {user.platform_role || 'user'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 12px', maxWidth: '150px' }}>
+                          {user.team_id ? (
+                            <span className="truncate-text" style={{
+                              display: 'inline-block',
+                              maxWidth: '100%',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '0.72rem',
+                              background: 'rgba(74, 222, 128, 0.12)',
+                              border: '1px solid rgba(74, 222, 128, 0.25)',
+                              color: '#4ade80',
+                              fontWeight: '500'
+                            }}>
+                              {teams.find(t => t.id === user.team_id)?.name || 'Unknown'}
+                            </span>
+                          ) : (
+                            <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No Team</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '14px 12px' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            background: isDeactivated ? 'rgba(239, 68, 68, 0.15)' : 'rgba(74, 222, 128, 0.15)',
+                            border: isDeactivated ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(74, 222, 128, 0.3)',
+                            color: isDeactivated ? '#ef4444' : '#4ade80'
+                          }}>
+                            {isDeactivated ? 'Deactivated' : 'Active'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile/Small Device Matrix Card View */}
+            <div className="users-grid-container">
+              {filteredUsers.map(user => {
+                const isDeactivated = !!user.is_deactivated
+                return (
+                  <div
+                    key={user.id}
+                    onClick={() => setViewingProfileUser(user)}
+                    style={{
+                      padding: '16px',
+                      cursor: 'pointer',
+                      opacity: isDeactivated ? 0.6 : 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      transition: 'background 0.2s, border-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="truncate-text" style={{ fontWeight: '600', color: '#fff', fontSize: '1.05rem', marginBottom: '2px' }}>
                           {user.first_name} {user.last_name}
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{user.email}</div>
-                      </td>
-                      <td style={{ padding: '14px 12px' }}>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(99, 102, 241, 0.12)',
-                          border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
-                          color: user.platform_role === 'admin' ? '#f87171' : '#818cf8'
-                        }}>
-                          {user.platform_role || 'user'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 12px' }}>
+                        <div className="truncate-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {user.email}
+                        </div>
+                      </div>
+                      <span style={{
+                        flexShrink: 0,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.65rem',
+                        fontWeight: '700',
+                        textTransform: 'uppercase',
+                        background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(99, 102, 241, 0.12)',
+                        border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
+                        color: user.platform_role === 'admin' ? '#f87171' : '#818cf8'
+                      }}>
+                        {user.platform_role || 'user'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
                         {user.team_id ? (
-                          <span style={{
+                          <span className="truncate-text" style={{
+                            display: 'inline-block',
+                            maxWidth: '100%',
                             padding: '2px 8px',
                             borderRadius: '12px',
                             fontSize: '0.72rem',
@@ -977,28 +1098,27 @@ export default function AdminUsers() {
                             {teams.find(t => t.id === user.team_id)?.name || 'Unknown'}
                           </span>
                         ) : (
-                          <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No Team</span>
+                          <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No Team</span>
                         )}
-                      </td>
-                      <td style={{ padding: '14px 12px' }}>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          background: isDeactivated ? 'rgba(239, 68, 68, 0.15)' : 'rgba(74, 222, 128, 0.15)',
-                          border: isDeactivated ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(74, 222, 128, 0.3)',
-                          color: isDeactivated ? '#ef4444' : '#4ade80'
-                        }}>
-                          {isDeactivated ? 'Deactivated' : 'Active'}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <span style={{
+                        flexShrink: 0,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.7rem',
+                        fontWeight: '600',
+                        background: isDeactivated ? 'rgba(239, 68, 68, 0.15)' : 'rgba(74, 222, 128, 0.15)',
+                        border: isDeactivated ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(74, 222, 128, 0.3)',
+                        color: isDeactivated ? '#ef4444' : '#4ade80'
+                      }}>
+                        {isDeactivated ? 'Deactivated' : 'Active'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         ) : (
           <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>No users found matching search query.</p>
         )}

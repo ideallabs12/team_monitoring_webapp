@@ -620,8 +620,8 @@ export default function AdminAnalytics() {
             <div style={{ background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Weekly Breakdown</h4>
               {weeklyData.length > 0 ? (
-                <div style={{ height: 250, width: '100%' }}>
-                  <ResponsiveContainer>
+                <div style={{ height: 250, width: '100%', minWidth: 0, minHeight: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyData}>
                       <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
                       <RechartsTooltip
@@ -646,8 +646,8 @@ export default function AdminAnalytics() {
           <div style={{ background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>
             <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--apple-text-primary)' }}>Source Breakdown</h4>
             {sourceData.length > 0 ? (
-              <div style={{ height: 250, width: '100%' }}>
-                <ResponsiveContainer>
+              <div style={{ height: 250, width: '100%', minWidth: 0, minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={sourceData}

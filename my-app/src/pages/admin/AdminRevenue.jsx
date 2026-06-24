@@ -380,13 +380,23 @@ export default function AdminRevenue() {
           </div>
         </div>
 
-        {/* Month grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }} className="apple-two-col-grid">
+        {/* Month grid (Swipeable Horizontal Carousel) */}
+        <div style={{
+          display: 'flex',
+          overflowX: 'auto',
+          gap: '12px',
+          paddingBottom: '16px',
+          scrollSnapType: 'x mandatory',
+          WebkitOverflowScrolling: 'touch'
+        }}>
           {company12MonthTrend.map((d, i) => {
             const pct = companyMaxMonthRevenue > 0 ? (d.actual / companyMaxMonthRevenue) * 100 : 0
             const isCurrentMonth = i === company12MonthTrend.length - 1
             return (
               <div key={d.key} style={{
+                flex: '0 0 auto',
+                width: '140px',
+                scrollSnapAlign: 'start',
                 background: isCurrentMonth ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${isCurrentMonth ? 'rgba(0, 113, 227, 0.25)' : 'rgba(255,255,255,0.06)'}`,
                 borderRadius: '12px',
@@ -464,8 +474,8 @@ export default function AdminRevenue() {
           </span>
         </div>
 
-        <div style={{ flex: 1, height: '240px', width: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <div style={{ flex: 1, height: '240px', width: '100%', minWidth: 0, minHeight: 0 }}>
+          <ResponsiveContainer width="99%" height={240}>
             <ComposedChart data={company12MonthTrend} margin={{ top: 20, right: 5, left: 5, bottom: 5 }}>
               <defs>
                 <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
@@ -731,13 +741,15 @@ export default function AdminRevenue() {
             const percentage = Math.max(5, (team.totalRevenue / maxRev) * 100)
 
             return (
-              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '40px 180px 1fr 120px', alignItems: 'center', gap: '16px' }} className="apple-leaderboard-row">
-                <div style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#afafaf' : index === 2 ? '#b45309' : 'var(--apple-text-secondary)', fontWeight: '800', fontSize: '1.1rem' }}>
+              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '28px minmax(80px, 1.2fr) minmax(60px, 1fr) auto', alignItems: 'center', gap: '12px' }} className="apple-leaderboard-row">
+                <div style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#afafaf' : index === 2 ? '#b45309' : 'var(--apple-text-secondary)', fontWeight: '800', fontSize: '1.05rem' }}>
                   #{index + 1}
                 </div>
-                <div style={{ fontWeight: '600', color: '#ffffff' }}>{team.name}</div>
+                <div style={{ fontWeight: '600', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {team.name}
+                </div>
 
-                <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--apple-border)' }}>
+                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--apple-border)' }}>
                   <div style={{
                     width: `${percentage}%`,
                     height: '100%',
@@ -748,7 +760,7 @@ export default function AdminRevenue() {
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: '700', color: '#ffffff' }}>
+                  <div style={{ fontWeight: '700', color: '#ffffff', fontSize: '0.95rem' }}>
                     ${team.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>

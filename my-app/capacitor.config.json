@@ -1,0 +1,5 @@
+{
+  "appId": "com.ideallabs.myapp",
+  "appName": "MyApp",
+  "webDir": "dist"
+}
