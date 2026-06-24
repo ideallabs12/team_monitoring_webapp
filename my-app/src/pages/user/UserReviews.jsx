@@ -96,7 +96,8 @@ export default function UserReviews({ user }) {
     
     // Subscribe to realtime changes on the user's reviews
     if (user) {
-      const channel = supabase.channel('user_reviews_changes')
+      const channelId = `user_reviews_${user.id}_${Date.now()}`
+      const channel = supabase.channel(channelId)
         .on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
@@ -108,7 +109,8 @@ export default function UserReviews({ user }) {
         })
         .subscribe()
         
-      const settingsChannel = supabase.channel('system_settings_changes')
+      const settingsChannelId = `system_settings_${Date.now()}`
+      const settingsChannel = supabase.channel(settingsChannelId)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
