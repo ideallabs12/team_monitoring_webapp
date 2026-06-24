@@ -187,6 +187,7 @@ export default function AdminReviews() {
                   <div>
                     <div style={{ fontWeight: 'bold', color: '#202124', fontSize: '1.05rem', marginBottom: '4px' }}>
                       {review.profiles?.first_name} {review.profiles?.last_name}
+                      {review.penname && <span style={{ color: '#5f6368', fontSize: '0.85rem', fontWeight: 'normal', marginLeft: '8px' }}>(Pen Name: {review.penname})</span>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#5f6368', fontSize: '0.85rem' }}>
                       <span style={{ border: '1px solid #d2e3fc', background: '#e8effd', color: '#1a73e8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
@@ -256,13 +257,18 @@ export default function AdminReviews() {
             {/* Header Info */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', paddingRight: '40px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: '700', color: '#fff', fontSize: '1.2rem' }}>
                     {selectedReview.profiles?.first_name} {selectedReview.profiles?.last_name}
                   </span>
                   <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
                     ({selectedReview.profiles?.email})
                   </span>
+                  {selectedReview.penname && (
+                    <span className="apple-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem' }}>
+                      Pen Name: {selectedReview.penname}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.8rem' }}>
                   <span className="apple-badge apple-badge-blue">{selectedReview.teams?.name || 'No Team'}</span>
