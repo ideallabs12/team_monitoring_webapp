@@ -4,8 +4,10 @@ import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as Imag
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
+  const [writeUps, setWriteUps] = useState([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('pending')
+  const [selectedWriteUpId, setSelectedWriteUpId] = useState('all')
   
   // Modals for Actions
   const [selectedReview, setSelectedReview] = useState(null)
@@ -14,18 +16,27 @@ export default function AdminReviews() {
   const loadReviews = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select(`
-          *,
-          events ( title, is_active ),
-          profiles ( first_name, last_name, email ),
-          teams ( name )
-        `)
-        .order('created_at', { ascending: false })
+      const [reviewsRes, eventsRes] = await Promise.all([
+        supabase
+          .from('reviews')
+          .select(`
+            *,
+            events ( title, is_active ),
+            profiles ( first_name, last_name, email ),
+            teams ( name )
+          `)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('events')
+          .select('id, title')
+          .order('created_at', { ascending: false })
+      ])
       
-      if (error) throw error
-      setReviews(data || [])
+      if (reviewsRes.error) throw reviewsRes.error
+      setReviews(reviewsRes.data || [])
+
+      if (eventsRes.error) throw eventsRes.error
+      setWriteUps(eventsRes.data || [])
     } catch (err) {
       console.error('Error loading reviews:', err)
     } finally {
@@ -109,9 +120,18 @@ export default function AdminReviews() {
 
 
   const filteredReviews = useMemo(() => {
-    if (filterStatus === 'all') return reviews
-    return reviews.filter(r => r.status === filterStatus)
-  }, [reviews, filterStatus])
+    let result = reviews
+    
+    if (selectedWriteUpId !== 'all') {
+      result = result.filter(r => r.event_id === selectedWriteUpId)
+    }
+    
+    if (filterStatus !== 'all') {
+      result = result.filter(r => r.status === filterStatus)
+    }
+    
+    return result
+  }, [reviews, filterStatus, selectedWriteUpId])
 
   if (loading && reviews.length === 0) {
     return (
@@ -141,7 +161,23 @@ export default function AdminReviews() {
         </div>
       </div>
 
-      {/* ===== FILTERS ===== */}
+      {/* ===== WRITEUP FILTER ===== */}
+      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <label className="apple-form-label" style={{ margin: 0, whiteSpace: 'nowrap' }}>Filter by Write-Up:</label>
+        <select 
+          className="apple-form-control" 
+          style={{ maxWidth: '400px' }}
+          value={selectedWriteUpId}
+          onChange={(e) => setSelectedWriteUpId(e.target.value)}
+        >
+          <option value="all">All Write-Ups</option>
+          {writeUps.map(w => (
+            <option key={w.id} value={w.id}>{w.title}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* ===== STATUS FILTERS ===== */}
       <div className="apple-pill-tabs" style={{ marginBottom: '24px' }}>
         <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
           All Reviews
