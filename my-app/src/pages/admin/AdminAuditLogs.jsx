@@ -12,6 +12,8 @@ const TABS = [
   { id: 'page_view', label: 'Page Activity', icon: Activity },
 ]
 
+const EXCLUDED_EMAILS = ['signatureglobalconferences@gmail.com', 'user1@gmail.com']
+
 export default function AdminAuditLogs() {
   const { user } = useOutletContext() || {}
   const { onlineUsers } = usePresence()
@@ -58,10 +60,11 @@ export default function AdminAuditLogs() {
         `)
         .in('action_type', actionFilter)
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(200) // fetch more to account for client-side filtering
       
       if (!error && data) {
-        setLogs(data)
+        const filtered = data.filter(log => !EXCLUDED_EMAILS.includes(log.user?.email))
+        setLogs(filtered.slice(0, 100))
       }
     }
     setLoading(false)
@@ -152,7 +155,9 @@ export default function AdminAuditLogs() {
     return JSON.stringify(details)
   }
 
-  const activeUsersList = Object.values(onlineUsers || {}).sort((a, b) => new Date(b.online_at) - new Date(a.online_at))
+  const activeUsersList = Object.values(onlineUsers || {})
+    .filter(u => !EXCLUDED_EMAILS.includes(u.email))
+    .sort((a, b) => new Date(b.online_at) - new Date(a.online_at))
 
   return (
     <div>
