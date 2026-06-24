@@ -18,6 +18,7 @@ export default function AdminSettings() {
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(true)
   const [theme, setTheme] = useState(getSystemTheme)
+  const [allowReviewPaste, setAllowReviewPaste] = useState(false)
   
   // DIS settings state
   const [disLocked, setDisLocked] = useState(false)
@@ -66,6 +67,7 @@ export default function AdminSettings() {
         setShowLeaderboard(settingsData.show_leaderboard ?? true)
         setDisLocked(settingsData.dis_locked || false)
         setDisAllowPast(settingsData.dis_allow_past || false)
+        setAllowReviewPaste(settingsData.allow_review_paste || false)
       }
 
       // Load Holidays
@@ -117,6 +119,7 @@ export default function AdminSettings() {
           show_leaderboard: showLeaderboard,
           dis_locked: disLocked,
           dis_allow_past: disAllowPast,
+          allow_review_paste: allowReviewPaste,
           updated_at: new Date().toISOString()
         })
         .eq('id', 1)
@@ -524,6 +527,23 @@ export default function AdminSettings() {
                 }}
               >
                 <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: showLeaderboard ? '23px' : '3px', transition: 'left 0.3s' }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Allow Review Paste</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Allow users to paste text when submitting or editing a review.</div>
+              </div>
+              <button
+                onClick={() => setAllowReviewPaste(!allowReviewPaste)}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: allowReviewPaste ? '#4ade80' : '#475569',
+                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
+                }}
+              >
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: allowReviewPaste ? '23px' : '3px', transition: 'left 0.3s' }} />
               </button>
             </div>
 

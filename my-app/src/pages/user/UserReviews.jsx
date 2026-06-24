@@ -24,11 +24,23 @@ export default function UserReviews({ user }) {
   // Animation State
   const [snappingId, setSnappingId] = useState(null)
   const [activeTab, setActiveTab] = useState('write') // 'write' or 'submissions'
+  const [allowPaste, setAllowPaste] = useState(false)
 
   const loadData = async () => {
     if (!user) return
     setLoading(true)
     try {
+      // 0. Load system settings
+      const { data: settingsData } = await supabase
+        .from('system_settings')
+        .select('allow_review_paste')
+        .eq('id', 1)
+        .single()
+        
+      if (settingsData) {
+        setAllowPaste(settingsData.allow_review_paste || false)
+      }
+
       // 1. Load Profile to get primary_team_id
       const { data: profData } = await supabase
         .from('profiles')
@@ -92,8 +104,21 @@ export default function UserReviews({ user }) {
         })
         .subscribe()
         
+      const settingsChannel = supabase.channel('system_settings_changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'system_settings'
+        }, payload => {
+          if (payload.new) {
+            setAllowPaste(payload.new.allow_review_paste || false)
+          }
+        })
+        .subscribe()
+        
       return () => {
         supabase.removeChannel(channel)
+        supabase.removeChannel(settingsChannel)
       }
     }
   }, [user])
@@ -384,7 +409,7 @@ export default function UserReviews({ user }) {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                onPaste={(e) => e.preventDefault()} // Anti-paste feature
+                onPaste={(e) => { if (!allowPaste) e.preventDefault() }} // Anti-paste feature
               />
             </div>
 
@@ -397,7 +422,7 @@ export default function UserReviews({ user }) {
                 rows={6}
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
-                onPaste={(e) => e.preventDefault()} // Anti-paste feature
+                onPaste={(e) => { if (!allowPaste) e.preventDefault() }} // Anti-paste feature
                 style={{ resize: 'vertical' }}
               />
             </div>
