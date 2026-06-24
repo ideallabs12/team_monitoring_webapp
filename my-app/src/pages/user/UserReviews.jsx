@@ -30,15 +30,19 @@ export default function UserReviews({ user }) {
     if (!user) return
     setLoading(true)
     try {
-      // 0. Load system settings
-      const { data: settingsData } = await supabase
-        .from('system_settings')
-        .select('allow_review_paste')
-        .eq('id', 1)
-        .single()
-        
-      if (settingsData) {
-        setAllowPaste(settingsData.allow_review_paste || false)
+      // 0. Load system settings safely
+      try {
+        const { data: settingsData, error } = await supabase
+          .from('system_settings')
+          .select('allow_review_paste')
+          .eq('id', 1)
+          .single()
+          
+        if (settingsData && !error) {
+          setAllowPaste(settingsData.allow_review_paste || false)
+        }
+      } catch (settingsErr) {
+        console.warn('Settings load skipped or failed:', settingsErr)
       }
 
       // 1. Load Profile to get primary_team_id
