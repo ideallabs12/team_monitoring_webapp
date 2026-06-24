@@ -236,6 +236,7 @@ export default function UserReviews({ user }) {
     setTitle(review.title)
     setContext(review.context)
     setPenname(review.penname || '')
+    setActiveTab('write')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
