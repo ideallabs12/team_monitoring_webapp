@@ -447,7 +447,7 @@ export default function UserDis() {
       {activeTab === 'submit' && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: secondaryTeam ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr',
+          gridTemplateColumns: secondaryTeam ? 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))' : '1fr',
           gap: '28px',
           maxWidth: secondaryTeam ? '100%' : '650px',
           margin: '0 auto'

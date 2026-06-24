@@ -396,8 +396,26 @@ export default function TeamAnalytics({ user }) {
             </p>
           </div>
           
-          {/* Timeframe Selector Pill */}
-          <div className="apple-pill-tabs" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '4px' }}>
+          {/* Timeframe Selector — pills on desktop/tablet, dropdown on mobile */}
+          {/* Mobile dropdown (shown below 600px via CSS) */}
+          <select
+            className="mobile-timeframe-select"
+            value={timeframe}
+            onChange={e => setTimeframe(e.target.value)}
+          >
+            {[
+              { label: 'This Month', value: 'this_month' },
+              { label: '2 Months', value: '2m' },
+              { label: '3 Months', value: '3m' },
+              { label: '6 Months', value: '6m' },
+              { label: '12 Months', value: '12m' },
+              { label: 'All Time', value: 'all_time' }
+            ].map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {/* Desktop pill tabs (hidden on mobile via CSS) */}
+          <div className="apple-pill-tabs hide-on-mobile-use-select" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '4px' }}>
             {[
               { label: 'This Month', value: 'this_month' },
               { label: '2M', value: '2m' },
@@ -776,7 +794,7 @@ export default function TeamAnalytics({ user }) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px' }}>
               {newMemberAverages.map((mem, idx) => (
                  <div key={mem.memberId} style={{
                    background: 'rgba(255, 255, 255, 0.02)',

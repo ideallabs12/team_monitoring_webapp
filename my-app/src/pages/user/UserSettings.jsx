@@ -69,7 +69,7 @@ export default function UserSettings({ user }) {
           Choose how you want to navigate the application. Your preference will be saved across devices.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px' }}>
           {/* Top Navbar Option */}
           <div 
             onClick={() => !saving && handleSelectPreference('navbar')}

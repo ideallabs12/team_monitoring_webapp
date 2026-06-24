@@ -196,25 +196,46 @@ export default function UserSidebarLayout({ user, isDeactivated, RestrictedAcces
   return (
     <div className="admin-shell">
       {sidebarOpen && (
-        <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="admin-sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          style={{ zIndex: 150 }}
+        />
       )}
 
       <div className={`admin-sidebar-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
         <SidebarContent isMobileView={false} />
       </div>
 
-      <div className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}>
+      <div
+        className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}
+        style={{ zIndex: 200 }}
+      >
         <SidebarContent isMobileView={true} />
       </div>
 
       <div className="admin-main">
         <div className="admin-mobile-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <button className="admin-mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <button
+              className="admin-mobile-menu-btn"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle sidebar"
+            >
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
               All-Hands
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, var(--apple-accent-blue), #8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.7rem', fontWeight: '700', color: '#fff', flexShrink: 0
+            }}>
+              {initials}
             </div>
           </div>
         </div>

@@ -567,7 +567,7 @@ export default function TeamManagement({ user }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', alignItems: 'end', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '12px', alignItems: 'end', marginBottom: '20px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Effective Month</label>
             <select
@@ -783,7 +783,7 @@ export default function TeamManagement({ user }) {
                 🎉 Roster complete! All team members have submitted reports for this date.
               </p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '12px' }}>
                 {disDayBoard.missing.map(member => (
                   <div key={member.memberId} style={{ background: 'rgba(255, 69, 58, 0.02)', border: '1px solid rgba(255, 69, 58, 0.12)', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                     <div>
@@ -1000,7 +1000,7 @@ export default function TeamManagement({ user }) {
               {!isFutureMonth(revenueYear, revenueMonth) && !isPastMonthCheck(revenueYear, revenueMonth) && (
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '12px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SELECT WEEK</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px' }}>
                     {getWeekRanges(revenueYear, revenueMonth).map(w => {
                       const isSelected = selectedWeek === w.value
                       return (

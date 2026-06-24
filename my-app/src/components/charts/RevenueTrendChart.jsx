@@ -27,7 +27,7 @@ const renderCustomLabel = (props) => {
   if (!value || value === 0) return null
 
   const RADIAN = Math.PI / 180
-  const radius = outerRadius + 22
+  const radius = outerRadius + 8
   const x = cx + radius * Math.cos(-midAngle * RADIAN)
   const y = cy + radius * Math.sin(-midAngle * RADIAN)
 
@@ -236,17 +236,17 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <span>No revenue data available for this period.</span>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap', minWidth: 0 }}>
           {/* Pie Chart */}
-          <div style={{ flex: '1 1 350px', height: 350, minWidth: '300px', minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <div style={{ flex: '1 1 220px', height: 300, minWidth: '180px', minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" style={{ overflow: 'visible' }}>
+              <PieChart style={{ overflow: 'visible' }}>
                 <Pie
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
+                  innerRadius={45}
+                  outerRadius={75}
                   paddingAngle={3}
                   dataKey="value"
                   isAnimationActive={true}
@@ -254,8 +254,6 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                   animationDuration={1200}
                   stroke="rgba(0,0,0,0.3)"
                   strokeWidth={1}
-                  label={renderCustomLabel}
-                   labelLine={{ stroke: 'var(--apple-border)', strokeWidth: 1 }}
                 >
                   {pieData.map((_, index) => (
                     <Cell

@@ -305,6 +305,7 @@ export default function TargetVsActualChart({
       <div style={{
         display: 'flex',
         alignItems: 'center',
+        flexWrap: 'wrap',
         gap: '20px',
         marginTop: '16px',
         paddingTop: '14px',
@@ -325,7 +326,7 @@ export default function TargetVsActualChart({
           <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '500' }}>Actual Revenue</span>
         </div>
         {totalTarget > 0 && (
-          <div style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#64748b' }}>
+          <div style={{ fontSize: '0.78rem', color: '#64748b', flexGrow: 1, textAlign: 'right' }}>
             Total Target: <strong style={{ color: '#60a5fa' }}>{formatValue(totalTarget)}</strong>
             &nbsp;·&nbsp;
             Total Actual: <strong style={{ color: '#34d399' }}>{formatValue(totalActual)}</strong>

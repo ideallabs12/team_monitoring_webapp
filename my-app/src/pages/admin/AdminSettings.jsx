@@ -359,7 +359,7 @@ export default function AdminSettings() {
         <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Database size={18} style={{ color: '#38bdf8' }} /> Database Health Monitor
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Storage Used</div>
             <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
@@ -391,7 +391,7 @@ export default function AdminSettings() {
           <FileText size={18} style={{ color: '#3b82f6' }} /> DIS Management
         </h3>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '28px' }}>
           {/* Settings Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--apple-text-primary)', margin: 0 }}>DIS Configurations</h4>
@@ -496,7 +496,7 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '28px' }}>
         
         {/* Global Configuration */}
         <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>

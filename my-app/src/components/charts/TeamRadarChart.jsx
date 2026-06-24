@@ -85,7 +85,8 @@ export default function TeamRadarChart({ data, rawTeams }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '4px 12px',
+                padding: '6px 14px',
+                minHeight: '36px',
                 borderRadius: '16px',
                 border: active ? `1px solid ${color}` : '1px solid var(--apple-border)',
                 background: active ? `rgba(${active ? '59,130,246' : '0,0,0'}, 0.05)` : 'transparent',
@@ -118,18 +119,18 @@ export default function TeamRadarChart({ data, rawTeams }) {
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select one or more teams to overlay.</span>
         </div>
       ) : (
-        <div style={{ width: '100%', height: 280, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <ResponsiveContainer>
-            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
+        <div style={{ width: '100%', height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 8px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="55%" data={data} style={{ overflow: 'visible' }}>
               <PolarGrid stroke="var(--apple-border)" />
               <PolarAngleAxis 
                 dataKey="subject" 
-                tick={{ fill: 'var(--text-secondary)', fontSize: '0.75rem' }} 
+                tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} 
               />
               <PolarRadiusAxis 
                 angle={30} 
                 domain={[0, 100]} 
-                tick={{ fill: 'var(--apple-text-secondary)', fontSize: '0.65rem' }}
+                tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
                 axisLine={false}
               />
               
@@ -144,7 +145,16 @@ export default function TeamRadarChart({ data, rawTeams }) {
                   strokeWidth={2}
                 />
               ))}
-              <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '10px' }} />
+              <Legend 
+                wrapperStyle={{ 
+                  fontSize: '0.75rem', 
+                  paddingTop: '10px',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }} 
+              />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -152,8 +162,8 @@ export default function TeamRadarChart({ data, rawTeams }) {
 
       {/* Raw Metrics Comparison Table */}
       {activeTeamNames.length > 0 && (
-        <div style={{ marginTop: '16px', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
+        <div style={{ marginTop: '16px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left', minWidth: '450px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--text-secondary)' }}>
                 <th style={{ padding: '6px 4px' }}>Team</th>

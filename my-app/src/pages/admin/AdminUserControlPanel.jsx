@@ -329,7 +329,7 @@ export default function AdminUserControlPanel() {
       )}
 
       {/* Grid Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '24px' }}>
         
         {/* Card 1: Role & Access */}
         <div className="apple-card" style={{ padding: '24px' }}>
@@ -536,7 +536,7 @@ export default function AdminUserControlPanel() {
             </h3>
             
             {/* Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '24px' }}>
               <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
                 <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Calls Logged</div>
                 <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fff' }}>{salesLogs.length}</div>

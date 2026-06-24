@@ -1,3 +1,11 @@
+/* =====================================================
+   GLOBAL OVERFLOW FIX — prevents horizontal page shaking
+   ===================================================== */
+html {
+  /* overflow-x: hidden on html breaks position: sticky globally. 
+     Horizontal overflow protection is applied at the .admin-main level. */
+}
+
 :root {
   --primary: #4F46E5;
   --primary-hover: #4338CA;
@@ -16,6 +24,14 @@
   padding: 0;
 }
 
+/* Prevent flex/grid children from overflowing their containers */
+.admin-main,
+.admin-content,
+.admin-content-area {
+  min-width: 0;
+  max-width: 100%;
+}
+
 body {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -25,7 +41,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
 }
 
 #root {
@@ -2389,3 +2404,410 @@ select.apple-input {
   background: rgba(255,255,255,0.2);
 }
 
+
+/* =====================================================
+   MOBILE RESPONSIVE SYSTEM
+   All rules below target ONLY tablet and mobile.
+   Desktop (≥1024px) is completely unaffected.
+   ===================================================== */
+
+/* ── Tablet breakpoint (≤1023px) ── */
+@media (max-width: 1023px) {
+  /* Admin layout content padding (accounts for fixed 56px topbar) */
+  .admin-content {
+    padding: 84px 20px 32px 20px !important;
+    max-width: 100% !important;
+  }
+  .admin-content-area {
+    padding: 84px 20px 32px 20px !important;
+    max-width: 100% !important;
+  }
+
+  /* Prevent any direct child of admin-main from overflowing */
+  .admin-main > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* All recharts ResponsiveContainer wrappers — only prevent shrinking, do NOT clip */
+  .recharts-responsive-container {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .recharts-wrapper {
+    min-width: 0 !important;
+    /* NOTE: Do NOT set overflow:hidden here — it clips chart rendering */
+  }
+
+  /* Table wrappers — horizontal scroll on mobile */
+  .mobile-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Cards — ensure full width */
+  .apple-card {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── Mobile breakpoint (≤767px) ── */
+@media (max-width: 767px) {
+  /* Admin content reduced padding */
+  .admin-content,
+  .admin-content-area {
+    padding: 76px 14px 24px 14px !important;
+  }
+
+  /* Main content area for top-navbar layout */
+  .main-content {
+    padding: 24px 14px;
+    max-width: 100%;
+  }
+
+  /* Stats grids — single column */
+  .admin-stats-grid,
+  .admin-quick-nav-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Two-column grids → single column */
+  .apple-responsive-grid,
+  .apple-two-col-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* All auto-fit grids with min 280+ → force single column */
+  [style*="minmax(280px"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="minmax(300px"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="minmax(320px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Dis grids */
+  .dis-grid,
+  .dis-grid-cols,
+  .dis-team-selector-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Page header — stack icon and title */
+  .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  /* Full-width form controls */
+  .form-control,
+  .apple-form-control,
+  .apple-input,
+  .liquid-glass-input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Full-width buttons when stacked */
+  .mobile-full-btn {
+    width: 100% !important;
+  }
+
+  /* Touch target minimum */
+  button,
+  [role="button"],
+  .admin-sidebar-link,
+  .apple-pill-tab,
+  .apple-drawer-link {
+    min-height: 44px;
+  }
+
+  /* Apple pill tabs — scrollable but no overflow */
+  .apple-pill-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  /* Modal card — full width on small screens */
+  .apple-modal-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Charts overflow fix */
+  .recharts-surface {
+    overflow: visible;
+  }
+
+  /* Pane layouts stack */
+  .apple-pane-layout {
+    flex-direction: column !important;
+    gap: 16px;
+  }
+  .apple-left-pane {
+    width: 100% !important;
+  }
+
+  /* Stat hero text responsive */
+  .apple-stat-hero {
+    font-size: clamp(1.5rem, 6vw, 2.4rem);
+  }
+
+  /* DIS header section — stack on mobile */
+  .dis-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .dis-search-container {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Auth page — ensure single column */
+  .login-auth-container {
+    grid-template-columns: 1fr !important;
+    padding: 20px 14px !important;
+    gap: 20px !important;
+  }
+  .auth-feature-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Dashboard cards grid */
+  .dashboard-cards {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ticker container edge-to-edge */
+  .admin-ticker-container {
+    margin: -76px -14px 16px -14px !important;
+  }
+}
+
+/* ── Small mobile breakpoint (≤479px) ── */
+@media (max-width: 479px) {
+  /* Even tighter padding */
+  .admin-content,
+  .admin-content-area {
+    padding: 72px 12px 20px 12px !important;
+  }
+
+  .main-content {
+    padding: 20px 12px;
+  }
+
+  /* Page titles smaller */
+  .admin-page-title {
+    font-size: 1.4rem;
+  }
+
+  /* Pill tabs font size */
+  .apple-pill-tab {
+    font-size: 0.78rem;
+    padding: 7px 12px;
+  }
+
+  /* Apple card padding tighter */
+  .apple-card {
+    padding: 16px !important;
+  }
+
+  /* Buttons full-width in toolbars */
+  .mobile-toolbar-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .mobile-toolbar-wrap > * {
+    width: 100%;
+  }
+
+  /* Ticker container */
+  .admin-ticker-container {
+    margin: -72px -12px 14px -12px !important;
+  }
+}
+
+/* ── Table scroll utility ── */
+.table-scroll-mobile {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll-mobile table {
+  min-width: 600px;
+}
+
+/* ── Card list mobile (for table → card conversion) ── */
+.mobile-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-card-list-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--apple-border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.mobile-card-list-item .mcl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.mobile-card-list-item .mcl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 8px;
+}
+
+.mobile-card-list-item .mcl-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mobile-card-list-item .mcl-label {
+  font-size: 0.72rem;
+  color: var(--apple-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.mobile-card-list-item .mcl-value {
+  font-size: 0.85rem;
+  color: var(--apple-text-primary);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ── Responsive select dropdown for timeframe pickers ── */
+.mobile-timeframe-select {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .mobile-timeframe-select {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--apple-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--apple-text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    min-height: 44px;
+  }
+
+  .mobile-timeframe-select option {
+    background-color: #161617;
+    color: #f5f5f7;
+  }
+
+  /* Hide pill tabs on very small screens — show select instead */
+  .hide-on-mobile-use-select {
+    display: none !important;
+  }
+}
+
+/* ── Fix recharts on mobile ── */
+@media (max-width: 767px) {
+  /* Recharts legend wrapping — do NOT set max-width on wrapper/surface, it breaks internal SVG sizing */
+  /* Legend wrapping */
+  .recharts-legend-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    padding-top: 8px;
+  }
+  .recharts-default-legend {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 4px 12px !important;
+  }
+  .recharts-legend-item {
+    margin: 2px 4px !important;
+  }
+}
+
+/* ── Admin mobile topbar improvements ── */
+@media (max-width: 1023px) {
+  .admin-mobile-topbar {
+    padding: 12px 16px;
+    min-height: 56px;
+  }
+  .admin-mobile-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .admin-mobile-menu-btn:active {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* ── Flex filter rows — wrap on mobile ── */
+@media (max-width: 767px) {
+  .filter-row-flex {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .filter-row-flex > * {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+  .filter-row-flex select,
+  .filter-row-flex input {
+    width: 100% !important;
+  }
+}
+
+/* ── Admin shell overflow protection ── */
+/* IMPORTANT: Do NOT use overflow-x:hidden on .admin-shell —
+   it creates a scroll container that kills position:sticky on .admin-sidebar-wrapper.
+   Instead, overflow is controlled at .admin-main level only. */
+.admin-shell {
+  /* overflow: visible is the default — leave it so sticky sidebar works */
+  overflow: visible;
+}
+.admin-main {
+  overflow-x: clip; /* clip (not hidden) — clips visual overflow without creating scroll container */
+  min-width: 0;
+  flex: 1 1 0;
+  min-height: 100vh;
+}

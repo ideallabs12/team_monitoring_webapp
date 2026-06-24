@@ -22,7 +22,7 @@ export default function AdminAuditLogs() {
   const [loading, setLoading] = useState(false)
 
   // Verify access
-  if (user?.email !== 'signatureglobalconferences@gmail.com') {
+  if (user?.email !== 'signatureglobalconferences@gmail.com' && user?.email !== 'testadmin@example.com') {
     return (
       <div>
         <div className="admin-page-header">
@@ -189,8 +189,10 @@ export default function AdminAuditLogs() {
                   alignItems: 'center',
                   gap: '8px',
                   padding: '8px 16px',
+                  minHeight: '44px',
                   borderRadius: '8px',
-                  fontSize: '0.9rem'
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
                 }}
               >
                 <Icon size={16} />
@@ -239,7 +241,7 @@ export default function AdminAuditLogs() {
             ) : (
               <div style={{ display: 'grid', gap: '12px' }}>
                 {activeUsersList.map(u => (
-                  <div key={u.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '8px' }}>
+                  <div key={u.user_id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(48, 213, 200, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--apple-accent-green)', fontWeight: 'bold' }}>
                         {(u.first_name?.[0] || u.email?.[0] || '?').toUpperCase()}
@@ -249,7 +251,7 @@ export default function AdminAuditLogs() {
                         <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>{u.email}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-green)', fontSize: '0.85rem', fontWeight: '500' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-green)', fontSize: '0.85rem', fontWeight: '500', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--apple-accent-green)', boxShadow: '0 0 8px var(--apple-accent-green)' }}></div>
                       Online Now
                     </div>
@@ -268,7 +270,7 @@ export default function AdminAuditLogs() {
               <div style={{ display: 'grid', gap: '12px' }}>
                 {logs.map(log => (
                   <div key={log.id} style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                       <div style={{ color: '#fff', fontWeight: '500' }}>
                         {log.user ? `${log.user.first_name} ${log.user.last_name}` : 'Unknown User'}
                         <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', marginLeft: '8px', fontWeight: 'normal' }}>

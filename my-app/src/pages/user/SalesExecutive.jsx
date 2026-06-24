@@ -223,7 +223,7 @@ export default function SalesExecutive({ user }) {
       )}
 
       {/* Analytics Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '24px' }}>
         <div className="apple-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(0,113,227,0.1)', color: 'var(--apple-accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <PhoneCall size={24} />

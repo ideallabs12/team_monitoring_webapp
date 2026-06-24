@@ -198,7 +198,7 @@ export default function AdminReviews() {
 
       {/* ===== REVIEWS LIST ===== */}
       {filteredReviews.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {filteredReviews.map(review => (
             <div key={review.id} onClick={() => setSelectedReview(review)} style={{ 
               background: '#ffffff', 

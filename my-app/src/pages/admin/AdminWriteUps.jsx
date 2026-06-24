@@ -311,7 +311,7 @@ export default function AdminWriteUps() {
       )}
 
       {/* ===== EVENTS LIST ===== */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
         {events.map((ev) => (
           <div key={ev.id} className="apple-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: ev.is_active ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }} />

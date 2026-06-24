@@ -416,6 +416,8 @@ export default function AdminUsers() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
           <div style={{
             display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
             background: 'rgba(255,255,255,0.05)',
             padding: '4px',
             borderRadius: '16px',
@@ -502,7 +504,7 @@ export default function AdminUsers() {
         </div>
 
         {activeTab === 'control_panel' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '28px', marginBottom: '28px' }}>
           {/* Two Column Grid */}
           
           {/* Column 1: Access Controls (Profile info moved up) */}
@@ -742,7 +744,7 @@ export default function AdminUsers() {
             {loadingDis ? (
               <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
             ) : userDisReports.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '12px' }}>
                 {userDisReports.slice(0, 6).map(rep => (
                   <div
                     key={rep.id}
@@ -788,7 +790,7 @@ export default function AdminUsers() {
                 <Phone size={18} style={{ color: '#4ade80' }} /> Sales Executive Analytics
               </h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '24px' }}>
                 <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
                   <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Calls Logged</div>
                   <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fff' }}>{userSalesLogs.length}</div>

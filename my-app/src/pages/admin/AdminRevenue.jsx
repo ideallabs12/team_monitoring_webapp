@@ -287,7 +287,7 @@ export default function AdminRevenue() {
       {/* ===== SPECIAL TOP STATS GRID ===== */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', 
         gap: '24px', 
         marginBottom: '28px' 
       }}>
@@ -522,7 +522,7 @@ export default function AdminRevenue() {
         </div>
 
         {/* Summary mini-cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px', marginBottom: '28px' }}>
           <div className="apple-card" style={{ border: '1px solid rgba(0, 113, 227, 0.25)', background: 'rgba(0, 113, 227, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Expected ({filterLabel})
@@ -683,7 +683,7 @@ export default function AdminRevenue() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px' }}>
           {teamAverages.map((team, idx) => (
              <div key={team.teamId} style={{
                background: 'rgba(255, 255, 255, 0.02)',

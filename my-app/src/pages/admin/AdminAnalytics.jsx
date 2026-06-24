@@ -397,8 +397,8 @@ export default function AdminAnalytics() {
       </div>
 
       {/* ── TARGET VS ACTUAL + TEAM RADAR ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '24px' }}>
-        <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap: '24px' }}>
+        <div style={{ minWidth: 0 }}>
           <TargetVsActualChart
             targets={targets}
             revenues={nonAdminRevenues}
@@ -407,7 +407,7 @@ export default function AdminAnalytics() {
             teams={teams}
           />
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <TeamRadarChart data={radarData.radarData} rawTeams={radarData.rawTeams} />
         </div>
       </div>
@@ -461,7 +461,7 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--text-secondary)' }}>
@@ -561,6 +561,7 @@ export default function AdminAnalytics() {
               color: 'var(--apple-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
               background: 'var(--apple-bg)', padding: '6px 12px',
               borderRadius: '8px', border: '1px solid var(--apple-border)',
+              minHeight: '44px',
             }}>
               <input
                 type="checkbox"
@@ -577,7 +578,7 @@ export default function AdminAnalytics() {
                 padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
                 background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
                 border: '1px solid var(--apple-border)',
-                cursor: 'pointer',
+                cursor: 'pointer', minHeight: '44px',
               }}
             >
               <option value="all">All Teams</option>
@@ -593,6 +594,7 @@ export default function AdminAnalytics() {
                 border: '1px solid var(--apple-border)',
                 opacity: analyticsIsAllTime ? 0.5 : 1,
                 cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer',
+                minHeight: '44px',
               }}
             >
               {MONTH_NAMES.map((name, idx) => <option key={idx} value={idx}>{name}</option>)}
@@ -607,6 +609,7 @@ export default function AdminAnalytics() {
                 border: '1px solid var(--apple-border)',
                 opacity: analyticsIsAllTime ? 0.5 : 1,
                 cursor: analyticsIsAllTime ? 'not-allowed' : 'pointer',
+                minHeight: '44px',
               }}
             >
               {getAvailableYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -614,7 +617,7 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: analyticsIsAllTime ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: analyticsIsAllTime ? '1fr' : 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
           {/* Weekly Analytics */}
           {!analyticsIsAllTime && (
             <div style={{ background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '16px' }}>

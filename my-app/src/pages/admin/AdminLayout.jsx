@@ -198,6 +198,7 @@ export default function AdminLayout({ user, isDeactivated }) {
         <div
           className="admin-sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
+          style={{ zIndex: 150 }}
         />
       )}
 
@@ -207,7 +208,10 @@ export default function AdminLayout({ user, isDeactivated }) {
       </div>
 
       {/* ── Mobile Sidebar ── */}
-      <div className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}>
+      <div
+        className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}
+        style={{ zIndex: 200 }}
+      >
         <SidebarContent isMobileView={true} />
       </div>
 
@@ -219,11 +223,22 @@ export default function AdminLayout({ user, isDeactivated }) {
             <button
               className="admin-mobile-menu-btn"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle sidebar"
             >
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
               All-Hands Admin
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, var(--apple-accent-blue), #30d5c8)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.7rem', fontWeight: '700', color: '#fff', flexShrink: 0
+            }}>
+              {profile ? `${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`.toUpperCase() : 'SA'}
             </div>
           </div>
         </div>

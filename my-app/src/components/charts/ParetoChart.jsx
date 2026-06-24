@@ -89,7 +89,7 @@ export default function ParetoChart({ data, concentrationStats }) {
       </div>
 
       {/* Concentration Key Stat Badges */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px', marginBottom: '24px' }}>
         
         {/* Risk concentration */}
         <div style={{ 

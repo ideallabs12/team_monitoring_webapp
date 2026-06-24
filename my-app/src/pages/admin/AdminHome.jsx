@@ -443,7 +443,7 @@ export default function AdminHome() {
         }
         .admin-grid-bottom {
           display: grid;
-          grid-template-columns: 1fr 300px 300px;
+          grid-template-columns: minmax(0, 1fr) 300px 300px;
           gap: 20px;
           margin-bottom: 20px;
           align-items: stretch;
@@ -510,25 +510,38 @@ export default function AdminHome() {
           .admin-ticker-container {
             margin: -24px -20px 20px -20px;
           }
+          .admin-grid-bottom {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 600px) {
           .admin-header {
             flex-direction: column;
             align-items: flex-start;
-            gap: 16px;
+            gap: 12px;
+          }
+          .admin-stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .admin-quick-nav-grid {
+            grid-template-columns: 1fr 1fr;
           }
           .admin-header > div:last-child {
             text-align: left !important;
           }
         }
 
-        @media (max-width: 580px) {
+        @media (max-width: 420px) {
           .admin-stats-grid {
             grid-template-columns: 1fr;
           }
           .admin-quick-nav-grid {
             grid-template-columns: 1fr;
+          }
+          .admin-ticker-container {
+            margin: -24px -14px 16px -14px;
           }
         }
       `}</style>

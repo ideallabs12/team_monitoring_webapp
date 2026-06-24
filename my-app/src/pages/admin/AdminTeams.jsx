@@ -347,7 +347,7 @@ export default function AdminTeams() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
               <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
                   <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
@@ -394,7 +394,7 @@ export default function AdminTeams() {
             {loadingDis ? (
               <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem' }}>Loading DIS reports...</div>
             ) : disReports.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '12px' }}>
                 {disReports.map(rep => (
                   <div
                     key={rep.id}
@@ -552,7 +552,7 @@ export default function AdminTeams() {
           </div>
 
           {activeProfiles.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '14px' }}>
               {activeProfiles.map(profile => {
                 const monthRevenue = revenues
                   .filter(r => r.user_id === profile.id && r.team_id === activeTeam.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
@@ -672,7 +672,7 @@ export default function AdminTeams() {
                 Historical Members
                 <span style={{ marginLeft: '8px', fontSize: '0.75rem', fontWeight: '500' }}>({historicalWithRevenue.length})</span>
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px', opacity: 0.8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '14px', opacity: 0.8 }}>
                 {historicalWithRevenue.map(profile => {
                   const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase()
                   return (
@@ -741,8 +741,8 @@ export default function AdminTeams() {
 
           {/* Monthly Revenue Breakdown Grid */}
           <div className="apple-card" style={{ padding: '24px !important' }}>
-              <div style={{ width: '100%', textAlign: 'center', margin: '16px 0 24px 0' }}>
-                <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)' }}>
+              <div style={{ width: '100%', textAlign: 'center', margin: '16px 0 24px 0', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)', minWidth: 'min-content' }}>
                   {(() => {
                     const options = [
                       { label: '3M', value: 3 },
@@ -783,7 +783,7 @@ export default function AdminTeams() {
                               borderRadius: '999px',
                               transition: 'color 0.2s',
                               flex: 1,
-                              minWidth: '70px'
+                              minWidth: '50px'
                             }}
                           >
                             {opt.label}
@@ -1080,8 +1080,8 @@ export default function AdminTeams() {
           </div>
 
           {/* Contributors List */}
-          <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '500px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)' }}>
                   <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</th>
@@ -1218,7 +1218,7 @@ export default function AdminTeams() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px' }}>
                 {memberAverages.map((mem, idx) => (
                    <div key={mem.memberId} style={{
                      background: 'rgba(255, 255, 255, 0.02)',
@@ -1397,7 +1397,7 @@ export default function AdminTeams() {
       </div>
 
       {/* Grid of Team Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px', width: '100%' }}>
         {teams.length > 0 ? (
           teams.map(team => {
             // Count total members (primary + secondary, excluding admins and deactivated)

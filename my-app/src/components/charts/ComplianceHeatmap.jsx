@@ -341,7 +341,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
       </div>
 
       {/* ── TWO-COLUMN SUMMARY (TEAMS & STREAKS) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
         
         {/* Left Column: Team Compliance Rates */}
         <div style={{ background: 'var(--apple-bg)', borderRadius: '12px', padding: '16px', border: '1px solid var(--apple-border)' }}>

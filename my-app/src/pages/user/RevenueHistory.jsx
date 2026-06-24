@@ -190,7 +190,7 @@ export default function RevenueHistory({ user }) {
       </div>
 
       {/* Summary Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '28px' }}>
         <div className="apple-card" style={{ padding: '20px !important', textAlign: 'center', background: 'linear-gradient(135deg, rgba(48,213,200,0.08), rgba(0,113,227,0.08)) !important', border: '1px solid rgba(48,213,200,0.2) !important' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700', marginBottom: '6px' }}>All-Time Total</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '700', color: 'var(--apple-accent-green)', letterSpacing: '-0.02em' }}>

@@ -447,7 +447,7 @@ export default function UserRevenue({ user, isAdminView }) {
             <form onSubmit={handleSubmit}>
 
               {/* Row 1: Team, Year, Month */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {/* Team (read-only if one, dropdown if multiple) */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
@@ -523,7 +523,7 @@ export default function UserRevenue({ user, isAdminView }) {
               {!isPastMonthCheck && (
                 <div style={{ marginBottom: '24px' }}>
                   <label className="apple-form-label" style={{ marginBottom: '12px' }}>Select Week</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px' }}>
                     {getWeekRanges(selectedYear, selectedMonth).map((w) => {
                       const isActive = selectedWeek === w.value;
                       return (
@@ -564,7 +564,7 @@ export default function UserRevenue({ user, isAdminView }) {
               )}
 
               {/* Row 3: Client Name, Source, Amount */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {/* Client Name */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name</label>
@@ -674,7 +674,7 @@ export default function UserRevenue({ user, isAdminView }) {
       )}
 
       {/* ===== SUMMARY CARDS ===== */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '32px' }}>
 
         {/* All-Time Total */}
         <div className="apple-card" style={{
@@ -1018,10 +1018,10 @@ export default function UserRevenue({ user, isAdminView }) {
           <>
             {/* WEEKLY & SOURCE ANALYTICS */}
             {!isAllTime && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px', marginBottom: '32px' }}>
 
                 {/* Weekly Analytics */}
-                <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '20px' }}>
                   <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Weekly Breakdown</h3>
                   {weeklyData.length > 0 ? (
                     <div style={{ height: 250, width: '100%' }}>
@@ -1041,7 +1041,7 @@ export default function UserRevenue({ user, isAdminView }) {
                 </div>
 
                 {/* Source Breakdown */}
-                <div className="apple-card" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '20px' }}>
                   <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Source Breakdown</h3>
                   {sourceData.length > 0 ? (
                     <div style={{ height: 250, width: '100%' }}>
@@ -1051,9 +1051,9 @@ export default function UserRevenue({ user, isAdminView }) {
                             data={sourceData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
+                            innerRadius={45}
+                            outerRadius={65}
+                            paddingAngle={3}
                             dataKey="value"
                             label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
                               const radius = innerRadius + (outerRadius - innerRadius) * 2.2;

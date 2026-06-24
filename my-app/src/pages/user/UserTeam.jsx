@@ -285,7 +285,7 @@ export default function UserTeam({ user }) {
                     padding: '24px clamp(16px, 4vw, 32px)', 
                     background: 'rgba(255,255,255,0.02)', 
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
                     gap: '16px'
                   }}>
                     <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(96,165,250,0.08)' }}>

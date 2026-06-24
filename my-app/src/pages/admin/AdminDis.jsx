@@ -394,7 +394,7 @@ export default function AdminDis() {
       </div>
 
       {/* ===== METRICS SUMMARY ROW ===== */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '28px' }}>
         
         {/* MTD Revenue */}
         <div className="apple-card" style={{ position: 'relative', overflow: 'hidden', padding: '20px' }}>
@@ -494,7 +494,7 @@ export default function AdminDis() {
           Select Team to Filter
         </h3>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
           
           {/* "All Teams" Card */}
           <div 
