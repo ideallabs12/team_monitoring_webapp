@@ -380,17 +380,18 @@ export default function UserRevenue({ user, isAdminView }) {
           position: 'relative'
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}>
             <div style={{
               width: '48px', height: '48px',
               background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
               borderRadius: '12px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 16px rgba(79, 70, 229, 0.25)'
+              boxShadow: '0 8px 16px rgba(79, 70, 229, 0.25)',
+              flexShrink: 0
             }}>
               <DollarSign color="#fff" size={24} />
             </div>
-            <div>
+            <div style={{ flex: '1 1 180px', minWidth: 0 }}>
               <h3 className="apple-title-small" style={{ margin: 0, color: editingRecord ? 'var(--apple-accent-blue)' : '#fff' }}>
                 {editingRecord ? 'Edit Revenue Contribution' : 'Log New Revenue'}
               </h3>
@@ -422,7 +423,8 @@ export default function UserRevenue({ user, isAdminView }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
@@ -803,9 +805,12 @@ export default function UserRevenue({ user, isAdminView }) {
                   {/* Grid layout of months wrapping into multiple rows */}
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))', 
+                    gridTemplateRows: 'repeat(2, 1fr)', 
+                    gridAutoFlow: 'column',
                     gap: '8px', 
-                    width: '100%'
+                    width: '100%',
+                    overflowX: 'auto',
+                    paddingBottom: '8px'
                   }}>
                     {breakdownMonths.map(monthStr => {
                       const amt = combinedMonthMap[monthStr] || 0
@@ -817,7 +822,8 @@ export default function UserRevenue({ user, isAdminView }) {
                           border: `1px solid ${amt > 0 ? 'rgba(0, 113, 227, 0.2)' : 'var(--apple-border)'}`,
                           borderRadius: '8px',
                           padding: '8px 4px',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          minWidth: '85px'
                         }}>
                           <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
                             {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
@@ -884,9 +890,12 @@ export default function UserRevenue({ user, isAdminView }) {
                   {/* Grid layout of months wrapping into multiple rows */}
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', 
+                    gridTemplateRows: 'repeat(2, 1fr)', 
+                    gridAutoFlow: 'column',
                     gap: '6px', 
-                    width: '100%' 
+                    width: '100%',
+                    overflowX: 'auto',
+                    paddingBottom: '8px'
                   }}>
                     {breakdownMonths.map(monthStr => {
                       const amt = teamMonthMap[monthStr] || 0
@@ -898,7 +907,8 @@ export default function UserRevenue({ user, isAdminView }) {
                           border: `1px solid ${amt > 0 ? 'rgba(48, 213, 200, 0.15)' : 'var(--apple-border)'}`,
                           borderRadius: '6px',
                           padding: '6px 2px',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          minWidth: '80px'
                         }}>
                           <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
                             {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}

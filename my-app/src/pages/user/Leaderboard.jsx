@@ -246,7 +246,8 @@ export default function Leaderboard({ user }) {
             Team Rankings
           </h2>
       <div className="apple-card" style={{ padding: '0 !important' }}>
-        <div style={{ width: '100%', overflowX: 'auto' }}>
+        {/* Desktop Table */}
+        <div className="leaderboard-table-desktop" style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)', fontSize: '0.85rem' }}>
@@ -302,6 +303,45 @@ export default function Leaderboard({ user }) {
           </tbody>
         </table>
         </div>
+        {/* Mobile Card List */}
+        <div className="leaderboard-cards-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+          {teamRankings.map((team, index) => {
+            const isFirst = index === 0 && team.total > 0
+            const isSecond = index === 1 && team.total > 0
+            const isThird = index === 2 && team.total > 0
+            let topRank = 0
+            if (isFirst) topRank = 1
+            else if (isSecond) topRank = 2
+            else if (isThird) topRank = 3
+            return (
+              <div key={team.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: index < teamRankings.length - 1 ? '1px solid var(--apple-border)' : 'none',
+                background: isFirst ? 'linear-gradient(to right, rgba(245,158,11,0.07), transparent)'
+                  : isSecond ? 'linear-gradient(to right, rgba(148,163,184,0.04), transparent)'
+                  : isThird ? 'linear-gradient(to right, rgba(180,83,9,0.04), transparent)'
+                  : 'transparent',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div style={{ flexShrink: 0 }}><RankBadge rank={index + 1} topRank={topRank} /></div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: isFirst ? '700' : '600', color: isFirst ? '#fff' : 'var(--apple-text-primary)', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {team.name}
+                    </div>
+                    <div style={{ fontWeight: '700', color: team.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.88rem', marginTop: '2px' }}>
+                      ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {teamRankings.length === 0 && (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>No teams found.</div>
+          )}
+        </div>
       </div>
         </>
       )}
@@ -314,7 +354,8 @@ export default function Leaderboard({ user }) {
             Individual Rankings (Top 10)
           </h2>
       <div className="apple-card" style={{ padding: '0 !important' }}>
-        <div style={{ width: '100%', overflowX: 'auto' }}>
+        {/* Desktop Table */}
+        <div className="leaderboard-table-desktop" style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)', fontSize: '0.85rem' }}>
@@ -374,6 +415,49 @@ export default function Leaderboard({ user }) {
             )}
           </tbody>
         </table>
+        </div>
+        {/* Mobile Card List */}
+        <div className="leaderboard-cards-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+          {individualRankings.slice(0, 10).map((indiv, index) => {
+            const isFirst = index === 0 && indiv.total > 0
+            const isSecond = index === 1 && indiv.total > 0
+            const isThird = index === 2 && indiv.total > 0
+            const teamObj = teams.find(t => t.id === indiv.team_id)
+            let topRank = 0
+            if (isFirst) topRank = 1
+            else if (isSecond) topRank = 2
+            else if (isThird) topRank = 3
+            return (
+              <div key={indiv.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 20px',
+                borderBottom: index < Math.min(individualRankings.length, 10) - 1 ? '1px solid var(--apple-border)' : 'none',
+                background: isFirst ? 'linear-gradient(to right, rgba(245,158,11,0.07), transparent)'
+                  : isSecond ? 'linear-gradient(to right, rgba(148,163,184,0.04), transparent)'
+                  : isThird ? 'linear-gradient(to right, rgba(180,83,9,0.04), transparent)'
+                  : 'transparent',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div style={{ flexShrink: 0 }}><RankBadge rank={index + 1} topRank={topRank} /></div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: isFirst ? '700' : '600', color: isFirst ? '#fff' : 'var(--apple-text-primary)', fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {indiv.name}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '1px' }}>
+                      {teamObj ? teamObj.name : 'Unknown'}
+                    </div>
+                    <div style={{ fontWeight: '700', color: indiv.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.86rem', marginTop: '3px' }}>
+                      ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {individualRankings.length === 0 && (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>No individuals found.</div>
+          )}
         </div>
       </div>
         </>

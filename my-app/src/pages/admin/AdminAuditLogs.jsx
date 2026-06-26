@@ -56,13 +56,15 @@ export default function AdminAuditLogs() {
         .from('audit_logs')
         .select(`
           id, action_type, details, created_at,
-          user:profiles!audit_logs_user_id_fkey(first_name, last_name, email)
+          user:profiles(first_name, last_name, email)
         `)
         .in('action_type', actionFilter)
         .order('created_at', { ascending: false })
         .limit(200) // fetch more to account for client-side filtering
       
-      if (!error && data) {
+      if (error) {
+        console.error('Error fetching audit logs:', error)
+      } else if (data) {
         const filtered = data.filter(log => !EXCLUDED_EMAILS.includes(log.user?.email))
         setLogs(filtered.slice(0, 100))
       }
@@ -160,14 +162,23 @@ export default function AdminAuditLogs() {
     .sort((a, b) => new Date(b.online_at) - new Date(a.online_at))
 
   return (
-    <div>
-      <div className="admin-page-header">
-        <div className="admin-page-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+    <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+        <div style={{
+          width: '48px', height: '48px', borderRadius: '14px',
+          background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+        }}>
           <ClipboardList size={28} />
         </div>
         <div>
-          <h1 className="admin-page-title">Global Audit Logs</h1>
-          <p className="admin-page-subtitle">Track real-time activity across the entire platform.</p>
+          <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.02em' }}>
+            Global Audit Logs
+          </h1>
+          <p style={{ margin: '4px 0 0 0', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
+            Track real-time activity across the entire platform.
+          </p>
         </div>
       </div>
 
@@ -230,7 +241,7 @@ export default function AdminAuditLogs() {
         )}
       </div>
 
-      <div className="admin-card" style={{ padding: '20px' }}>
+      <div className="apple-card" style={{ padding: '20px' }}>
         {activeTab === 'active' ? (
           <div>
             <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>

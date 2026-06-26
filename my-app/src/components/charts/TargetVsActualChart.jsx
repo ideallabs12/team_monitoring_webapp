@@ -223,7 +223,7 @@ export default function TargetVsActualChart({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 30, right: 16, left: 8, bottom: 5 }}
+              margin={{ top: 30, right: 10, left: -5, bottom: 5 }}
               barCategoryGap="32%"
               barGap={5}
             >
@@ -257,8 +257,8 @@ export default function TargetVsActualChart({
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatValue}
-                dx={-4}
-                width={56}
+                dx={0}
+                width={45}
               />
               <Tooltip
                 content={<CustomTooltip />}

@@ -54,6 +54,7 @@ export default function Layout({ user, isDeactivated }) {
       <Navbar user={user} />
       <main style={{ 
         flex: 1, 
+        minWidth: 0,
         padding: 'clamp(20px, 4vw, 40px) clamp(16px, 5%, 48px)', 
         maxWidth: '1200px', 
         margin: '0 auto', 

@@ -754,17 +754,6 @@ export default function AdminTeams() {
                     const activeIndex = options.findIndex(o => o.value === breakdownPeriod);
                     return (
                       <>
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: 4, bottom: 4, left: 4,
-                            width: `calc((100% - 8px) / ${options.length})`,
-                            background: 'rgba(0, 113, 227, 0.12)',
-                            borderRadius: '999px',
-                            transform: `translateX(${activeIndex * 100}%)`,
-                            transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)'
-                          }}
-                        />
                         {options.map(opt => (
                           <button
                             key={opt.value}
@@ -773,17 +762,16 @@ export default function AdminTeams() {
                             style={{
                               position: 'relative',
                               zIndex: 1,
-                              padding: '6px 18px',
+                              padding: '6px 16px',
                               fontSize: '0.82rem',
                               fontWeight: breakdownPeriod === opt.value ? '700' : '600',
                               color: breakdownPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--text-secondary)',
-                              background: 'transparent',
+                              background: breakdownPeriod === opt.value ? 'rgba(0, 113, 227, 0.12)' : 'transparent',
                               border: 'none',
                               cursor: 'pointer',
                               borderRadius: '999px',
-                              transition: 'color 0.2s',
-                              flex: 1,
-                              minWidth: '50px'
+                              transition: 'all 0.2s',
+                              minWidth: 'auto'
                             }}
                           >
                             {opt.label}
@@ -797,7 +785,7 @@ export default function AdminTeams() {
               <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Monthly Revenue</div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Team Revenue Breakdown</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--apple-text-primary)', fontWeight: '700', lineHeight: '1.2' }}>Team Revenue<br/>Breakdown</h3>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>
@@ -810,11 +798,15 @@ export default function AdminTeams() {
               </div>
 
             {/* Month grid wrapping into multiple rows */}
-            <div style={{ 
+            <div className="custom-scrollbar" style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))', 
-              gap: '10px',
-              width: '100%'
+              gridTemplateRows: 'repeat(2, 1fr)', 
+              gridAutoFlow: 'column',
+              gridAutoColumns: 'minmax(85px, 1fr)',
+              gap: '8px',
+              width: '100%',
+              overflowX: 'auto',
+              paddingBottom: '8px'
             }}>
               {breakdownTrendData.map((d) => {
                 const pct = breakdownMaxMonthRevenue > 0 ? (d.total / breakdownMaxMonthRevenue) * 100 : 0
@@ -887,33 +879,37 @@ export default function AdminTeams() {
 
           {/* Trend Line Card */}
           <div className="apple-card" style={{ padding: '24px !important', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Activity size={18} color="var(--apple-text-secondary)" />
-                <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>Performance Trend</h3>
-              </div>
+            <div style={{ width: '100%', textAlign: 'center', margin: '0 0 20px 0', overflowX: 'auto', whiteSpace: 'nowrap' }}>
               {/* Period filter pills */}
-              <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '4px' }}>
+              <div style={{ display: 'inline-flex', position: 'relative', background: 'var(--apple-bg-secondary)', padding: '4px', borderRadius: '999px', border: '1px solid var(--apple-border)', minWidth: 'min-content' }}>
                 {[{ label: '2M', value: 2 }, { label: '3M', value: 3 }, { label: '6M', value: 6 }, { label: '12M', value: 12 }].map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => setTrendPeriod(opt.value)}
                     style={{
-                      padding: '5px 14px',
-                      borderRadius: '7px',
+                      position: 'relative',
+                      zIndex: 1,
+                      padding: '6px 16px',
+                      fontSize: '0.82rem',
+                      fontWeight: trendPeriod === opt.value ? '700' : '600',
+                      color: trendPeriod === opt.value ? 'var(--apple-accent-blue)' : 'var(--text-secondary)',
+                      background: trendPeriod === opt.value ? 'rgba(0, 113, 227, 0.12)' : 'transparent',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '0.78rem',
-                      fontWeight: '600',
-                      transition: 'all 0.15s ease',
-                      background: trendPeriod === opt.value ? 'var(--apple-accent-blue)' : 'transparent',
-                      color: trendPeriod === opt.value ? '#fff' : 'var(--apple-text-secondary)',
+                      borderRadius: '999px',
+                      transition: 'all 0.2s',
+                      minWidth: 'auto'
                     }}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <Activity size={18} color="var(--apple-text-secondary)" />
+              <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: '600' }}>Performance Trend</h3>
             </div>
 
             <div style={{ height: '260px' }}>
@@ -938,8 +934,8 @@ export default function AdminTeams() {
                     tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }}
                     axisLine={false} 
                     tickLine={false}
-                    dx={-4}
-                    width={60}
+                    dx={0}
+                    width={40}
                   />
                   <Tooltip
                     content={<ChartTooltip />}

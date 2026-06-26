@@ -2811,3 +2811,17 @@ select.apple-input {
   flex: 1 1 0;
   min-height: 100vh;
 }
+
+/* ── Leaderboard Mobile Adjustments ── */
+.leaderboard-cards-mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .leaderboard-table-desktop {
+    display: none !important;
+  }
+  .leaderboard-cards-mobile {
+    display: flex !important;
+  }
+}

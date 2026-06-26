@@ -26,7 +26,7 @@ import TeamDisReport from './pages/user/TeamDisReport'
 import SalesExecutive from './pages/user/SalesExecutive'
 import UserReviews from './pages/user/UserReviews'
 import UserSettings from './pages/user/UserSettings'
-
+import Attendance from './pages/user/Attendance'
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminHome from './pages/admin/AdminHome'
@@ -41,6 +41,7 @@ import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminWriteUps from './pages/admin/AdminWriteUps'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
+import AdminAttendance from './pages/admin/AdminAttendance'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -323,6 +324,7 @@ function App() {
           <Route path="/reviews" element={hasProfile && !isAdmin ? <UserReviews user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
         {/* Admin Routes */}
@@ -342,6 +344,7 @@ function App() {
           <Route path="milestones" element={<Milestones user={user} />} />
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
+          <Route path="attendance" element={<AdminAttendance />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

@@ -252,15 +252,30 @@ export default function AdminHome() {
 
   const months12 = useMemo(() => getLastNMonths(12).reverse(), [])
 
+  /* ── aggregate revenues once for performance (O(N) instead of O(N*M*T)) ── */
+  const aggregatedRevenues = useMemo(() => {
+    const byMonth = {}
+    const byMonthAndTeam = {}
+    for (const r of revenues) {
+      const m = normalizeMonth(r.revenue_month)
+      const amt = Number(r.amount || 0)
+      if (!byMonth[m]) byMonth[m] = 0
+      byMonth[m] += amt
+      
+      const teamKey = `${m}_${r.team_id}`
+      if (!byMonthAndTeam[teamKey]) byMonthAndTeam[teamKey] = 0
+      byMonthAndTeam[teamKey] += amt
+    }
+    return { byMonth, byMonthAndTeam }
+  }, [revenues])
+
   /* Revenue trend chart data (last 12 months) */
   const revenueTrend = useMemo(() => {
     return months12.map(m => {
-      const total = revenues
-        .filter(r => normalizeMonth(r.revenue_month) === m)
-        .reduce((s, r) => s + Number(r.amount || 0), 0)
+      const total = aggregatedRevenues.byMonth[m] || 0
       return { month: formatRevenueMonthShort(m), total, key: m }
     })
-  }, [revenues, months12])
+  }, [aggregatedRevenues, months12])
 
   /* Per-team monthly data (last 6 months) for stacked bar */
   const months6 = useMemo(() => getLastNMonths(6).reverse(), [])
@@ -268,21 +283,19 @@ export default function AdminHome() {
     return months6.map(m => {
       const row = { month: formatRevenueMonthShort(m) }
       teams.forEach(team => {
-        row[team.name] = revenues
-          .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === m)
-          .reduce((s, r) => s + Number(r.amount || 0), 0)
+        row[team.name] = aggregatedRevenues.byMonthAndTeam[`${m}_${team.id}`] || 0
       })
       return row
     })
-  }, [revenues, teams, months6])
+  }, [aggregatedRevenues, teams, months6])
 
   /* Current & last month strings */
   const currentMonthStr = useMemo(() => getLastNMonths(1)[0], [])
   const lastMonthStr    = useMemo(() => getLastNMonths(2)[1], [])
 
   /* MTD & MoM */
-  const mtdRevenue  = useMemo(() => sumRevenues(revenues.filter(r => normalizeMonth(r.revenue_month) === currentMonthStr)), [revenues, currentMonthStr])
-  const lastMonthRev= useMemo(() => sumRevenues(revenues.filter(r => normalizeMonth(r.revenue_month) === lastMonthStr)),    [revenues, lastMonthStr])
+  const mtdRevenue  = useMemo(() => aggregatedRevenues.byMonth[currentMonthStr] || 0, [aggregatedRevenues, currentMonthStr])
+  const lastMonthRev= useMemo(() => aggregatedRevenues.byMonth[lastMonthStr] || 0, [aggregatedRevenues, lastMonthStr])
   const momChange   = lastMonthRev > 0 ? ((mtdRevenue - lastMonthRev) / lastMonthRev) * 100 : 0
 
   /* DIS */
@@ -295,13 +308,13 @@ export default function AdminHome() {
   /* Team Watchlist: current vs last month per team */
   const teamWatchlist = useMemo(() => {
     return teams.map((team, idx) => {
-      const cur  = sumRevenues(revenues.filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr))
-      const prev = sumRevenues(revenues.filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === lastMonthStr))
+      const cur  = aggregatedRevenues.byMonthAndTeam[`${currentMonthStr}_${team.id}`] || 0
+      const prev = aggregatedRevenues.byMonthAndTeam[`${lastMonthStr}_${team.id}`] || 0
       const chg  = prev > 0 ? ((cur - prev) / prev) * 100 : (cur > 0 ? 100 : 0)
       const memberCount = nonAdminProfiles.filter(p => p.team_id === team.id).length
       // mini sparkline (last 4 months)
       const spark = getLastNMonths(4).reverse().map(m =>
-        sumRevenues(revenues.filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === m))
+        aggregatedRevenues.byMonthAndTeam[`${m}_${team.id}`] || 0
       )
       return { ...team, cur, prev, chg, memberCount, spark, color: TEAM_COLORS[idx % TEAM_COLORS.length] }
     }).sort((a, b) => b.cur - a.cur)

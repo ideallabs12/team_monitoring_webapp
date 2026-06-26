@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon } from 'lucide-react'
+import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import UserRevenue from '../user/UserRevenue'
 
@@ -131,7 +131,15 @@ export default function AdminUsers() {
         .eq('id', viewingProfileUser.id)
       if (error) throw error
 
-      setSuccessMsg(`Successfully updated ${field === 'has_revenue_logging' ? 'Revenue Logging' : field === 'has_dis_reporting' ? 'DIS Reporting' : 'Sales Executive'} to ${nextStatus ? 'ON' : 'OFF'}`)
+      let readableField = field
+      if (field === 'has_revenue_logging') readableField = 'Revenue Logging'
+      else if (field === 'has_dis_reporting') readableField = 'DIS Reporting'
+      else if (field === 'is_sales_executive') readableField = 'Sales Executive'
+      else if (field === 'require_gps_attendance') readableField = 'Require GPS Attendance'
+      else if (field === 'require_ip_attendance') readableField = 'Require IP Attendance'
+      else if (field === 'wfh_enabled') readableField = 'Work From Home'
+
+      setSuccessMsg(`Successfully updated ${readableField} to ${nextStatus ? 'ON' : 'OFF'}`)
       updateProfileUser({ [field]: nextStatus })
     } catch (err) {
       setErrorMsg(err.message || 'Failed to update access status.')
@@ -590,6 +598,69 @@ export default function AdminUsers() {
                     }}
                   >
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.is_sales_executive ? '23px' : '3px', transition: 'left 0.3s' }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 1.3: Attendance Controls */}
+            <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h3 className="apple-title-small" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={18} style={{ color: '#ec4899' }} /> Attendance Controls
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Work From Home (WFH)</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>Bypasses location/IP verification</span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAccess('wfh_enabled', viewingProfileUser.wfh_enabled)}
+                    disabled={saving}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: viewingProfileUser.wfh_enabled ? '#4ade80' : '#475569',
+                      border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0
+                    }}
+                  >
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.wfh_enabled ? '23px' : '3px', transition: 'left 0.3s' }} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Require Office GPS</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>Must be at office coordinates</span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAccess('require_gps_attendance', viewingProfileUser.require_gps_attendance !== false)}
+                    disabled={saving}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: viewingProfileUser.require_gps_attendance !== false ? '#4ade80' : '#475569',
+                      border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0
+                    }}
+                  >
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.require_gps_attendance !== false ? '23px' : '3px', transition: 'left 0.3s' }} />
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Require Office Wi-Fi/IP</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>Must be connected to office network</span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAccess('require_ip_attendance', viewingProfileUser.require_ip_attendance !== false)}
+                    disabled={saving}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: viewingProfileUser.require_ip_attendance !== false ? '#4ade80' : '#475569',
+                      border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0
+                    }}
+                  >
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: viewingProfileUser.require_ip_attendance !== false ? '23px' : '3px', transition: 'left 0.3s' }} />
                   </button>
                 </div>
               </div>

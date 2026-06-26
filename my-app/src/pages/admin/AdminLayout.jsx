@@ -21,7 +21,8 @@ import {
   Moon,
   Calendar,
   Star,
-  Sparkles
+  Sparkles,
+  MapPin
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },
   { path: '/admin/milestones', label: 'Milestones',  icon: Crown },
   { path: '/admin/auditlogs', label: 'Audit Logs',  icon: ClipboardList },
+  { path: '/admin/attendance', label: 'Attendance', icon: MapPin },
   { path: '/admin/settings',  label: 'Settings',    icon: Settings },
 ]
 
@@ -145,7 +147,11 @@ export default function AdminLayout({ user, isDeactivated }) {
 
         {/* ── Navigation ── */}
         <nav className="admin-sidebar-nav" style={{ padding: collapsed ? '0 8px' : '0 10px' }}>
-          {NAV_ITEMS.filter(item => item.path !== '/admin/ai-analytics' || user?.email?.includes('signatureglobalconferences')).map(({ path, label, icon: Icon }) => {
+          {NAV_ITEMS.filter(item => {
+            if (item.path === '/admin/ai-analytics') return user?.email?.includes('signatureglobalconferences')
+            if (item.path === '/admin/attendance') return user?.email === 'user1@gmail.com' || user?.email === 'signatureglobalconferences@gmail.com' || user?.email === 'testadmin@example.com'
+            return true
+          }).map(({ path, label, icon: Icon }) => {
             const active = isActive(path)
             return (
               <Link

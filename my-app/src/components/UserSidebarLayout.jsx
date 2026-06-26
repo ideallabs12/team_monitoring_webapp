@@ -15,7 +15,8 @@ import {
   History,
   PhoneCall,
   Star,
-  User as UserIcon
+  User as UserIcon,
+  MapPin
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, RestrictedAccessView }) {
@@ -62,6 +63,11 @@ export default function UserSidebarLayout({ user, isDeactivated, RestrictedAcces
   navLinks.push({ path: '/dis', label: 'My DIS', icon: FileText })
   navLinks.push({ path: '/profile', label: 'Profile', icon: UserIcon })
   navLinks.push({ path: '/settings', label: 'Settings', icon: SettingsIcon })
+
+  const isWhitelisted = user?.email === 'user1@gmail.com' || user?.email === 'signatureglobalconferences@gmail.com' || user?.email === 'testadmin@example.com'
+  if (isWhitelisted) {
+    navLinks.push({ path: '/attendance', label: 'Attendance', icon: MapPin })
+  }
 
   const othersLinks = [
     { path: '/revenue-history', label: 'Revenue History', icon: History },

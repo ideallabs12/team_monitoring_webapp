@@ -224,7 +224,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          height: 350,
+          height: 250,
           color: 'var(--text-secondary)',
           fontSize: '0.9rem',
           gap: '8px',
@@ -236,9 +236,9 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <span>No revenue data available for this period.</span>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'clamp(12px, 3vw, 24px)', flexWrap: 'wrap', minWidth: 0 }}>
           {/* Pie Chart */}
-          <div style={{ flex: '1 1 220px', height: 300, minWidth: '180px', minHeight: 0 }}>
+          <div style={{ flex: '1 1 220px', height: 220, minWidth: '180px', minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%" style={{ overflow: 'visible' }}>
               <PieChart style={{ overflow: 'visible' }}>
                 <Pie
@@ -268,7 +268,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           </div>
 
           {/* Breakdown list */}
-          <div style={{ flex: '0 1 260px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ flex: '1 1 260px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
             {/* Grand total */}
             <div style={{
               background: 'var(--apple-bg)',
@@ -301,12 +301,13 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                   padding: '8px 12px',
                   borderRadius: '8px',
                   cursor: 'default',
+                  minWidth: 0
                 }}>
                   <span style={{
                     width: '10px', height: '10px', borderRadius: '3px',
                     background: COLORS[idx % COLORS.length], flexShrink: 0,
                   }} />
-                  <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: '400', color: 'var(--apple-text-secondary)' }}>
+                  <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: '400', color: 'var(--apple-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {item.name}
                   </span>
                   <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>

@@ -304,8 +304,8 @@ export default function TeamDisReport({ user }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center', flex: 1 }}>
             
             {/* Date Selection */}
-            <div style={{ minWidth: '200px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                 Report Date
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -323,24 +323,25 @@ export default function TeamDisReport({ user }) {
                   }}
                   max={new Date().toISOString().split('T')[0]}
                   className="form-control"
-                  style={{ paddingLeft: '38px' }}
+                  style={{ paddingLeft: '38px', width: '100%' }}
                 />
               </div>
             </div>
 
             {/* Search Input */}
-            <div className="dis-search-container">
-              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div className="dis-search-container" style={{ flex: '1 1 200px', minWidth: '200px' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                 Search Employee
               </label>
               <div style={{ position: 'relative' }}>
-                <Search size={16} className="dis-search-icon" />
+                <Search size={16} className="dis-search-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                 <input
                   type="text"
-                  placeholder="Search by name or email..."
+                  placeholder="Search name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="form-control dis-search-input"
+                  style={{ paddingLeft: '38px', width: '100%' }}
                 />
               </div>
             </div>
