@@ -980,25 +980,30 @@ export default function AdminTeams() {
                   onClick={() => setBreakdownAllTime(!breakdownAllTime)}
                   style={{
                     position: 'relative',
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: breakdownAllTime ? 'var(--apple-accent-blue)' : 'var(--apple-border)',
-                    border: 'none',
+                    display: 'inline-block',
+                    width: '40px', minWidth: '40px', height: '24px', minHeight: '24px',
+                    borderRadius: '14px',
+                    padding: 0,
+                    background: breakdownAllTime 
+                      ? 'var(--apple-accent-blue)' 
+                      : 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
                     cursor: 'pointer',
-                    transition: 'background 0.3s'
+                    transition: 'background 150ms ease',
+                    flexShrink: 0
                   }}
                 >
                   <div style={{
-                    width: '18px',
-                    height: '18px',
+                    width: '22px',
+                    height: '22px',
                     borderRadius: '50%',
                     background: '#ffffff',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                     position: 'absolute',
-                    top: '3px',
-                    left: breakdownAllTime ? '23px' : '3px',
-                    transition: 'left 0.25s var(--apple-ease)'
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    left: breakdownAllTime ? '16px' : '0px',
+                    transition: 'left 150ms ease'
                   }} />
                 </button>
               </div>
@@ -1315,25 +1320,28 @@ export default function AdminTeams() {
               onClick={() => setShowPastData(!showPastData)}
               style={{
                 position: 'relative',
-                width: '44px',
-                height: '24px',
-                borderRadius: '12px',
-                background: showPastData ? 'var(--apple-accent-blue)' : 'var(--apple-border)',
-                border: 'none',
+                display: 'inline-block',
+                width: '40px', minWidth: '40px', height: '24px', minHeight: '24px',
+                borderRadius: '14px',
+                padding: 0,
+                background: showPastData ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
                 cursor: 'pointer',
-                transition: 'background 0.3s'
+                transition: 'background 150ms ease',
+                flexShrink: 0
               }}
             >
               <div style={{
-                width: '18px',
-                height: '18px',
+                width: '22px',
+                height: '22px',
                 borderRadius: '50%',
                 background: '#ffffff',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 position: 'absolute',
-                top: '3px',
-                left: showPastData ? '23px' : '3px',
-                transition: 'left 0.25s var(--apple-ease)'
+                top: '50%',
+                transform: 'translateY(-50%)',
+                left: showPastData ? '16px' : '0px',
+                transition: 'left 150ms ease'
               }} />
             </button>
           </div>

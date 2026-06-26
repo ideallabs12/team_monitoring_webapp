@@ -236,9 +236,9 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <span>No revenue data available for this period.</span>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'clamp(12px, 3vw, 24px)', flexWrap: 'wrap', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(24px, 8vw, 80px)', flexWrap: 'wrap', minWidth: 0 }}>
           {/* Pie Chart */}
-          <div style={{ flex: '1 1 220px', height: 220, minWidth: '180px', minHeight: 0 }}>
+          <div style={{ flex: '0 0 auto', width: '220px', height: 220, margin: '0 auto' }}>
             <ResponsiveContainer width="100%" height="100%" style={{ overflow: 'visible' }}>
               <PieChart style={{ overflow: 'visible' }}>
                 <Pie
@@ -268,7 +268,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           </div>
 
           {/* Breakdown list */}
-          <div style={{ flex: '1 1 260px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 300px', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, margin: '0 auto' }}>
             {/* Grand total */}
             <div style={{
               background: 'var(--apple-bg)',

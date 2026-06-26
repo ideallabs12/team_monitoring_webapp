@@ -384,13 +384,9 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('has_revenue_logging', user.has_revenue_logging)}
                 disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.has_revenue_logging ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.has_revenue_logging  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.has_revenue_logging ? '23px' : '3px', transition: 'left 0.3s' }} />
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.has_revenue_logging  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
@@ -398,13 +394,9 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('has_dis_reporting', user.has_dis_reporting)}
                 disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.has_dis_reporting ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.has_dis_reporting  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.has_dis_reporting ? '23px' : '3px', transition: 'left 0.3s' }} />
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.has_dis_reporting  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
@@ -412,13 +404,9 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('is_sales_executive', user.is_sales_executive)}
                 disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.is_sales_executive ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
-                }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.is_sales_executive  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.is_sales_executive ? '23px' : '3px', transition: 'left 0.3s' }} />
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.is_sales_executive  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
           </div>
@@ -439,13 +427,9 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('wfh_enabled', user.wfh_enabled)}
                 disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.wfh_enabled ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0
-                }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.wfh_enabled  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.wfh_enabled ? '23px' : '3px', transition: 'left 0.3s' }} />
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.wfh_enabled  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
 
@@ -457,13 +441,9 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('require_gps_attendance', user.require_gps_attendance !== false)}
                 disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.require_gps_attendance !== false ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0
-                }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_gps_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.require_gps_attendance !== false ? '23px' : '3px', transition: 'left 0.3s' }} />
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.require_gps_attendance !== false  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
             
@@ -475,13 +455,9 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('require_ip_attendance', user.require_ip_attendance !== false)}
                 disabled={saving}
-                style={{
-                  width: '44px', height: '24px', borderRadius: '12px',
-                  background: user.require_ip_attendance !== false ? '#4ade80' : '#475569',
-                  border: 'none', position: 'relative', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0
-                }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_ip_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: user.require_ip_attendance !== false ? '23px' : '3px', transition: 'left 0.3s' }} />
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.require_ip_attendance !== false  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
           </div>

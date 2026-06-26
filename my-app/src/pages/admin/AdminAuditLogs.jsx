@@ -182,34 +182,47 @@ export default function AdminAuditLogs() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {TABS.map(tab => {
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ 
+          background: 'rgba(255, 255, 255, 0.02)', 
+          border: '1px solid var(--apple-border)', 
+          borderRadius: '12px', 
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          marginBottom: '16px'
+        }}>
+          {TABS.map((tab, index) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="apple-btn"
                 style={{
-                  background: isActive ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.05)',
-                  color: isActive ? '#fff' : 'var(--apple-text-secondary)',
-                  border: isActive ? 'none' : '1px solid var(--apple-border)',
+                  background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'transparent',
+                  color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)',
+                  border: 'none',
+                  borderBottom: index < TABS.length - 1 ? '1px solid var(--apple-border)' : 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  minHeight: '44px',
-                  borderRadius: '8px',
-                  fontSize: '0.9rem',
-                  cursor: 'pointer'
+                  justifyContent: 'space-between',
+                  padding: '14px 20px',
+                  minHeight: '52px',
+                  fontSize: '0.95rem',
+                  fontWeight: isActive ? '600' : '500',
+                  cursor: 'pointer',
+                  width: '100%',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
                 }}
               >
-                <Icon size={16} />
-                {tab.label}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <Icon size={20} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
+                  {tab.label}
+                </div>
                 {tab.id === 'active' && activeUsersList.length > 0 && (
-                  <span style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(48, 213, 200, 0.2)', color: isActive ? '#fff' : 'var(--apple-accent-green)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  <span style={{ background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'rgba(48, 213, 200, 0.1)', color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-accent-green)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700' }}>
                     {activeUsersList.length}
                   </span>
                 )}
@@ -219,25 +232,27 @@ export default function AdminAuditLogs() {
         </div>
         
         {activeTab !== 'active' && logs.length > 0 && (
-          <button
-            onClick={handleClearAllLogs}
-            className="apple-btn"
-            style={{
-              background: 'rgba(239, 68, 68, 0.1)',
-              color: '#ef4444',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              cursor: 'pointer'
-            }}
-          >
-            <Trash2 size={16} />
-            Clear All Logs
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleClearAllLogs}
+              className="apple-btn"
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}
+            >
+              <Trash2 size={16} />
+              Clear All Logs
+            </button>
+          </div>
         )}
       </div>
 
@@ -282,11 +297,15 @@ export default function AdminAuditLogs() {
                 {logs.map(log => (
                   <div key={log.id} style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                      <div style={{ color: '#fff', fontWeight: '500' }}>
-                        {log.user ? `${log.user.first_name} ${log.user.last_name}` : 'Unknown User'}
-                        <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', marginLeft: '8px', fontWeight: 'normal' }}>
-                          ({log.user?.email})
-                        </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: '1 1 auto', paddingRight: '12px' }}>
+                        <div style={{ color: '#fff', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {log.user ? `${log.user.first_name} ${log.user.last_name}` : 'Unknown User'}
+                        </div>
+                        {log.user?.email && (
+                          <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', fontWeight: 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                            {log.user.email}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>

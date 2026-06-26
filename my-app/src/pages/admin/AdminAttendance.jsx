@@ -106,8 +106,8 @@ export default function AdminAttendance() {
 
       {activeTab === 'logs' ? (
         <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: '12px' }}>
-            <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', marginBottom: '16px', gap: '12px' }}>
+            <div style={{ position: 'relative', flex: '1 1 220px' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
               <input
                 type="text"
@@ -115,18 +115,18 @@ export default function AdminAttendance() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="apple-input"
-                style={{ paddingLeft: '36px', width: '220px' }}
+                style={{ paddingLeft: '36px', width: '100%' }}
               />
             </div>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="apple-input">
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="apple-input" style={{ flex: '1 1 180px' }}>
               <option value="all">All Logs</option>
               <option value="pending">Pending Approval</option>
               <option value="present">Present (Approved)</option>
             </select>
           </div>
 
-          <div className="apple-card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+          <div className="apple-card" style={{ padding: '0 !important' }}>
+            <div className="apple-desktop-table-container" style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)' }}>
@@ -208,6 +208,83 @@ export default function AdminAttendance() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card List */}
+        <div className="apple-mobile-list-card">
+          {loading ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>Loading logs...</div>
+          ) : filteredLogs.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>No attendance logs found.</div>
+          ) : (
+            filteredLogs.map((log, index) => (
+              <div key={log.id} style={{
+                display: 'flex', flexDirection: 'column',
+                padding: '16px 20px',
+                borderBottom: index < filteredLogs.length - 1 ? '1px solid var(--apple-border)' : 'none',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: '600', color: '#fff', textTransform: 'capitalize', fontSize: '0.95rem' }}>
+                      {log.profiles?.first_name} {log.profiles?.last_name}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.email}</div>
+                  </div>
+                  <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                      {new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </div>
+                    <div style={{ marginTop: '4px' }}>
+                      {log.status === 'present' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', fontSize: '0.75rem', fontWeight: '600' }}><CheckCircle size={12} /> Approved</span>}
+                      {log.status === 'pending_approval' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', color: '#fbbf24', fontSize: '0.75rem', fontWeight: '600' }}><Clock size={12} /> Pending</span>}
+                      {log.status === 'rejected' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.75rem', fontWeight: '600' }}><XCircle size={12} /> Rejected</span>}
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '16px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>IN</div>
+                    <div style={{ fontSize: '0.9rem', color: '#4ade80', fontWeight: '500' }}>
+                      {new Date(log.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  {log.check_out_time && (
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', marginBottom: '2px' }}>OUT</div>
+                      <div style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: '500' }}>
+                        {new Date(log.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                    <Wifi size={14} /> {log.ip_address || 'No IP'}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                    <MapPin size={14} /> {log.latitude ? `${log.latitude}, ${log.longitude}` : 'No Location'}
+                  </div>
+                </div>
+
+                {log.exception_reason && (
+                  <div style={{ fontSize: '0.8rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.05)', padding: '8px 12px', borderRadius: '6px', borderLeft: '2px solid #fbbf24', marginTop: '4px' }}>
+                    <AlertTriangle size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                    <strong>Exception:</strong> {log.exception_reason}
+                  </div>
+                )}
+
+                {log.status === 'pending_approval' && (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button onClick={() => handleApprove(log.id)} className="apple-btn" style={{ flex: 1, padding: '8px', fontSize: '0.85rem', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderColor: 'rgba(74, 222, 128, 0.2)' }}>Approve</button>
+                    <button onClick={() => handleReject(log.id)} className="apple-btn" style={{ flex: 1, padding: '8px', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Reject</button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
         </>
@@ -379,7 +456,7 @@ function AttendanceSettings() {
   if (loading) return <div>Loading settings...</div>
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '24px', justifyContent: 'center' }}>
       
       {/* Office Locations */}
       {locations.map(loc => {

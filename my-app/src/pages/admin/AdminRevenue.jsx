@@ -381,60 +381,83 @@ export default function AdminRevenue() {
         </div>
 
         {/* Month grid (Swipeable Horizontal Carousel) */}
-        <div style={{
+        <div className="no-scrollbar" style={{
           display: 'flex',
           overflowX: 'auto',
-          gap: '12px',
+          gap: '16px',
           paddingBottom: '16px',
           scrollSnapType: 'x mandatory',
-          WebkitOverflowScrolling: 'touch'
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
         }}>
-          {company12MonthTrend.map((d, i) => {
-            const pct = companyMaxMonthRevenue > 0 ? (d.actual / companyMaxMonthRevenue) * 100 : 0
-            const isCurrentMonth = i === company12MonthTrend.length - 1
-            return (
-              <div key={d.key} style={{
-                flex: '0 0 auto',
-                width: '140px',
-                scrollSnapAlign: 'start',
-                background: isCurrentMonth ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${isCurrentMonth ? 'rgba(0, 113, 227, 0.25)' : 'rgba(255,255,255,0.06)'}`,
-                borderRadius: '12px',
-                padding: '14px 12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {d.month}
-                  </span>
-                  {isCurrentMonth && (
-                    <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>MTD</span>
-                  )}
-                </div>
-                {/* Mini progress bar */}
-                <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${pct}%`,
-                    background: d.actual > 0 ? 'var(--apple-accent-blue)' : 'transparent',
-                    borderRadius: '2px',
-                    transition: 'width 0.5s ease'
-                  }} />
-                </div>
-                <div style={{
-                  fontSize: '0.92rem',
-                  fontWeight: '700',
-                  color: d.actual > 0 ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)'
-                }}>
-                  {d.actual > 0
-                    ? `$${d.actual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                    : '—'}
-                </div>
-              </div>
-            )
-          })}
+          <style>{`
+            .no-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+          
+          {(() => {
+            const reversedTrend = [...company12MonthTrend].reverse()
+            return [
+              reversedTrend.slice(0, 6),
+              reversedTrend.slice(6, 12)
+            ].map((group, groupIndex) => (
+            <div key={`group-${groupIndex}`} style={{
+              flex: '0 0 100%',
+              scrollSnapAlign: 'start',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateRows: 'repeat(2, auto)',
+              gap: '12px'
+            }}>
+              {group.map((d, i) => {
+                const globalIndex = groupIndex * 6 + i
+                const pct = companyMaxMonthRevenue > 0 ? (d.actual / companyMaxMonthRevenue) * 100 : 0
+                const isCurrentMonth = globalIndex === 0
+                
+                return (
+                  <div key={d.key} style={{
+                    background: isCurrentMonth ? 'rgba(0, 113, 227, 0.08)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isCurrentMonth ? 'rgba(0, 113, 227, 0.25)' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: '12px',
+                    padding: '14px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--apple-text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {d.month}
+                      </span>
+                      {isCurrentMonth && (
+                        <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>MTD</span>
+                      )}
+                    </div>
+                    {/* Mini progress bar */}
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${pct}%`,
+                        background: d.actual > 0 ? 'var(--apple-accent-blue)' : 'transparent',
+                        borderRadius: '2px',
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                    <div style={{
+                      fontSize: '0.92rem',
+                      fontWeight: '700',
+                      color: d.actual > 0 ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)'
+                    }}>
+                      {d.actual > 0
+                        ? `$${d.actual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                        : '—'}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ))})()}
         </div>
 
         {/* Summary row */}
@@ -741,22 +764,12 @@ export default function AdminRevenue() {
             const percentage = Math.max(5, (team.totalRevenue / maxRev) * 100)
 
             return (
-              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '28px minmax(80px, 1.2fr) minmax(60px, 1fr) auto', alignItems: 'center', gap: '12px' }} className="apple-leaderboard-row">
+              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', alignItems: 'center', gap: '12px' }} className="apple-leaderboard-row">
                 <div style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#afafaf' : index === 2 ? '#b45309' : 'var(--apple-text-secondary)', fontWeight: '800', fontSize: '1.05rem' }}>
                   #{index + 1}
                 </div>
                 <div style={{ fontWeight: '600', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {team.name}
-                </div>
-
-                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--apple-border)' }}>
-                  <div style={{
-                    width: `${percentage}%`,
-                    height: '100%',
-                    background: index === 0 ? 'linear-gradient(90deg, var(--apple-accent-green), var(--apple-accent-blue))' : 'var(--apple-accent-blue)',
-                    borderRadius: '6px',
-                    transition: 'width 0.8s var(--apple-ease)'
-                  }}></div>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>

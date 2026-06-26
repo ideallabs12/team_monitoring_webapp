@@ -247,7 +247,7 @@ export default function Leaderboard({ user }) {
           </h2>
       <div className="apple-card" style={{ padding: '0 !important' }}>
         {/* Desktop Table */}
-        <div className="leaderboard-table-desktop" style={{ width: '100%', overflowX: 'auto' }}>
+        <div className="apple-desktop-table-container" style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)', fontSize: '0.85rem' }}>
@@ -304,7 +304,7 @@ export default function Leaderboard({ user }) {
         </table>
         </div>
         {/* Mobile Card List */}
-        <div className="leaderboard-cards-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="apple-mobile-list-card">
           {teamRankings.map((team, index) => {
             const isFirst = index === 0 && team.total > 0
             const isSecond = index === 1 && team.total > 0
@@ -330,10 +330,10 @@ export default function Leaderboard({ user }) {
                     <div style={{ fontWeight: isFirst ? '700' : '600', color: isFirst ? '#fff' : 'var(--apple-text-primary)', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {team.name}
                     </div>
-                    <div style={{ fontWeight: '700', color: team.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.88rem', marginTop: '2px' }}>
-                      ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
                   </div>
+                </div>
+                <div style={{ fontWeight: '700', color: team.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.95rem', flexShrink: 0, textAlign: 'right' }}>
+                  ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             )
@@ -355,7 +355,7 @@ export default function Leaderboard({ user }) {
           </h2>
       <div className="apple-card" style={{ padding: '0 !important' }}>
         {/* Desktop Table */}
-        <div className="leaderboard-table-desktop" style={{ width: '100%', overflowX: 'auto' }}>
+        <div className="apple-desktop-table-container" style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.02)', fontSize: '0.85rem' }}>
@@ -417,7 +417,7 @@ export default function Leaderboard({ user }) {
         </table>
         </div>
         {/* Mobile Card List */}
-        <div className="leaderboard-cards-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="apple-mobile-list-card">
           {individualRankings.slice(0, 10).map((indiv, index) => {
             const isFirst = index === 0 && indiv.total > 0
             const isSecond = index === 1 && indiv.total > 0
@@ -447,10 +447,10 @@ export default function Leaderboard({ user }) {
                     <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '1px' }}>
                       {teamObj ? teamObj.name : 'Unknown'}
                     </div>
-                    <div style={{ fontWeight: '700', color: indiv.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.86rem', marginTop: '3px' }}>
-                      ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
                   </div>
+                </div>
+                <div style={{ fontWeight: '700', color: indiv.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.95rem', flexShrink: 0, textAlign: 'right' }}>
+                  ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             )
