@@ -371,10 +371,11 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
         </div>
 
         {/* Right Column: Missing streaks */}
-        <div style={{ background: 'var(--apple-bg)', borderRadius: '12px', padding: '16px', border: '1px solid var(--apple-border)' }}>
+        <div style={{ background: 'var(--apple-bg)', borderRadius: '12px', padding: '16px', border: '1px solid var(--apple-border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
           <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Needs Attention (Missed 3+ Consecutive Days)</h4>
           <p style={{ margin: '0 0 16px 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Active team members who haven't reported recently.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '160px', overflowY: 'auto', paddingRight: '4px' }}>
+          <div style={{ position: 'relative', flex: 1, minHeight: '150px' }}>
+            <div className="no-scrollbar" style={{ position: 'absolute', inset: 0, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {missingStreaks.map(usr => (
               <div key={usr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255, 69, 58, 0.05)', border: '1px solid rgba(255, 69, 58, 0.15)', borderRadius: '8px' }}>
                 <div>
@@ -392,6 +393,7 @@ export default function ComplianceHeatmap({ disReports, profiles, memberships, t
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>All members compliant!</span>
               </div>
             )}
+            </div>
           </div>
         </div>
 

@@ -1679,6 +1679,53 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 0.6;
 }
 
+/* Utility to hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Target vs Actual Mobile Adjustments */
+.target-list-mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .target-chart-desktop {
+    display: none !important;
+  }
+  .target-list-mobile {
+    display: flex !important;
+  }
+}
+
+/* Member Flip Card Adjustments */
+.member-flip-mobile {
+  display: none;
+}
+.member-swipe-panels-mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .member-grid-desktop {
+    display: none !important;
+  }
+  .member-flip-mobile {
+    display: block !important;
+  }
+  .member-swipe-panels-mobile {
+    display: block !important;
+  }
+  .summary-cards-container {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+}
+
 /* Full Screen blur overlays for modals */
 .apple-modal-overlay {
   position: fixed;

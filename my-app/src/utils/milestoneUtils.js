@@ -139,12 +139,87 @@ export function calculateMilestones(revenues, profiles, teams, disReports = []) 
     }
   })
 
+  // 7. Top 3 All-time highest individual revenue (Total accumulated across all months)
+  const userTotalRev = {}
+  revenues.forEach(r => {
+    if (!nonAdminIds.has(r.user_id)) return
+    userTotalRev[r.user_id] = (userTotalRev[r.user_id] || 0) + Number(r.amount || 0)
+  })
+
+  // Sort by revenue descending and take top 10
+  const topMembersAllTime = Object.entries(userTotalRev)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([userId, amount]) => {
+      const profile = profileMap[userId]
+      const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'Unknown'
+      const teamName = profile && profile.team_id ? teamMap[profile.team_id] : 'No Team'
+      return { amount, userName, teamName, userId }
+    })
+
+  // 8. All-Time Highest Revenue by Team (Total)
+  const teamTotalRev = {}
+  revenues.forEach(r => {
+    if (!r.team_id) return
+    teamTotalRev[r.team_id] = (teamTotalRev[r.team_id] || 0) + Number(r.amount || 0)
+  })
+
+  let maxTeamAllTime = { amount: 0, teamName: 'N/A' }
+  Object.entries(teamTotalRev).forEach(([teamId, amount]) => {
+    if (amount > maxTeamAllTime.amount) {
+      maxTeamAllTime = { amount, teamName: teamMap[teamId] || 'Unknown Team', teamId }
+    }
+  })
+
+  // 9. Consecutive Months Streak
+  const userMonths = {}
+  revenues.forEach(r => {
+    if (!nonAdminIds.has(r.user_id)) return
+    const amt = Number(r.amount || 0)
+    if (amt > 0) { // Only count months with actual revenue
+      const month = normalizeMonth(r.revenue_month)
+      if (!userMonths[r.user_id]) userMonths[r.user_id] = new Set()
+      userMonths[r.user_id].add(month)
+    }
+  })
+
+  let longestStreak = { streak: 0, userName: 'N/A', teamName: 'N/A' }
+  Object.entries(userMonths).forEach(([userId, monthsSet]) => {
+    const sortedMonths = Array.from(monthsSet).sort()
+    if (sortedMonths.length === 0) return
+    let maxUserStreak = 1
+    let currentStreak = 1
+    for (let i = 1; i < sortedMonths.length; i++) {
+      const prev = new Date(sortedMonths[i - 1] + '-01')
+      const curr = new Date(sortedMonths[i] + '-01')
+      const diffMonths = (curr.getFullYear() - prev.getFullYear()) * 12 + (curr.getMonth() - prev.getMonth())
+      if (diffMonths === 1) {
+        currentStreak++
+        if (currentStreak > maxUserStreak) maxUserStreak = currentStreak
+      } else if (diffMonths > 1) {
+        currentStreak = 1
+      }
+    }
+    if (maxUserStreak > longestStreak.streak) {
+      const profile = profileMap[userId]
+      longestStreak = {
+        streak: maxUserStreak,
+        userName: profile ? `${profile.first_name} ${profile.last_name}` : 'Unknown',
+        teamName: profile && profile.team_id ? teamMap[profile.team_id] : 'No Team',
+        userId
+      }
+    }
+  })
+
   return {
     maxMemberInMonth,
     maxTeamInMonth,
     maxCompanyInMonth,
     maxLeadInMonth,
     maxSingleDeal,
-    maxLeadsInMonth
+    maxLeadsInMonth,
+    topMembersAllTime,
+    maxTeamAllTime,
+    longestStreak
   }
 }

@@ -69,6 +69,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
   const [revDistMode, setRevDistMode] = useState('preset') // 'preset' | 'custom'
   const [revDistYear, setRevDistYear] = useState(new Date().getFullYear())
   const [revDistMonth, setRevDistMonth] = useState(new Date().getMonth())
+  const [animationKey, setAnimationKey] = useState(0)
 
   // Compute active months based on mode
   const activeMonths = useMemo(() => {
@@ -236,17 +237,23 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <span>No revenue data available for this period.</span>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(24px, 8vw, 80px)', flexWrap: 'wrap', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', minWidth: 0 }}>
           {/* Pie Chart */}
-          <div style={{ flex: '0 0 auto', width: '220px', height: 220, margin: '0 auto' }}>
+          <div className="desktop-pie-chart" style={{ flex: '0 0 auto', width: '620px', height: 460, margin: '0 auto', userSelect: 'none' }}>
             <ResponsiveContainer width="100%" height="100%" style={{ overflow: 'visible' }}>
-              <PieChart style={{ overflow: 'visible' }}>
+              <PieChart 
+                key={animationKey}
+                onClick={() => setAnimationKey(k => k + 1)}
+                margin={{ top: 25, right: 65, left: 65, bottom: 25 }} 
+                style={{ overflow: 'visible', outline: 'none' }}
+              >
                 <Pie
                   data={pieData}
+                  onClick={() => setAnimationKey(k => k + 1)}
                   cx="50%"
                   cy="50%"
-                  innerRadius={45}
-                  outerRadius={75}
+                  innerRadius={80}
+                  outerRadius={125}
                   paddingAngle={3}
                   dataKey="value"
                   isAnimationActive={true}
@@ -254,6 +261,111 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                   animationDuration={1200}
                   stroke="rgba(0,0,0,0.3)"
                   strokeWidth={1}
+                  label={(props) => {
+                    const { name, cx, cy, midAngle, outerRadius, fill, index, percent } = props;
+                    const RADIAN = Math.PI / 180;
+                    
+                    // Start of the line at the edge of the pie
+                    const sx = cx + (outerRadius) * Math.cos(-midAngle * RADIAN);
+                    const sy = cy + (outerRadius) * Math.sin(-midAngle * RADIAN);
+                    
+                    // Middle of the line (angled outwards)
+                    const mx = cx + (outerRadius + 15) * Math.cos(-midAngle * RADIAN);
+                    const my = cy + (outerRadius + 15) * Math.sin(-midAngle * RADIAN);
+                    
+                    // Determine if the label is on the right or left side
+                    const isRight = Math.cos(-midAngle * RADIAN) >= 0;
+                    
+                    // End of the line (horizontal extension)
+                    const ex = mx + (isRight ? 1 : -1) * 15;
+                    const ey = my;
+                    
+                    // Text position with a gap from the end of the line
+                    const textX = ex + (isRight ? 6 : -6);
+                    
+                    // Animation delay sequentially based on index (starting near the end of pie animation)
+                    const baseDelay = 1.0;
+                    const seqDelay = baseDelay + (index * 0.18);
+
+                    return (
+                      <g className="desktop-pie-label-group">
+                        <path 
+                          d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} 
+                          stroke={fill}
+                          strokeOpacity={0.5}
+                          fill="none" 
+                          strokeWidth={1.5}
+                          strokeDasharray="80"
+                          strokeDashoffset="80"
+                          style={{
+                            animation: `drawPieLine 0.4s ease-out forwards`,
+                            animationDelay: `${seqDelay}s`,
+                            opacity: 0
+                          }}
+                        />
+                        <circle 
+                          cx={ex} 
+                          cy={ey} 
+                          r={3} 
+                          fill={fill} 
+                          stroke="none" 
+                          style={{
+                            animation: `popPieDot 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`,
+                            animationDelay: `${seqDelay + 0.3}s`,
+                            opacity: 0,
+                            transformOrigin: `${ex}px ${ey}px`
+                          }}
+                        />
+                        <foreignObject 
+                          x={isRight ? ex + 6 : ex - 156} 
+                          y={ey - 16} 
+                          width={150} 
+                          height={32}
+                          style={{
+                            animation: `fadeInPieText 0.4s ease-out forwards`,
+                            animationDelay: `${seqDelay + 0.3}s`,
+                            opacity: 0,
+                            overflow: 'visible'
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: isRight ? 'flex-start' : 'flex-end',
+                            width: '100%',
+                            height: '100%'
+                          }}>
+                            <div style={{
+                              background: 'var(--apple-bg, #ffffff)',
+                              border: `1px solid ${fill}40`,
+                              borderRadius: '6px',
+                              padding: '3px 6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--apple-text-primary, #1e293b)' }}>
+                                {name}
+                              </span>
+                              <span style={{
+                                fontSize: '0.62rem',
+                                fontWeight: '700',
+                                color: fill,
+                                background: `${fill}15`,
+                                padding: '1px 5px',
+                                borderRadius: '4px'
+                              }}>
+                                {(percent * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        </foreignObject>
+                      </g>
+                    );
+                  }}
+                  labelLine={false}
                 >
                   {pieData.map((_, index) => (
                     <Cell
@@ -265,10 +377,48 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
+            <style>{`
+              @keyframes drawPieLine {
+                0% { stroke-dashoffset: 80; opacity: 0; }
+                10% { opacity: 1; }
+                100% { stroke-dashoffset: 0; opacity: 1; }
+              }
+              @keyframes popPieDot {
+                0% { transform: scale(0); opacity: 0; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+              @keyframes fadeInPieText {
+                0% { opacity: 0; transform: translateX(5px); }
+                100% { opacity: 1; transform: translateX(0); }
+              }
+              @media (min-width: 1025px) {
+                .desktop-hide-pct {
+                  display: none !important;
+                }
+              }
+              @media (max-width: 1024px) {
+                .desktop-pie-chart {
+                  width: 220px !important;
+                  height: 220px !important;
+                }
+                .desktop-pie-label-group {
+                  display: none !important;
+                }
+              }
+              .desktop-pie-chart .recharts-wrapper,
+              .desktop-pie-chart .recharts-surface,
+              .desktop-pie-chart .recharts-sector {
+                outline: none !important;
+                -webkit-tap-highlight-color: transparent;
+              }
+              .desktop-pie-label-group text {
+                user-select: none;
+              }
+            `}</style>
           </div>
 
           {/* Breakdown list */}
-          <div style={{ flex: '1 1 300px', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, margin: '0 auto' }}>
+          <div style={{ flex: '1 1 250px', maxWidth: '350px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, margin: '0 auto' }}>
             {/* Grand total */}
             <div style={{
               background: 'var(--apple-bg)',
@@ -313,7 +463,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                   <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>
                     ${item.value.toLocaleString()}
                   </span>
-                  <span style={{
+                  <span className="desktop-hide-pct" style={{
                     fontSize: '0.68rem', fontWeight: '600',
                     color: COLORS[idx % COLORS.length],
                     background: `${COLORS[idx % COLORS.length]}18`,

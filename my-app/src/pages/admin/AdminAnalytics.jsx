@@ -397,7 +397,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* ── TARGET VS ACTUAL + TEAM RADAR ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div style={{ minWidth: 0 }}>
           <TargetVsActualChart
             targets={targets}

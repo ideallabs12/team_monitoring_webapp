@@ -1,11 +1,11 @@
 // updated admin revenue page instead of displaying regular trend line now it will display creative visual representaion for company performance
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts'
 import {
-  TrendingUp, Activity, BarChart2, DollarSign, Users, Calendar, Award
+  TrendingUp, Activity, BarChart2, DollarSign, Users, Calendar, Award, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import {
   filterRevenuesByPeriod,
@@ -58,7 +58,32 @@ export default function AdminRevenue() {
   const [teams, setTeams] = useState(adminRevCache.teams)
   const [profiles, setProfiles] = useState(adminRevCache.profiles)
   const [revenues, setRevenues] = useState(adminRevCache.revenues)
+
+  const carouselRef = useRef(null)
+
+  const scrollCarousel = (direction) => {
+    if (carouselRef.current) {
+      const scrollAmount = carouselRef.current.clientWidth;
+      carouselRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  }
   const [targets, setTargets] = useState(adminRevCache.targets)
+
+  const [activeSwipePanel, setActiveSwipePanel] = useState(0)
+  const [touchStartX, setTouchStartX] = useState(null)
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX)
+  }
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartX - touchEndX
+    if (diff > 50) setActiveSwipePanel(1) // Swipe left
+    if (diff < -50) setActiveSwipePanel(0) // Swipe right
+    setTouchStartX(null)
+  }
 
   const [periodFilter, setPeriodFilter] = useState(1)
   const [averagePeriod, setAveragePeriod] = useState(6)
@@ -339,7 +364,7 @@ export default function AdminRevenue() {
           <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.82rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
             All Time Company Revenue
           </div>
-          <div style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: '800', color: 'var(--apple-text-primary)', letterSpacing: '-0.02em' }}>
             ${allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
@@ -378,10 +403,18 @@ export default function AdminRevenue() {
             <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: '600' }}>Company Revenue</div>
             <h3 className="apple-title-small" style={{ margin: 0, border: 'none' }}>Last 12 Months Breakdown</h3>
           </div>
+          <div className="desktop-arrows" style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => scrollCarousel('left')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', outline: 'none' }}>
+              <ChevronLeft size={18} />
+            </button>
+            <button onClick={() => scrollCarousel('right')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', outline: 'none' }}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Month grid (Swipeable Horizontal Carousel) */}
-        <div className="no-scrollbar" style={{
+        <div className="no-scrollbar" ref={carouselRef} style={{
           display: 'flex',
           overflowX: 'auto',
           gap: '16px',
@@ -389,11 +422,96 @@ export default function AdminRevenue() {
           scrollSnapType: 'x mandatory',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
+          msOverflowStyle: 'none',
+          scrollBehavior: 'smooth'
         }}>
           <style>{`
             .no-scrollbar::-webkit-scrollbar {
               display: none;
+            }
+            .two-col-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 16px;
+            }
+            .three-col-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 16px;
+            }
+            .avg-amount {
+              font-size: 1.8rem;
+              font-weight: 800;
+              color: var(--apple-text-primary);
+              padding-left: 8px;
+            }
+            @media (max-width: 768px) {
+              .desktop-arrows { display: none !important; }
+              .team-avg-card {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 12px !important;
+              }
+              .team-avg-card .avg-name {
+                margin-bottom: 8px !important;
+                font-size: 0.65rem !important;
+                padding: 4px 6px !important;
+                margin-left: 4px !important;
+              }
+              .avg-amount {
+                font-size: 1.05rem !important;
+                padding-left: 4px !important;
+              }
+              .three-col-grid {
+                grid-template-columns: 1fr !important;
+              }
+              .swipe-carousel-mobile {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                scroll-snap-type: x mandatory !important;
+                -ms-overflow-style: none !important;
+                scrollbar-width: none !important;
+                padding-bottom: 8px !important;
+              }
+              .swipe-carousel-mobile::-webkit-scrollbar {
+                display: none !important;
+              }
+              .swipe-carousel-mobile > div {
+                flex: 0 0 85% !important;
+                scroll-snap-align: center !important;
+              }
+            }
+            .leaderboard-card {
+              transition: all 0.3s ease;
+              background: rgba(255, 255, 255, 0.015);
+              border: 1px solid var(--apple-border);
+              border-radius: 12px;
+              overflow: hidden;
+            }
+            .leaderboard-card:hover {
+              background: rgba(255, 255, 255, 0.04);
+              transform: translateY(-2px);
+              border-color: rgba(255, 255, 255, 0.1);
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            }
+            .leaderboard-rank {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              background: rgba(255, 255, 255, 0.05);
+              color: var(--apple-text-secondary);
+              font-weight: 700;
+              font-size: 0.9rem;
+            }
+            .leaderboard-card.rank-1 .leaderboard-rank {
+              background: rgba(255, 255, 255, 0.15);
+              color: #fff;
+              box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
             }
           `}</style>
           
@@ -464,13 +582,13 @@ export default function AdminRevenue() {
         <div style={{ display: 'flex', gap: '32px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--apple-border)', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>Monthly Average</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>
               ${companyMonthlyAvg.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </div>
           </div>
           <div>
             <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>Active Members</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--apple-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Users size={16} color="var(--apple-text-secondary)" /> {nonAdminProfiles.length}
             </div>
           </div>
@@ -487,7 +605,7 @@ export default function AdminRevenue() {
       <div className="apple-card" style={{ padding: '24px 28px', borderRadius: '20px', marginBottom: '28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Performance Trend Analysis</h3>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Performance Trend Analysis</h3>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
               Creative overlay comparison: Combined actual sales (bars) vs target expectations (line) for last 12 months.
             </p>
@@ -518,57 +636,62 @@ export default function AdminRevenue() {
       </div>
 
       {/* ===== TEAM MEMBERS EXPECTED VS ACTUAL ===== */}
-      <div className="apple-card" style={{ marginBottom: '28px' }}>
-        <h3 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
-          Team Members Expected vs Actual
-        </h3>
-
-        {/* Team selector + period dropdown in the same row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'end', marginBottom: '24px' }} className="apple-two-col-grid">
-          <div>
-            <label className="apple-form-label">Select Team</label>
-            <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="apple-form-control">
-              {teams.map(team => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="apple-form-label">Select Period</label>
-            <select value={periodFilter} onChange={e => setPeriodFilter(Number(e.target.value))} className="apple-form-control">
-              {TIME_PERIOD_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Summary mini-cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px', marginBottom: '28px' }}>
-          <div className="apple-card" style={{ border: '1px solid rgba(0, 113, 227, 0.25)', background: 'rgba(0, 113, 227, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-              Expected ({filterLabel})
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-blue)' }}>${summary.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </div>
-          <div className="apple-card" style={{ border: '1px solid rgba(48, 213, 200, 0.25)', background: 'rgba(48, 213, 200, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-              Actual ({filterLabel})
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-green)' }}>${summary.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </div>
-          <div className="apple-card" style={{ border: '1px solid rgba(255, 159, 10, 0.25)', background: 'rgba(255, 159, 10, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-              Achievement
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-orange)' }}>
-              {summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}
-            </div>
-          </div>
-        </div>
-
+      <div style={{ marginBottom: '28px' }}>
         {(() => {
+          const titleAndDropdowns = (
+            <>
+              <h3 className="apple-title-small" style={{ marginBottom: '20px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+                Team Members Expected vs Actual
+              </h3>
+
+              {/* Team selector + period dropdown in the same row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'end', marginBottom: '24px' }} className="apple-two-col-grid">
+                <div>
+                  <label className="apple-form-label">Select Team</label>
+                  <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="apple-form-control">
+                    {teams.map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="apple-form-label">Select Period</label>
+                  <select value={periodFilter} onChange={e => setPeriodFilter(Number(e.target.value))} className="apple-form-control">
+                    {TIME_PERIOD_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
+          );
+
+          const summaryCardsContent = (
+            <div className="summary-cards-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px', marginBottom: '28px' }}>
+              <div className="apple-card" style={{ border: '1px solid rgba(0, 113, 227, 0.25)', background: 'rgba(0, 113, 227, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                  Expected ({filterLabel})
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-blue)' }}>${summary.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+              <div className="apple-card" style={{ border: '1px solid rgba(48, 213, 200, 0.25)', background: 'rgba(48, 213, 200, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                  Actual ({filterLabel})
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-green)' }}>${summary.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+              <div className="apple-card" style={{ border: '1px solid rgba(255, 159, 10, 0.25)', background: 'rgba(255, 159, 10, 0.04)', padding: '16px 20px', borderRadius: '16px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                  Achievement
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--apple-accent-orange)' }}>
+                  {summary.expected > 0 ? `${summary.achievement.toFixed(1)}%` : 'N/A'}
+                </div>
+              </div>
+            </div>
+          );
+
           const activeStats = memberStats.filter(m => m.isActiveInTeam)
           const historicalStats = memberStats.filter(m => !m.isActiveInTeam)
 
@@ -576,45 +699,58 @@ export default function AdminRevenue() {
             return <p style={{ color: 'var(--apple-text-secondary)', margin: 0, fontStyle: 'italic' }}>No historical or active non-admin members found for this team in this period.</p>
           }
 
-          return (
+          const desktopGridContent = (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
               {activeStats.length > 0 && (
                 <div className="apple-desktop-table-container" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--apple-border)', borderRadius: '14px', overflow: 'hidden' }}>
                   <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: '700' }}>🟢 Active Members</h4>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>🟢 Active Members</h4>
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.01)' }}>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Expected</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actual</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Gap</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Achievement</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeStats.map(member => (
-                        <tr key={member.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
-                          <td style={{ padding: '14px 20px', color: '#fff', fontWeight: '600' }}>
+                  <div className="three-col-grid swipe-carousel-mobile" style={{ padding: '16px 20px' }}>
+                    {activeStats.map(member => (
+                      <div key={member.id} style={{ 
+                        background: 'rgba(255, 255, 255, 0.02)', 
+                        border: '1px solid var(--apple-border)', 
+                        borderRadius: '12px', 
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ color: 'var(--apple-text-primary)', fontWeight: '700', fontSize: '1.05rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {member.first_name} {member.last_name}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-accent-blue)', fontWeight: '700' }}>
-                            ${member.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-accent-green)', fontWeight: '700' }}>
-                            ${member.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: member.gap >= 0 ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)', fontWeight: '700' }}>
-                            {member.gap >= 0 ? '+' : ''}${member.gap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-accent-orange)', fontWeight: '700' }}>
+                          </div>
+                          <span style={{ 
+                            display: 'inline-block', 
+                            padding: '4px 10px', 
+                            background: member.achievement >= 100 ? 'rgba(48, 213, 200, 0.08)' : (member.achievement >= 50 ? 'rgba(255, 159, 10, 0.08)' : 'rgba(255, 59, 48, 0.08)'), 
+                            border: member.achievement >= 100 ? '1px solid rgba(48, 213, 200, 0.2)' : (member.achievement >= 50 ? '1px solid rgba(255, 159, 10, 0.2)' : '1px solid rgba(255, 59, 48, 0.2)'), 
+                            borderRadius: '6px', 
+                            color: member.achievement >= 100 ? 'var(--apple-accent-green)' : (member.achievement >= 50 ? 'var(--apple-accent-orange)' : 'var(--apple-accent-red)'), 
+                            fontWeight: '700', 
+                            fontSize: '0.85rem' 
+                          }}>
                             {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '20px', marginTop: '4px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Expected</div>
+                            <div style={{ color: 'var(--apple-accent-blue)', fontWeight: '600', fontSize: '1.1rem' }}>
+                              ${member.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Actual</div>
+                            <div style={{ color: 'var(--apple-accent-green)', fontWeight: '600', fontSize: '1.1rem' }}>
+                              ${member.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -623,44 +759,124 @@ export default function AdminRevenue() {
                   <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)' }}>
                     <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--apple-text-secondary)', fontWeight: '700' }}>📂 Historical Members</h4>
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--apple-border)', background: 'rgba(255,255,255,0.01)' }}>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Expected</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actual</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Gap</th>
-                        <th style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Achievement</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historicalStats.map(member => (
-                        <tr key={member.id} style={{ borderBottom: '1px solid var(--apple-border)', fontSize: '0.92rem' }}>
-                          <td style={{ padding: '14px 20px', color: 'var(--apple-text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="three-col-grid swipe-carousel-mobile" style={{ padding: '16px 20px' }}>
+                    {historicalStats.map(member => (
+                      <div key={member.id} style={{ 
+                        background: 'rgba(255, 255, 255, 0.01)', 
+                        border: '1px solid rgba(255, 255, 255, 0.05)', 
+                        borderRadius: '12px', 
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {member.first_name} {member.last_name}
                             <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--apple-text-secondary)' }}>
                               {member.is_deactivated ? 'Former' : 'Transferred'}
                             </span>
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
-                            ${member.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
-                            ${member.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
-                            {member.gap >= 0 ? '+' : ''}${member.gap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ padding: '14px 20px', textAlign: 'right', color: 'var(--apple-text-secondary)' }}>
+                          </div>
+                          <span style={{ 
+                            display: 'inline-block', 
+                            padding: '4px 10px', 
+                            background: 'rgba(255, 255, 255, 0.03)', 
+                            border: '1px solid rgba(255, 255, 255, 0.08)', 
+                            borderRadius: '6px', 
+                            color: 'var(--apple-text-secondary)', 
+                            fontWeight: '600', 
+                            fontSize: '0.85rem' 
+                          }}>
                             {member.expected > 0 ? `${member.achievement.toFixed(1)}%` : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '20px', marginTop: '4px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Expected</div>
+                            <div style={{ color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '1.1rem' }}>
+                              ${member.expected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Actual</div>
+                            <div style={{ color: 'var(--apple-text-secondary)', fontWeight: '600', fontSize: '1.1rem' }}>
+                              ${member.actual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+          );
+
+          const mobileMembersContent = (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[...activeStats, ...historicalStats].map(member => (
+                <div key={member.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontWeight: '600', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--apple-text-primary)' }}>{member.first_name}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)' }}>Tgt</div>
+                    <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: '600' }}>${member.expected}</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)' }}>Act</div>
+                    <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: '600' }}>${member.actual}</div>
+                  </div>
+                  <div style={{ marginTop: '4px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', padding: '4px', borderRadius: '6px', fontSize: '0.8rem', color: member.achievement >= 100 ? '#10b981' : (member.achievement >= 50 ? '#fbbf24' : '#f87171'), fontWeight: '700' }}>
+                    {member.expected > 0 ? `${member.achievement.toFixed(0)}%` : 'N/A'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+
+          return (
+            <>
+              {/* DESKTOP VIEW */}
+              <div className="member-grid-desktop">
+                <div className="apple-card">
+                  {titleAndDropdowns}
+                  {summaryCardsContent}
+                  {desktopGridContent}
+                </div>
+              </div>
+
+              {/* MOBILE SWIPE PANELS VIEW */}
+              <div className="member-swipe-panels-mobile" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ overflow: 'hidden' }}>
+                <style>{`
+                  @keyframes slideInRight { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                  @keyframes slideInLeft { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                  .swipe-panel-enter-1 { animation: slideInRight 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+                  .swipe-panel-enter-0 { animation: slideInLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+                `}</style>
+                {activeSwipePanel === 0 ? (
+                  <div className="swipe-panel-enter-0 apple-card" style={{ marginBottom: '0' }}>
+                    {titleAndDropdowns}
+                    {summaryCardsContent}
+                    
+                    <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '4px', background: 'var(--apple-accent-blue)', transition: 'background 0.3s' }}></div>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '4px', background: 'rgba(0,113,227,0.15)', transition: 'background 0.3s' }}></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="swipe-panel-enter-1 apple-card" style={{ marginBottom: '0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
+                      <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Individual Stats</h4>
+                    </div>
+                    {mobileMembersContent}
+                    
+                    <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '4px', background: 'rgba(0,113,227,0.15)', transition: 'background 0.3s' }}></div>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '4px', background: 'var(--apple-accent-blue)', transition: 'background 0.3s' }}></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )
         })()}
       </div>
@@ -669,7 +885,7 @@ export default function AdminRevenue() {
       <div className="apple-card" style={{ marginBottom: '28px', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#ffffff', fontWeight: '700' }}>Team Average Revenue</h3>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Team Average Revenue</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
               Average monthly revenue per team. Select a period to compare.
             </p>
@@ -706,23 +922,37 @@ export default function AdminRevenue() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px' }}>
+        <div className="two-col-grid">
           {teamAverages.map((team, idx) => (
-             <div key={team.teamId} style={{
+             <div key={team.teamId} className="team-avg-card" style={{
                background: 'rgba(255, 255, 255, 0.02)',
                border: '1px solid var(--apple-border)',
                borderRadius: '16px',
                padding: '20px',
                display: 'flex',
-               flexDirection: 'column',
+               flexDirection: 'row',
+               alignItems: 'center',
+               justifyContent: 'space-between',
                position: 'relative',
                overflow: 'hidden'
              }}>
                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: COLORS[idx % COLORS.length] }} />
-               <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', fontWeight: '600', marginBottom: '8px', paddingLeft: '8px' }}>
+               <div className="avg-name" style={{ 
+                 fontSize: '0.8rem', 
+                 color: COLORS[idx % COLORS.length], 
+                 fontWeight: '800', 
+                 textTransform: 'uppercase', 
+                 letterSpacing: '0.1em',
+                 marginBottom: '0', 
+                 padding: '4px 10px',
+                 background: `${COLORS[idx % COLORS.length]}15`,
+                 borderRadius: '8px',
+                 border: `1px solid ${COLORS[idx % COLORS.length]}30`,
+                 marginLeft: '8px'
+               }}>
                  {team.teamName}
                </div>
-               <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', paddingLeft: '8px' }}>
+               <div className="avg-amount">
                  ${team.average.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                </div>
              </div>
@@ -758,24 +988,42 @@ export default function AdminRevenue() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="two-col-grid">
           {teamRevenues.map((team, index) => {
             const maxRev = highestTeam?.totalRevenue || 1
-            const percentage = Math.max(5, (team.totalRevenue / maxRev) * 100)
+            const percentage = Math.max(2, (team.totalRevenue / maxRev) * 100)
 
             return (
-              <div key={team.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', alignItems: 'center', gap: '12px' }} className="apple-leaderboard-row">
-                <div style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#afafaf' : index === 2 ? '#b45309' : 'var(--apple-text-secondary)', fontWeight: '800', fontSize: '1.05rem' }}>
-                  #{index + 1}
+              <div key={team.id} className="team-avg-card" style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--apple-border)',
+                borderRadius: '16px',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: COLORS[index % COLORS.length] }} />
+                <div className="avg-name" style={{ 
+                  fontSize: '0.8rem', 
+                  color: COLORS[index % COLORS.length], 
+                  fontWeight: '800', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.1em',
+                  marginBottom: '0', 
+                  padding: '4px 10px',
+                  background: `${COLORS[index % COLORS.length]}15`,
+                  borderRadius: '8px',
+                  border: `1px solid ${COLORS[index % COLORS.length]}30`,
+                  marginLeft: '8px'
+                }}>
+                  #{index + 1} &nbsp; {team.name}
                 </div>
-                <div style={{ fontWeight: '600', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {team.name}
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: '700', color: '#ffffff', fontSize: '0.95rem' }}>
-                    ${team.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
+                <div className="avg-amount">
+                  ${team.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             )

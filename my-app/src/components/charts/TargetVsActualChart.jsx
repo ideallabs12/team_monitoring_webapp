@@ -72,6 +72,27 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
+const GlassBar = (props) => {
+  const { fill, x, y, width, height } = props;
+  if (height <= 0 || isNaN(height) || width <= 0 || isNaN(width)) return null;
+
+  return (
+    <g>
+      {/* Outer subtle glow */}
+      <rect x={x - 2} y={y - 2} width={width + 4} height={height + 2} fill={fill} opacity={0.15} rx={6} />
+      
+      {/* Main bar body */}
+      <rect x={x} y={y} width={width} height={height} fill={fill} rx={4} />
+      
+      {/* 3D Glass inner highlight on the left edge to simulate a cylinder */}
+      <rect x={x} y={y} width={Math.max(1, width * 0.25)} height={height} fill="#ffffff" opacity={0.2} rx={4} />
+      
+      {/* Top glossy cap */}
+      <rect x={x + 1} y={y + 1} width={Math.max(1, width - 2)} height={Math.min(6, height - 1)} fill="#ffffff" opacity={0.35} rx={2} />
+    </g>
+  );
+};
+
 export default function TargetVsActualChart({
   targets = [],
   revenues = [],
@@ -79,7 +100,7 @@ export default function TargetVsActualChart({
   profiles = [],
   teams = [],
 }) {
-  const [period, setPeriod] = useState(1)
+  const [period, setPeriod] = useState(6)
   const [selectedTeamId, setSelectedTeamId] = useState('all')
 
   const months = useMemo(() => getLastNMonths(period).reverse(), [period])
@@ -113,31 +134,35 @@ export default function TargetVsActualChart({
     <div className="card" style={{ padding: '24px', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── HEADER ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '18px' }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>
-            Target vs Actual Revenue
-          </h3>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-            Comparing monthly team targets with finalized actual revenues.
-          </p>
-        </div>
-
-        {totalTarget > 0 && (
-          <div style={{
-            background: badgeBg,
-            border: `1px solid ${badgeBorder}`,
-            padding: '8px 14px',
-            borderRadius: '10px',
-            textAlign: 'right',
-            flexShrink: 0,
-          }}>
-            <div style={{ fontSize: '0.67rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Attainment Rate</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: badgeColor, lineHeight: 1.1, marginTop: '2px' }}>{attainmentPct}%</div>
-            <div style={{ fontSize: '0.67rem', color: badgeColor, fontWeight: '600', marginTop: '2px' }}>{attainmentDesc}</div>
-          </div>
-        )}
+      <div style={{ marginBottom: '18px' }}>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>
+          Target vs Actual Revenue
+        </h3>
+        <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+          Comparing monthly team targets with finalized actual revenues.
+        </p>
       </div>
+
+      {/* ── FULL ROW ATTAINMENT BANNER ── */}
+      {totalTarget > 0 && (
+        <div style={{
+          background: badgeBg,
+          border: `1px solid ${badgeBorder}`,
+          padding: '16px 24px',
+          borderRadius: '12px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+          width: '100%'
+        }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700' }}>Overall Attainment</div>
+            <div style={{ fontSize: '0.9rem', color: badgeColor, fontWeight: '600', marginTop: '4px' }}>{attainmentDesc}</div>
+          </div>
+          <div style={{ fontSize: '2.4rem', fontWeight: '800', color: badgeColor, lineHeight: 1 }}>{attainmentPct}%</div>
+        </div>
+      )}
 
       {/* ── FILTER ROW ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
@@ -219,22 +244,24 @@ export default function TargetVsActualChart({
           <span>No revenue or target data for this period.</span>
         </div>
       ) : (
-        <div style={{ width: '100%', height: 340, minWidth: 0, minHeight: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              margin={{ top: 30, right: 10, left: -5, bottom: 5 }}
-              barCategoryGap="32%"
-              barGap={5}
-            >
+        <div style={{ width: '100%', minWidth: 0, minHeight: 0 }}>
+          {/* DESKTOP VIEW: Bar Chart */}
+          <div className="target-chart-desktop" style={{ width: '100%', height: 340 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                margin={{ top: 30, right: 10, left: -5, bottom: 5 }}
+                barCategoryGap="25%"
+                barGap={8}
+              >
               <defs>
                 <linearGradient id="tvaColorTarget" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#1e3a8a" stopOpacity={0.65} />
+                  <stop offset="100%" stopColor="#1e3a8a" stopOpacity={0.7} />
                 </linearGradient>
                 <linearGradient id="tvaColorActual" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#10b981" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#064e3b" stopOpacity={0.65} />
+                  <stop offset="100%" stopColor="#047857" stopOpacity={0.7} />
                 </linearGradient>
               </defs>
 
@@ -265,11 +292,13 @@ export default function TargetVsActualChart({
                 cursor={{ fill: 'rgba(255,255,255,0.025)', radius: 4 }}
               />
 
+              {/* ── TARGET BAR ── */}
               <Bar
                 name="Target"
                 dataKey="Target"
                 fill="url(#tvaColorTarget)"
-                radius={[5, 5, 0, 0]}
+                shape={<GlassBar />}
+                maxBarSize={48}
                 animationDuration={700}
                 animationEasing="ease-out"
               >
@@ -277,15 +306,18 @@ export default function TargetVsActualChart({
                   dataKey="Target"
                   position="top"
                   formatter={formatValue}
-                  style={{ fill: '#60a5fa', fontSize: '0.68rem', fontWeight: '700' }}
+                  style={{ fill: '#60a5fa', fontSize: '0.68rem', fontWeight: '600' }}
+                  dy={-8}
                 />
               </Bar>
 
+              {/* ── ACTUAL BAR ── */}
               <Bar
                 name="Actual Revenue"
                 dataKey="Actual"
                 fill="url(#tvaColorActual)"
-                radius={[5, 5, 0, 0]}
+                shape={<GlassBar />}
+                maxBarSize={48}
                 animationDuration={900}
                 animationEasing="ease-out"
               >
@@ -293,11 +325,36 @@ export default function TargetVsActualChart({
                   dataKey="Actual"
                   position="top"
                   formatter={formatValue}
-                  style={{ fill: '#34d399', fontSize: '0.68rem', fontWeight: '700' }}
+                  style={{ fill: '#10b981', fontSize: '0.68rem', fontWeight: '800' }}
+                  dy={-8}
                 />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </div>
+
+          {/* MOBILE VIEW: Grid of Progress Bars (2 in a row) */}
+          <div className="target-list-mobile no-scrollbar" style={{ width: '100%', maxHeight: '400px', overflowY: 'auto', flexDirection: 'row', flexWrap: 'wrap', gap: '16px', paddingRight: '4px' }}>
+            {data.slice().reverse().map(d => {
+              const target = d.Target || 0;
+              const actual = d.Actual || 0;
+              const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0;
+              return (
+                <div key={d.period} style={{ width: 'calc(50% - 8px)', padding: '12px', background: 'var(--apple-card)', borderRadius: '12px', border: '1px solid var(--apple-border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--apple-text-primary)' }}>{d.period}</span>
+                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600' }}>Target: <span style={{ color: '#3b82f6' }}>{formatValue(target)}</span></span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '10px', background: 'rgba(59,130,246,0.15)', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #047857)', borderRadius: '5px', transition: 'width 1s ease-out' }} />
+                    </div>
+                    <span style={{ fontWeight: '800', color: '#10b981', fontSize: '0.9rem', minWidth: '35px', textAlign: 'right' }}>{formatValue(actual)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
