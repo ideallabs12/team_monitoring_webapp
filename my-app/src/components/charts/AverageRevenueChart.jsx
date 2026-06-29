@@ -58,11 +58,16 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
 
   // Current total and average
   const stats = useMemo(() => {
-    const withRevenue = chartData.filter(d => d.revenue > 0)
-    const total = withRevenue.reduce((s, d) => s + d.revenue, 0)
-    const avg = withRevenue.length > 0 ? total / withRevenue.length : 0
-    return { total, avg: Number(avg.toFixed(2)), months: withRevenue.length }
-  }, [chartData])
+    const total = chartData.reduce((s, d) => s + d.revenue, 0)
+    
+    let divisor = chartData.length
+    if (selectedPeriod === 0 && chartData.length === 0) {
+       divisor = 1
+    }
+
+    const avg = divisor > 0 ? total / divisor : 0
+    return { total, avg: Number(avg.toFixed(2)), months: divisor }
+  }, [chartData, selectedPeriod])
 
   // Average line value
   const avgValue = stats.avg
