@@ -980,7 +980,22 @@ export default function AdminUsers() {
             display: none;
           }
           .users-grid-container {
-            display: grid;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          .admin-users-container {
+            padding: 16px 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .admin-users-container > h3, .admin-users-container > p {
+            padding: 0 16px;
+          }
+          .user-mobile-card {
+            margin: 0 8px !important;
+            border-radius: 16px !important;
           }
         }
         .truncate-text {
@@ -991,7 +1006,7 @@ export default function AdminUsers() {
       `}</style>
 
       {/* Users List Card */}
-      <div className="card" style={{ padding: '24px' }}>
+      <div className="card admin-users-container" style={{ padding: '24px' }}>
         <h3 style={{ marginBottom: '20px', fontSize: '1.2rem', color: '#fff' }}>Registered Users Directory</h3>
 
         {filteredUsers.length > 0 ? (
@@ -1084,6 +1099,7 @@ export default function AdminUsers() {
                 return (
                   <div
                     key={user.id}
+                    className="user-mobile-card"
                     onClick={() => setViewingProfileUser(user)}
                     style={{
                       padding: '16px',

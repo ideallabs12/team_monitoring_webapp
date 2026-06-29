@@ -151,7 +151,7 @@ export default function Attendance({ user }) {
           let isAllowedIp = false
           for (const loc of validLocations) {
             const locIps = officeIps.filter(ip => ip.location_id === loc.id)
-            if (locIps.some(ipConfig => ipConfig.ip_address === data.ip)) {
+            if (locIps.some(ipConfig => ipConfig.ip_address.split(',').map(i => i.trim()).includes(data.ip))) {
               isAllowedIp = true
               break
             }

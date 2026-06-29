@@ -845,7 +845,7 @@ export default function AdminRevenue() {
               </div>
 
               {/* MOBILE SWIPE PANELS VIEW */}
-              <div className="member-swipe-panels-mobile" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ overflow: 'hidden' }}>
+              <div className="member-swipe-panels-mobile apple-card" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ overflow: 'hidden', padding: '24px 20px', borderRadius: '20px', marginBottom: '28px' }}>
                 <style>{`
                   @keyframes slideInRight { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                   @keyframes slideInLeft { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -853,7 +853,7 @@ export default function AdminRevenue() {
                   .swipe-panel-enter-0 { animation: slideInLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
                 `}</style>
                 {activeSwipePanel === 0 ? (
-                  <div className="swipe-panel-enter-0 apple-card" style={{ marginBottom: '0' }}>
+                  <div className="swipe-panel-enter-0">
                     {titleAndDropdowns}
                     {summaryCardsContent}
                     
@@ -863,7 +863,7 @@ export default function AdminRevenue() {
                     </div>
                   </div>
                 ) : (
-                  <div className="swipe-panel-enter-1 apple-card" style={{ marginBottom: '0' }}>
+                  <div className="swipe-panel-enter-1">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
                       <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Individual Stats</h4>
                     </div>
