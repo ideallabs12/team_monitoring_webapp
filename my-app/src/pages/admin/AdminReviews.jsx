@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon, Users, Clock, Calendar, Trash2 } from 'lucide-react'
 
 export default function AdminReviews() {
+  const { user, featureAccess } = useOutletContext() || {}
+  const canManage = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.reviews
   const [reviews, setReviews] = useState([])
   const [writeUps, setWriteUps] = useState([])
   const [loading, setLoading] = useState(true)
@@ -350,33 +353,37 @@ export default function AdminReviews() {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px', borderTop: '1px solid var(--apple-border)', paddingTop: '20px', flexWrap: 'wrap' }}>
-              <button 
-                onClick={() => { handleDelete(selectedReview.id); setSelectedReview(null); }}
-                className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', marginRight: 'auto' }}
-              >
-                <Trash2 size={18} /> Delete Review
-              </button>
-
-              {selectedReview.status === 'pending' && (
+              {canManage && (
                 <>
                   <button 
-                    onClick={() => { handleReject(selectedReview.id); setSelectedReview(null); }}
-                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    onClick={() => { handleDelete(selectedReview.id); setSelectedReview(null); }}
+                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', marginRight: 'auto' }}
                   >
-                    <XCircle size={18} /> Reject
+                    <Trash2 size={18} /> Delete Review
                   </button>
-                  <button 
-                    onClick={() => setFeedbackModal({ isOpen: true, reviewId: selectedReview.id, feedback: '' })}
-                    className="apple-btn apple-btn-secondary" style={{ padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-orange)' }}
-                  >
-                    <AlertCircle size={18} /> Give Feedback
-                  </button>
-                  <button 
-                    onClick={() => { handleApprove(selectedReview.id); setSelectedReview(null); }}
-                    className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <CheckCircle size={18} /> Approve
-                  </button>
+
+                  {selectedReview.status === 'pending' && (
+                    <>
+                      <button 
+                        onClick={() => { handleReject(selectedReview.id); setSelectedReview(null); }}
+                        className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <XCircle size={18} /> Reject
+                      </button>
+                      <button 
+                        onClick={() => setFeedbackModal({ isOpen: true, reviewId: selectedReview.id, feedback: '' })}
+                        className="apple-btn apple-btn-secondary" style={{ padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-orange)' }}
+                      >
+                        <AlertCircle size={18} /> Give Feedback
+                      </button>
+                      <button 
+                        onClick={() => { handleApprove(selectedReview.id); setSelectedReview(null); }}
+                        className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <CheckCircle size={18} /> Approve
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>

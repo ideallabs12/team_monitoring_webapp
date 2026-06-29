@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import AdminRoleManager from './pages/admin/AdminRoleManager'
 import { supabase } from './supabaseClient'
 import { SpeedInsights } from "@vercel/speed-insights/react"
 
@@ -48,6 +49,8 @@ function App() {
   const [user, setUser] = useState(null)
   const [hasProfile, setHasProfile] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isExecutive, setIsExecutive] = useState(false)
+  const [featureAccess, setFeatureAccess] = useState(null)
   const [isDeactivated, setIsDeactivated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [systemSettings, setSystemSettings] = useState({ maintenance_mode: false, show_leaderboard: true })
@@ -129,6 +132,7 @@ function App() {
           setUser(null)
           setHasProfile(false)
           setIsAdmin(false)
+          setIsExecutive(false)
           setIsDeactivated(false)
           profileFetchedFor.current = null
           setLoading(false)
@@ -165,7 +169,7 @@ function App() {
 
       const res = await supabase
         .from('profiles')
-        .select('first_name, profile_completed, platform_role, is_deactivated')
+        .select('first_name, profile_completed, platform_role, is_deactivated, feature_access')
         .eq('id', userId)
         .maybeSingle()
 
@@ -173,7 +177,7 @@ function App() {
         // Fallback if is_deactivated column not migrated yet
         const fallbackRes = await supabase
           .from('profiles')
-          .select('first_name, profile_completed, platform_role')
+          .select('first_name, profile_completed, platform_role, feature_access')
           .eq('id', userId)
           .maybeSingle()
         if (fallbackRes.error) throw fallbackRes.error
@@ -200,16 +204,20 @@ function App() {
           return 'Unknown Device'
         })();
 
-        if (data.platform_role === 'admin') {
+        if (data.platform_role === 'admin' || data.platform_role === 'executive') {
           setIsAdmin(true)
+          setIsExecutive(data.platform_role === 'executive')
+          setFeatureAccess(data.feature_access || null)
           setHasProfile(true)
           supabase.from('audit_logs').insert({
             user_id: userId,
             action_type: 'admin_activity',
-            details: { description: 'Admin logged in', email: currentUser.email, device: deviceInfo }
+            details: { description: `${data.platform_role === 'executive' ? 'Executive' : 'Admin'} logged in`, email: currentUser.email, device: deviceInfo }
           }).then()
         } else {
           setIsAdmin(false)
+          setIsExecutive(false)
+          setFeatureAccess(data.feature_access || null)
           const completed = !!data.first_name || data.profile_completed === true
           setHasProfile(completed)
           supabase.from('audit_logs').insert({
@@ -230,6 +238,8 @@ function App() {
           setHasProfile(false)
           setIsDeactivated(false)
           setIsAdmin(false)
+          setIsExecutive(false)
+          setFeatureAccess(null)
           return
         }
 
@@ -240,6 +250,8 @@ function App() {
         }
         setIsDeactivated(false)
         setIsAdmin(false)
+        setIsExecutive(false)
+        setFeatureAccess(null)
       }
 
       // Mark this user as fully loaded — prevents re-fetch on tab switch
@@ -250,6 +262,7 @@ function App() {
       setHasProfile(false)
       setIsDeactivated(false)
       setIsAdmin(false)
+      setIsExecutive(false)
     } finally {
       setLoading(false)
     }
@@ -258,6 +271,7 @@ function App() {
   const handleProfileCompleted = () => {
     setHasProfile(true)
     setIsAdmin(false)
+    setIsExecutive(false)
     setIsDeactivated(true)
   }
 
@@ -308,7 +322,7 @@ function App() {
         />
 
         {/* Regular User Routes */}
-        <Route element={<Layout user={user} isDeactivated={isDeactivated} />}>
+        <Route element={<Layout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} />}>
           <Route path="/home" element={hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
@@ -328,9 +342,11 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={isAdmin ? <AdminLayout user={user} isDeactivated={isDeactivated} /> : <Navigate to="/" replace />}>
+        {/* Admin Routes */}
+        <Route path="/admin" element={isAdmin ? <AdminLayout user={user} isDeactivated={isDeactivated} isExecutive={isExecutive} featureAccess={featureAccess} /> : <Navigate to="/" replace />}>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<AdminHome />} />
+          <Route path="role-manager" element={<AdminRoleManager />} />
           <Route path="teams" element={<AdminTeams />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:id" element={<AdminUserControlPanel />} />

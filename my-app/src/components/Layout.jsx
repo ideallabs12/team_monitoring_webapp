@@ -18,7 +18,7 @@ function RestrictedAccessView() {
   )
 }
 
-export default function Layout({ user, isDeactivated }) {
+export default function Layout({ user, isDeactivated, featureAccess }) {
   const [navPref, setNavPref] = useState(null) // 'navbar' or 'sidebar'
   const [loading, setLoading] = useState(true)
 
@@ -44,7 +44,7 @@ export default function Layout({ user, isDeactivated }) {
 
   // Sidebar Layout Mode
   if (navPref === 'sidebar') {
-    return <UserSidebarLayout user={user} isDeactivated={isDeactivated} RestrictedAccessView={RestrictedAccessView} />
+    return <UserSidebarLayout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} RestrictedAccessView={RestrictedAccessView} />
   }
 
   // Default Top Navbar Layout Mode
@@ -62,7 +62,7 @@ export default function Layout({ user, isDeactivated }) {
         boxSizing: 'border-box',
         animation: 'fadeIn 0.3s var(--apple-ease)' 
       }}>
-        {isDeactivated ? <RestrictedAccessView /> : <Outlet />}
+        {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ featureAccess }} />}
       </main>
     </div>
   )

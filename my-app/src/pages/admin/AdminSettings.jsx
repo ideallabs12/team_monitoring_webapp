@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { 
   Database, Users, Activity, FileText, Download, ShieldAlert,
@@ -13,6 +14,9 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
+  
+  const { user, featureAccess } = useOutletContext() || {}
+  const canAccess = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.settings
 
   // Settings state
   const [maintenanceMode, setMaintenanceMode] = useState(false)
@@ -326,7 +330,13 @@ export default function AdminSettings() {
     } catch (err) { alert("Wipe failed: " + err.message) }
   }
 
-  if (loading) return <div style={{ color: 'var(--apple-text-secondary)', padding: '40px', textAlign: 'center' }}>Loading Advanced Settings...</div>
+  if (loading) return <div style={{ color: 'var(--apple-text-secondary)', padding: '40px', textAlign: 'center' }}>Loading system settings...</div>
+
+  if (!canAccess) return (
+    <div style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <div style={{ color: '#ef4444', fontSize: '1.2rem', fontWeight: '600' }}>Access Denied</div>
+    </div>
+  )
 
   return (
     <div style={{ paddingBottom: '60px', animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -403,7 +413,7 @@ export default function AdminSettings() {
               </div>
               <button
                 onClick={() => setDisLocked(!disLocked)}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: disLocked  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: disLocked  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: disLocked  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -416,7 +426,7 @@ export default function AdminSettings() {
               </div>
               <button
                 onClick={() => setDisAllowPast(!disAllowPast)}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: disAllowPast  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: disAllowPast  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: disAllowPast  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -512,7 +522,7 @@ export default function AdminSettings() {
               </div>
               <button
                 onClick={() => setShowLeaderboard(!showLeaderboard)}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: showLeaderboard  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: showLeaderboard  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: showLeaderboard  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -525,7 +535,7 @@ export default function AdminSettings() {
               </div>
               <button
                 onClick={() => setAllowReviewPaste(!allowReviewPaste)}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: allowReviewPaste  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: allowReviewPaste  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: allowReviewPaste  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -538,7 +548,7 @@ export default function AdminSettings() {
               </div>
               <button
                 onClick={() => setMaintenanceMode(!maintenanceMode)}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: maintenanceMode  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: maintenanceMode  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: maintenanceMode  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>

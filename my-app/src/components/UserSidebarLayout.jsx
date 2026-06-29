@@ -19,7 +19,7 @@ import {
   MapPin
 } from 'lucide-react'
 
-export default function UserSidebarLayout({ user, isDeactivated, RestrictedAccessView }) {
+export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
@@ -64,7 +64,7 @@ export default function UserSidebarLayout({ user, isDeactivated, RestrictedAcces
   navLinks.push({ path: '/profile', label: 'Profile', icon: UserIcon })
   navLinks.push({ path: '/settings', label: 'Settings', icon: SettingsIcon })
 
-  const isWhitelisted = user?.email === 'user1@gmail.com' || user?.email === 'signatureglobalconferences@gmail.com' || user?.email === 'testadmin@example.com'
+  const isWhitelisted = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.attendance
   if (isWhitelisted) {
     navLinks.push({ path: '/attendance', label: 'Attendance', icon: MapPin })
   }

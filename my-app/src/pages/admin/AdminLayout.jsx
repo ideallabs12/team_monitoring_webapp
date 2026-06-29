@@ -22,11 +22,13 @@ import {
   Calendar,
   Star,
   Sparkles,
-  MapPin
+  MapPin,
+  Shield
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
+  { path: '/admin/role-manager', label: 'Specials', icon: Shield },
   { path: '/admin/teams',     label: 'Teams',       icon: Network },
   { path: '/admin/users',     label: 'Users',       icon: User },
   { path: '/admin/dis',       label: 'DIS Reports', icon: FileText },
@@ -56,7 +58,7 @@ function RestrictedAccessView() {
   )
 }
 
-export default function AdminLayout({ user, isDeactivated }) {
+export default function AdminLayout({ user, isDeactivated, isExecutive, featureAccess }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
@@ -148,8 +150,18 @@ export default function AdminLayout({ user, isDeactivated }) {
         {/* ── Navigation ── */}
         <nav className="admin-sidebar-nav" style={{ padding: collapsed ? '0 8px' : '0 10px' }}>
           {NAV_ITEMS.filter(item => {
-            if (item.path === '/admin/ai-analytics') return user?.email?.includes('signatureglobalconferences')
-            if (item.path === '/admin/attendance') return user?.email === 'user1@gmail.com' || user?.email === 'signatureglobalconferences@gmail.com' || user?.email === 'testadmin@example.com'
+            if (user?.email === 'signatureglobalconferences@gmail.com') return true;
+            if (item.path === '/admin/role-manager') return false;
+
+            if (featureAccess) {
+              if (item.path === '/admin/ai-analytics') return !!featureAccess.aiAnalytics;
+              if (item.path === '/admin/attendance') return !!featureAccess.attendance;
+              if (item.path === '/admin/auditlogs') return !!featureAccess.auditLogs;
+              if (item.path === '/admin/settings') return !!featureAccess.settings;
+              if (item.path === '/admin/write-ups') return !!featureAccess.writeUps;
+              if (item.path === '/admin/reviews') return !!featureAccess.reviews;
+            }
+            
             return true
           }).map(({ path, label, icon: Icon }) => {
             const active = isActive(path)
@@ -250,7 +262,7 @@ export default function AdminLayout({ user, isDeactivated }) {
         </div>
 
         <main className="admin-content">
-          {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ user }} />}
+          {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ user, profile, isExecutive, featureAccess }} />}
         </main>
       </div>
     </div>

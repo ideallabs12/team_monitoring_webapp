@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { Sparkles, Activity, MessageSquare, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { useOutletContext } from 'react-router-dom'
 
 // Helper functions for analytical pre-processing
 const parseMonthYear = (dateString) => {
@@ -73,13 +74,15 @@ export default function AdminAiAnalytics() {
   const [customQuestion, setCustomQuestion] = useState('')
   const [aiResponse, setAiResponse] = useState('')
   const [generating, setGenerating] = useState(false)
+  const { user, featureAccess } = useOutletContext() || {}
+  const canAccess = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.aiAnalytics
+
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.user?.email?.includes('signatureglobalconferences')) {
+        if (!canAccess) {
           setErrorMsg('Access Restricted: You do not have permission to view or generate AI Analytics.')
           return
         }

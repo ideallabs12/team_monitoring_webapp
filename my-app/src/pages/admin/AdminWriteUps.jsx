@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { Calendar, Plus, Trash2, Power, RefreshCw, Edit } from 'lucide-react'
 
 export default function AdminWriteUps() {
+  const { user, featureAccess } = useOutletContext() || {}
+  const canManage = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.writeUps
   const [events, setEvents] = useState([])
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
@@ -236,19 +239,21 @@ export default function AdminWriteUps() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            onClick={() => {
-              if (showCreate) {
-                handleCancelEdit()
-              } else {
-                setShowCreate(true)
-              }
-            }}
-            className="apple-btn apple-btn-primary"
-            style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            {showCreate ? 'Cancel' : <><Plus size={16} /> Create Write-Up</>}
-          </button>
+          {canManage && (
+            <button
+              onClick={() => {
+                if (showCreate) {
+                  handleCancelEdit()
+                } else {
+                  setShowCreate(true)
+                }
+              }}
+              className="apple-btn apple-btn-primary"
+              style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              {showCreate ? 'Cancel' : <><Plus size={16} /> Create Write-Up</>}
+            </button>
+          )}
         </div>
       </div>
 
@@ -422,29 +427,33 @@ export default function AdminWriteUps() {
             )}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--apple-border)' }}>
-              <button
-                onClick={() => handleEditClick(ev)}
-                className="apple-btn apple-btn-secondary"
-                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
-              >
-                <Edit size={14} /> Edit
-              </button>
-              
-              <button
-                onClick={() => toggleEventStatus(ev.id, ev.is_active)}
-                className={`apple-btn ${ev.is_active ? 'apple-btn-secondary' : 'apple-btn-primary'}`}
-                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
-              >
-                <Power size={14} /> {ev.is_active ? 'Turn Off' : 'Turn On'}
-              </button>
-              
-              <button
-                onClick={() => handleDeleteEvent(ev.id)}
-                className="apple-btn apple-btn-danger"
-                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--apple-accent-red)', flex: '1 1 auto', justifyContent: 'center' }}
-              >
-                <Trash2 size={14} /> Delete
-              </button>
+              {canManage && (
+                <>
+                  <button
+                    onClick={() => handleEditClick(ev)}
+                    className="apple-btn apple-btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
+                  >
+                    <Edit size={14} /> Edit
+                  </button>
+                  
+                  <button
+                    onClick={() => toggleEventStatus(ev.id, ev.is_active)}
+                    className={`apple-btn ${ev.is_active ? 'apple-btn-secondary' : 'apple-btn-primary'}`}
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
+                  >
+                    <Power size={14} /> {ev.is_active ? 'Turn Off' : 'Turn On'}
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDeleteEvent(ev.id)}
+                    className="apple-btn apple-btn-danger"
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--apple-accent-red)', flex: '1 1 auto', justifyContent: 'center' }}
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </>
+              )}
               
               <button
                 onClick={() => handleDownloadCSV(ev.id, ev.title)}

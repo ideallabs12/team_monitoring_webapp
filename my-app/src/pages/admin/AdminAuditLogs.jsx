@@ -15,14 +15,30 @@ const TABS = [
 const EXCLUDED_EMAILS = ['signatureglobalconferences@gmail.com', 'user1@gmail.com']
 
 export default function AdminAuditLogs() {
-  const { user } = useOutletContext() || {}
+  const { user, featureAccess } = useOutletContext() || {}
   const { onlineUsers } = usePresence()
-  const [activeTab, setActiveTab] = useState('revenue')
+  const [activeTab, setActiveTab] = useState('')
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
 
+  const isMasterAdmin = user?.email === 'signatureglobalconferences@gmail.com'
+  
+  const allowedTabs = TABS.filter(tab => {
+    if (isMasterAdmin) return true
+    // Map 'page_view' to 'page' since our feature key is 'auditLogs_page'
+    const keyMap = { page_view: 'page' }
+    const featureKey = `auditLogs_${keyMap[tab.id] || tab.id}`
+    return !!featureAccess?.[featureKey]
+  })
+
+  useEffect(() => {
+    if (allowedTabs.length > 0 && !allowedTabs.find(t => t.id === activeTab)) {
+      setActiveTab(allowedTabs[0].id)
+    }
+  }, [allowedTabs, activeTab])
+
   // Verify access
-  if (user?.email !== 'signatureglobalconferences@gmail.com' && user?.email !== 'testadmin@example.com') {
+  if (allowedTabs.length === 0) {
     return (
       <div>
         <div className="admin-page-header">
@@ -39,6 +55,7 @@ export default function AdminAuditLogs() {
   }
 
   const fetchLogs = async () => {
+    if (!activeTab) return
     setLoading(true)
     let actionFilter = []
     if (activeTab === 'revenue') {
@@ -192,7 +209,7 @@ export default function AdminAuditLogs() {
           flexDirection: 'column',
           marginBottom: '16px'
         }}>
-          {TABS.map((tab, index) => {
+          {allowedTabs.map((tab, index) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
@@ -203,7 +220,7 @@ export default function AdminAuditLogs() {
                   background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'transparent',
                   color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)',
                   border: 'none',
-                  borderBottom: index < TABS.length - 1 ? '1px solid var(--apple-border)' : 'none',
+                  borderBottom: index < allowedTabs.length - 1 ? '1px solid var(--apple-border)' : 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',

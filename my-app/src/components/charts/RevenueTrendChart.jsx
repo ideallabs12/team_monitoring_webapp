@@ -431,7 +431,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                 Total Revenue
               </div>
               <div style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--apple-text-primary)', marginTop: '2px' }}>
-                ${grandTotal.toLocaleString()}
+                ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
                 {isCustomActive
@@ -461,7 +461,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
                     {item.name}
                   </span>
                   <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>
-                    ${item.value.toLocaleString()}
+                    ${item.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </span>
                   <span className="desktop-hide-pct" style={{
                     fontSize: '0.68rem', fontWeight: '600',

@@ -1256,12 +1256,12 @@ export default function AdminTeams() {
   // VIEW 3: TEAMS CARD SUMMARY VIEW (Default view)
   // ==========================================
 
-  const handleCopyData = async () => {
+  const handleCopyData = async (format = 'summary') => {
     try {
       const today = new Date();
       const dateStr = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
       
-      let reportText = '';
+      let reportText = `Revenue Report till ${dateStr}\n\n`;
       let totalAllTeams = 0;
 
       teams.forEach(team => {
@@ -1271,12 +1271,45 @@ export default function AdminTeams() {
         
         totalAllTeams += teamTotal;
 
-        reportText += `Team Name : ${team.name}\n`;
-        reportText += `Revenue till ${dateStr} : $${teamTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n\n`;
+        const cleanTeamName = (team.name || '').replace(/[\r\n]+/g, '').trim();
+        reportText += `Team Name : ${cleanTeamName}\n`;
+        reportText += `Team Total : $${teamTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}\n`;
+
+        if (format === 'detailed') {
+           const activeMembers = profiles.filter(p => 
+              (p.team_id === team.id || p.secondary_team_id === team.id) && 
+              p.platform_role !== 'admin' && 
+              !p.is_deactivated
+           );
+           
+           const memberIds = new Set(activeMembers.map(p => p.id));
+           teamRevs.forEach(r => {
+               if (!memberIds.has(r.user_id)) {
+                   memberIds.add(r.user_id);
+               }
+           });
+           
+           const allRelevantProfiles = Array.from(memberIds).map(id => profiles.find(p => p.id === id)).filter(Boolean);
+           
+           if (allRelevantProfiles.length > 0) {
+               const profileTotals = allRelevantProfiles.map(profile => {
+                   const memberTotal = teamRevs.filter(r => r.user_id === profile.id).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+                   return { profile, memberTotal };
+               });
+               
+               profileTotals.sort((a, b) => b.memberTotal - a.memberTotal);
+               
+               profileTotals.forEach(({ profile, memberTotal }) => {
+                   const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+                   reportText += `${fullName} : $${memberTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}\n`;
+               });
+           }
+        }
+        reportText += `\n`;
       });
 
       reportText += `Total\n`;
-      reportText += `Total revenue from all teams till ${dateStr} : $${totalAllTeams.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      reportText += `Total revenue from all teams : $${totalAllTeams.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
       await navigator.clipboard.writeText(reportText);
       alert('Data copied to clipboard!');
@@ -1300,19 +1333,34 @@ export default function AdminTeams() {
 
         {/* Previous Data Toggle, Timeframe Selector & Copy Data */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleCopyData}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '6px 14px', borderRadius: '8px',
-              background: 'var(--apple-accent-blue)', color: '#fff',
-              border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Copy size={14} />
-            Copy Data
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => handleCopyData('summary')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 14px', borderRadius: '8px',
+                background: 'var(--apple-accent-blue)', color: '#fff',
+                border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Copy size={14} />
+              Copy Totals
+            </button>
+            <button
+              onClick={() => handleCopyData('detailed')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 14px', borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.1)', color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Copy size={14} />
+              Copy Detailed
+            </button>
+          </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>Previous Months Data</span>

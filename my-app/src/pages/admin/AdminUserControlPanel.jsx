@@ -4,7 +4,8 @@ import { supabase } from '../../supabaseClient'
 import { Shield, Key, AlertTriangle, Activity, Trash2, ArrowLeft, User as UserIcon, PhoneCall, MapPin } from 'lucide-react'
 
 export default function AdminUserControlPanel() {
-  const { user: adminUser } = useOutletContext() || {}
+  const { user: adminUser, featureAccess } = useOutletContext() || {}
+  const canAccess = adminUser?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.controlPanel
   const { id } = useParams()
   const [loading, setLoading] = useState(true)
   
@@ -298,7 +299,18 @@ export default function AdminUserControlPanel() {
     return activities.sort((a, b) => b.date - a.date)
   }, [user, revenues, disReports, teams, auditLogs])
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading user profile...</div>
+  if (loading) return (
+    <div style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <div style={{ color: 'var(--apple-text-secondary)', fontSize: '1.1rem', fontWeight: '500' }}>Loading user data...</div>
+    </div>
+  )
+
+  if (!canAccess) return (
+    <div style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <div style={{ color: '#ef4444', fontSize: '1.2rem', fontWeight: '600' }}>Access Denied</div>
+    </div>
+  )
+
   if (!user) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>User not found.</div>
 
   const isDeactivated = !!user.is_deactivated
@@ -384,7 +396,7 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('has_revenue_logging', user.has_revenue_logging)}
                 disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.has_revenue_logging  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.has_revenue_logging  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.has_revenue_logging  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -394,7 +406,7 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('has_dis_reporting', user.has_dis_reporting)}
                 disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.has_dis_reporting  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.has_dis_reporting  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.has_dis_reporting  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -404,7 +416,7 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('is_sales_executive', user.is_sales_executive)}
                 disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.is_sales_executive  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.is_sales_executive  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.is_sales_executive  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -427,7 +439,7 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('wfh_enabled', user.wfh_enabled)}
                 disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.wfh_enabled  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.wfh_enabled  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.wfh_enabled  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -441,7 +453,7 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('require_gps_attendance', user.require_gps_attendance !== false)}
                 disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_gps_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_gps_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.require_gps_attendance !== false  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
@@ -455,7 +467,7 @@ export default function AdminUserControlPanel() {
               <button
                 onClick={() => handleToggleAccess('require_ip_attendance', user.require_ip_attendance !== false)}
                 disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_ip_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_ip_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.require_ip_attendance !== false  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>

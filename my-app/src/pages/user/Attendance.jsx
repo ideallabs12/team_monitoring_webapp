@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { MapPin, Wifi, CheckCircle, AlertTriangle, Clock, Map } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
 
 
 // Haversine formula to calculate distance between two coordinates
@@ -19,6 +20,7 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 }
 
 export default function Attendance({ user }) {
+  const { featureAccess } = useOutletContext() || {}
   const [loading, setLoading] = useState(true)
   const [checking, setChecking] = useState(false)
   
@@ -40,7 +42,7 @@ export default function Attendance({ user }) {
   const [pendingAction, setPendingAction] = useState('in')
 
   // Check if user is whitelisted
-  const isWhitelisted = user?.email === 'user1@gmail.com' || user?.email === 'signatureglobalconferences@gmail.com' || user?.email === 'testadmin@example.com'
+  const isWhitelisted = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.attendance
 
   useEffect(() => {
     if (!isWhitelisted) {
