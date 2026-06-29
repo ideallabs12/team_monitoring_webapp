@@ -8,7 +8,8 @@ import {
   getLastNMonths,
   formatRevenueMonth,
   toRevenueMonthString,
-  formatRevenueMonthShort
+  formatRevenueMonthShort,
+  calculateDivisor
 } from '../../utils/revenueUtils'
 import UserRevenue from '../user/UserRevenue'
 import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText, Activity, Copy } from 'lucide-react'
@@ -1164,8 +1165,8 @@ export default function AdminTeams() {
             const memberRevs = filtered.filter(r => r.user_id === member.id && r.team_id === activeTeam.id)
             const sum = sumRevenues(memberRevs)
             
-            const uniqueMonths = new Set(memberRevs.map(r => normalizeMonth(r.revenue_month))).size
-            const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+            const divisor = calculateDivisor(revenues.filter(r => r.team_id === activeTeam.id), averagePeriod, includeCurrentMonth)
+            const average = sum / divisor
             
             return {
               memberId: member.id,
@@ -1232,7 +1233,7 @@ export default function AdminTeams() {
                      overflow: 'hidden'
                    }}>
                      <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: COLORS[idx % COLORS.length] }} />
-                     <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', fontWeight: '600', marginBottom: '8px', paddingLeft: '8px' }}>
+                     <div style={{ fontSize: '0.95rem', color: COLORS[idx % COLORS.length], fontWeight: '700', marginBottom: '8px', paddingLeft: '8px', letterSpacing: '0.02em' }}>
                        {mem.memberName}
                      </div>
                      <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', paddingLeft: '8px' }}>

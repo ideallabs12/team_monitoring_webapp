@@ -788,7 +788,7 @@ export default function UserRevenue({ user, isAdminView }) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
-                      <span style={{ fontWeight: '700', color: '#ffffff', fontSize: '1rem' }}>Combined Performance</span>
+                      <span style={{ fontWeight: '700', color: 'var(--apple-text-primary)', fontSize: '1rem' }}>Combined Performance</span>
                       <span className="apple-badge apple-badge-blue" style={{ marginLeft: '10px', padding: '2px 8px', fontSize: '0.65rem' }}>
                         All Active Teams
                       </span>
@@ -828,7 +828,7 @@ export default function UserRevenue({ user, isAdminView }) {
                           <div style={{ fontSize: '0.6rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
                             {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
                           </div>
-                          <div style={{ fontWeight: '700', fontSize: '0.8rem', color: amt > 0 ? 'var(--apple-accent-blue)' : 'rgba(120, 120, 128, 0.5)' }}>
+                          <div style={{ fontWeight: '700', fontSize: '0.85rem', color: amt > 0 ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
                             ${amt > 0 ? amt.toFixed(0) : 0}
                           </div>
                         </div>
@@ -866,7 +866,7 @@ export default function UserRevenue({ user, isAdminView }) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
-                      <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.95rem', textTransform: 'capitalize' }}>
+                      <span style={{ fontWeight: '700', color: 'var(--apple-text-primary)', fontSize: '1rem', textTransform: 'capitalize' }}>
                         {uniqueTeamIds.length > 1 ? `${teamObj.name} Performance` : teamObj.name}
                       </span>
                       <span
@@ -877,12 +877,12 @@ export default function UserRevenue({ user, isAdminView }) {
                               ? 'apple-badge apple-badge-red'
                               : 'apple-badge apple-badge-green'
                         }
-                        style={{ marginLeft: '8px', padding: '1px 6px', fontSize: '0.65rem', textTransform: 'capitalize' }}
+                        style={{ marginLeft: '8px', padding: '2px 8px', fontSize: '0.65rem', textTransform: 'capitalize' }}
                       >
                         {teamRole}
                       </span>
                     </div>
-                    <span style={{ fontWeight: '700', color: '#ffffff', fontSize: '1rem' }}>
+                    <span style={{ fontWeight: '800', color: 'var(--apple-text-primary)', fontSize: '1.1rem' }}>
                       ${teamPeriodTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -913,7 +913,7 @@ export default function UserRevenue({ user, isAdminView }) {
                           <div style={{ fontSize: '0.58rem', color: 'var(--apple-text-secondary)', marginBottom: '2px', fontWeight: '500' }}>
                             {MONTH_NAMES[monthIdx].substring(0, 3)} {yearStr}
                           </div>
-                          <div style={{ fontWeight: '600', fontSize: '0.75rem', color: amt > 0 ? 'var(--apple-accent-green)' : 'rgba(120, 120, 128, 0.5)' }}>
+                          <div style={{ fontWeight: '700', fontSize: '0.85rem', color: amt > 0 ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
                             ${amt > 0 ? amt.toFixed(0) : 0}
                           </div>
                         </div>

@@ -17,6 +17,8 @@ export default function UserReviews({ user }) {
   const [message, setMessage] = useState({ type: '', text: '' })
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
+  const [speakerName, setSpeakerName] = useState('')
+  const [speakerEmail, setSpeakerEmail] = useState('')
   
   // Edit State
   const [editingReviewId, setEditingReviewId] = useState(null)
@@ -57,7 +59,7 @@ export default function UserReviews({ user }) {
       // 3. Load user's reviews FIRST to filter out already reviewed events
       const { data: reviewsData } = await supabase
         .from('reviews')
-        .select('*, events(title, description, is_active, social_platform, social_url)')
+        .select('*, events(title, description, is_active, social_platform, social_url, collect_email)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         
@@ -153,8 +155,39 @@ export default function UserReviews({ user }) {
         uploadedPhotoUrl = publicUrl;
       }
 
+      // Check if event requires email/name
+      let eventDetails;
       if (editingReviewId) {
-        const updateData = { title, context, penname, status: 'pending', admin_feedback: null, updated_at: new Date().toISOString() };
+        eventDetails = reviews.find(r => r.id === editingReviewId)?.events;
+      } else {
+        eventDetails = activeEvents.find(ev => String(ev.id) === String(selectedEventId));
+      }
+
+      if (eventDetails?.collect_email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!speakerEmail || !emailRegex.test(speakerEmail)) {
+          setMessage({ type: 'error', text: 'Please enter a valid speaker email address.' })
+          setSubmitting(false)
+          return
+        }
+        if (!speakerName.trim()) {
+          setMessage({ type: 'error', text: 'Please enter a speaker name.' })
+          setSubmitting(false)
+          return
+        }
+      }
+
+      if (editingReviewId) {
+        const updateData = { 
+          title, 
+          context: eventDetails?.collect_email ? null : context, 
+          penname: eventDetails?.collect_email ? null : penname, 
+          status: 'pending', 
+          admin_feedback: null, 
+          updated_at: new Date().toISOString(),
+          speaker_name: eventDetails?.collect_email ? speakerName : null,
+          speaker_email: eventDetails?.collect_email ? speakerEmail : null
+        };
         if (uploadedPhotoUrl) updateData.photo_url = uploadedPhotoUrl;
         
         const { error } = await supabase
@@ -170,8 +203,10 @@ export default function UserReviews({ user }) {
           user_id: user.id,
           team_id: profile?.team_id,
           title,
-          context,
-          penname
+          context: eventDetails?.collect_email ? null : context,
+          penname: eventDetails?.collect_email ? null : penname,
+          speaker_name: eventDetails?.collect_email ? speakerName : null,
+          speaker_email: eventDetails?.collect_email ? speakerEmail : null
         };
         if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
         
@@ -187,6 +222,8 @@ export default function UserReviews({ user }) {
       setTitle('')
       setContext('')
       setPenname('')
+      setSpeakerName('')
+      setSpeakerEmail('')
       setPhotoFile(null)
       setPhotoPreview(null)
       setEditingReviewId(null)
@@ -236,6 +273,8 @@ export default function UserReviews({ user }) {
     setTitle(review.title)
     setContext(review.context)
     setPenname(review.penname || '')
+    setSpeakerName(review.speaker_name || '')
+    setSpeakerEmail(review.speaker_email || '')
     setActiveTab('write')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -245,6 +284,8 @@ export default function UserReviews({ user }) {
     setTitle('')
     setContext('')
     setPenname('')
+    setSpeakerName('')
+    setSpeakerEmail('')
     setPhotoFile(null)
     setPhotoPreview(null)
     
@@ -287,6 +328,11 @@ export default function UserReviews({ user }) {
       .then(() => alert("Review copied to clipboard!"))
       .catch(() => alert("Failed to copy."))
   }
+
+  const currentEventDetails = editingReviewId 
+    ? reviews.find(r => r.id === editingReviewId)?.events
+    : unreviewedEvents.find(ev => String(ev.id) === String(selectedEventId));
+  const isEmailCollection = currentEventDetails?.collect_email;
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -375,37 +421,30 @@ export default function UserReviews({ user }) {
               </div>
             </div>
 
-            {(() => {
-              const selectedEventDetails = editingReviewId 
-                ? reviews.find(r => r.id === editingReviewId)?.events
-                : unreviewedEvents.find(ev => ev.id === selectedEventId)
-                
-              if (selectedEventDetails && selectedEventDetails.description) {
-                return (
-                  <div style={{ padding: '16px', background: 'rgba(0, 113, 227, 0.05)', border: '1px solid rgba(0, 113, 227, 0.2)', borderRadius: '12px', color: 'var(--apple-text-primary)' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--apple-accent-blue)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <AlertCircle size={14} /> Instructions
-                    </h4>
-                    <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5', whiteSpace: 'pre-wrap', color: 'var(--apple-text-secondary)' }}>
-                      {selectedEventDetails.description}
-                    </p>
-                  </div>
-                )
-              }
-              return null
-            })()}
+            {currentEventDetails && currentEventDetails.description && (
+              <div style={{ padding: '16px', background: 'rgba(0, 113, 227, 0.05)', border: '1px solid rgba(0, 113, 227, 0.2)', borderRadius: '12px', color: 'var(--apple-text-primary)' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--apple-accent-blue)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertCircle size={14} /> Instructions
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5', whiteSpace: 'pre-wrap', color: 'var(--apple-text-secondary)' }}>
+                  {currentEventDetails.description}
+                </p>
+              </div>
+            )}
 
-            <div>
-              <label className="apple-form-label">Pen Name</label>
-              <input
-                type="text"
-                className="apple-form-control"
-                placeholder="Name to display on your review..."
-                required
-                value={penname}
-                onChange={(e) => setPenname(e.target.value)}
-              />
-            </div>
+            {!isEmailCollection && (
+              <div>
+                <label className="apple-form-label">Pen Name</label>
+                <input
+                  type="text"
+                  className="apple-form-control"
+                  placeholder="Name to display on your review..."
+                  required
+                  value={penname}
+                  onChange={(e) => setPenname(e.target.value)}
+                />
+              </div>
+            )}
 
             <div>
               <label className="apple-form-label">Review Title</label>
@@ -420,19 +459,48 @@ export default function UserReviews({ user }) {
               />
             </div>
 
-            <div>
-              <label className="apple-form-label">Review Context</label>
-              <textarea
-                className="apple-form-control"
-                placeholder="Write your detailed review here..."
-                required
-                rows={6}
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                onPaste={(e) => { if (!allowPaste) e.preventDefault() }} // Anti-paste feature
-                style={{ resize: 'vertical' }}
-              />
-            </div>
+            {!isEmailCollection && (
+              <div>
+                <label className="apple-form-label">Review Context</label>
+                <textarea
+                  className="apple-form-control"
+                  placeholder="Write your detailed review here..."
+                  required
+                  rows={6}
+                  value={context}
+                  onChange={(e) => setContext(e.target.value)}
+                  onPaste={(e) => { if (!allowPaste) e.preventDefault() }} // Anti-paste feature
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+            )}
+            
+            {isEmailCollection && (
+              <div className="apple-two-col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                <div>
+                  <label className="apple-form-label">Speaker Name</label>
+                  <input
+                    type="text"
+                    className="apple-form-control"
+                    placeholder="Enter speaker name"
+                    required
+                    value={speakerName}
+                    onChange={(e) => setSpeakerName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="apple-form-label">Speaker Email</label>
+                  <input
+                    type="email"
+                    className="apple-form-control"
+                    placeholder="Enter valid email"
+                    required
+                    value={speakerEmail}
+                    onChange={(e) => setSpeakerEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
             
             <div>
               <label className="apple-form-label">Attach Photo (Optional)</label>
@@ -456,7 +524,7 @@ export default function UserReviews({ user }) {
                   Cancel Edit
                 </button>
               )}
-              <button type="submit" disabled={submitting || !title.trim() || !context.trim() || !penname.trim()} className="apple-btn apple-btn-primary">
+              <button type="submit" disabled={submitting || !title.trim() || (!isEmailCollection && !context.trim()) || (!isEmailCollection && !penname.trim())} className="apple-btn apple-btn-primary">
                 {submitting ? 'Submitting...' : editingReviewId ? 'Update Review' : 'Submit Review'}
               </button>
             </div>
@@ -579,6 +647,15 @@ export default function UserReviews({ user }) {
                     {review.context}
                   </p>
                 )}
+                
+                {(review.speaker_name || review.speaker_email) && (
+                  <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.85rem' }}>
+                    <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>Speaker Information</div>
+                    {review.speaker_name && <div style={{ color: '#fff' }}><strong>Name:</strong> {review.speaker_name}</div>}
+                    {review.speaker_email && <div style={{ color: '#fff' }}><strong>Email:</strong> {review.speaker_email}</div>}
+                  </div>
+                )}
+                
                 {review.photo_url && (
                   <div style={{ marginTop: '16px' }}>
                     <img src={review.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />

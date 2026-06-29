@@ -36,41 +36,41 @@ export default function ExpectedVsActualChart({ data, title = "Expected vs Actua
       
       return (
         <div style={{
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'var(--apple-card-bg)',
+          border: '1px solid var(--apple-border)',
           padding: '12px 16px',
           borderRadius: '8px',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
           fontFamily: 'Inter, sans-serif'
         }}>
-          <p style={{ color: 'var(--text-secondary)', margin: '0 0 8px 0', fontSize: '0.8rem', fontWeight: '600' }}>
+          <p style={{ color: 'var(--apple-text-secondary)', margin: '0 0 8px 0', fontSize: '0.8rem', fontWeight: '600' }}>
             {label}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
                 Expected (DIS)
               </span>
-              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--apple-text-primary)' }}>
                 ${expected.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                 Actual Revenue
               </span>
-              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--apple-text-primary)' }}>
                 ${actual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
             </div>
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+            <div style={{ height: '1px', background: 'var(--apple-border)', margin: '4px 0' }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Accuracy Rate</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Accuracy Rate</span>
               <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: accuracy >= 90 && accuracy <= 110 ? '#34d399' : accuracy > 110 ? '#60a5fa' : '#f87171' }}>
                 {accuracy > 0 ? `${accuracy}%` : 'N/A'}
               </span>

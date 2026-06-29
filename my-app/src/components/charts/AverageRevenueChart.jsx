@@ -75,18 +75,18 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
       const data = payload[0].payload
       return (
         <div style={{
-          background: 'rgba(10, 10, 14, 0.95)',
-          border: `1px solid ${trendColor}40`,
+          background: 'var(--apple-card-bg)',
+          border: `1px solid var(--apple-border)`,
           padding: '12px 16px',
           borderRadius: '10px',
-          boxShadow: `0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px ${trendColor}15`,
+          boxShadow: `0 8px 32px rgba(0, 0, 0, 0.15), 0 0 20px ${trendColor}15`,
           backdropFilter: 'blur(12px)',
           minWidth: '140px'
         }}>
           <p style={{ color: 'var(--apple-text-secondary)', margin: '0 0 6px 0', fontSize: '0.78rem', fontWeight: '500' }}>
             {data.fullLabel}
           </p>
-          <p style={{ color: '#fff', margin: 0, fontWeight: '700', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
+          <p style={{ color: 'var(--apple-text-primary)', margin: 0, fontWeight: '700', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
             ${payload[0].value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>

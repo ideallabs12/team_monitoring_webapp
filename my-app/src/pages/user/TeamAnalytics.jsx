@@ -31,7 +31,8 @@ import {
   filterRevenuesByPeriod,
   filterRevenuesByCompletedPeriod,
   sumRevenues,
-  normalizeMonth
+  normalizeMonth,
+  calculateDivisor
 } from '../../utils/revenueUtils'
 
 const CHART_COLORS = [
@@ -739,8 +740,8 @@ export default function TeamAnalytics({ user }) {
           const memberRevs = filtered.filter(r => r.user_id === member.id)
           const sum = sumRevenues(memberRevs)
           
-          const uniqueMonths = new Set(memberRevs.map(r => normalizeMonth(r.revenue_month))).size
-          const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+          const divisor = calculateDivisor(revenues, averagePeriod, includeCurrentMonth)
+          const average = sum / divisor
           
           return {
             memberId: member.id,

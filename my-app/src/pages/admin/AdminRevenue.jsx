@@ -16,7 +16,8 @@ import {
   getEffectiveTargetAmount,
   TIME_PERIOD_OPTIONS,
   formatRevenueMonthShort,
-  toRevenueMonthString
+  toRevenueMonthString,
+  calculateDivisor
 } from '../../utils/revenueUtils'
 
 let adminRevCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
@@ -167,8 +168,8 @@ export default function AdminRevenue() {
       const teamRevs = filtered.filter(r => r.team_id === team.id)
       const sum = sumRevenues(teamRevs)
       
-      const uniqueMonths = new Set(teamRevs.map(r => normalizeMonth(r.revenue_month))).size
-      const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+      const divisor = calculateDivisor(nonAdminRevenues, averagePeriod, includeCurrentMonth)
+      const average = sum / divisor
       
       return {
         teamId: team.id,

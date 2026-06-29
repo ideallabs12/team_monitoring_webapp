@@ -212,9 +212,28 @@ export function isFutureMonth(year, month) {
 }
 
 /**
+ * Calculates the correct divisor (number of months) for average calculation.
+ * If period > 0 (e.g. 6M), it simply returns the period.
+ * If period === 0 (All Time), it calculates months between earliest record and now.
+ */
+export function calculateDivisor(revenues, period, includeCurrentMonth = false) {
+  if (period > 0) return period;
+  if (!revenues || revenues.length === 0) return 1;
+  
+  const sorted = revenues.map(r => normalizeMonth(r.revenue_month)).sort();
+  const earliest = parseRevenueMonth(sorted[0]);
+  const now = new Date();
+  
+  let monthsDiff = (now.getFullYear() - earliest.getFullYear()) * 12 + now.getMonth() - earliest.getMonth();
+  if (includeCurrentMonth) monthsDiff += 1;
+  
+  return Math.max(1, monthsDiff);
+}
+
+/**
  * Calculates average revenue across standard time periods for a chart.
  */
-export function calculateAverageRevenueData(revenues) {
+export function calculateAverageRevenueData(revenues, includeCurrentMonth = false) {
   const periods = [
     { label: '1M', value: 1 },
     { label: '2M', value: 2 },
@@ -225,14 +244,18 @@ export function calculateAverageRevenueData(revenues) {
   ]
   
   return periods.map(p => {
-    const filtered = p.value > 0 
-      ? filterRevenuesByCompletedPeriod(revenues, p.value) 
-      : revenues
+    let filtered = revenues;
+    if (p.value > 0) {
+      filtered = includeCurrentMonth 
+        ? filterRevenuesByPeriod(revenues, p.value)
+        : filterRevenuesByCompletedPeriod(revenues, p.value);
+    }
+    
     const sum = sumRevenues(filtered)
     
-    // Divide by actual unique months that have revenue data
-    const uniqueMonths = new Set(filtered.map(r => normalizeMonth(r.revenue_month))).size
-    const average = uniqueMonths > 0 ? sum / uniqueMonths : 0
+    // Divide by actual number of months in the period, not just months with data
+    const divisor = calculateDivisor(revenues, p.value, includeCurrentMonth);
+    const average = sum / divisor;
     
     return {
       period: p.label,

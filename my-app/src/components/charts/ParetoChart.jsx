@@ -18,25 +18,25 @@ export default function ParetoChart({ data, concentrationStats }) {
       
       return (
         <div style={{
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'var(--apple-card-bg)',
+          border: '1px solid var(--apple-border)',
           padding: '12px 16px',
           borderRadius: '8px',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
           fontFamily: 'Inter, sans-serif'
         }}>
-          <p style={{ color: '#fff', margin: '0 0 6px 0', fontSize: '0.85rem', fontWeight: '600' }}>
+          <p style={{ color: 'var(--apple-text-primary)', margin: '0 0 6px 0', fontSize: '0.85rem', fontWeight: '600' }}>
             {label}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Revenue:</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>Revenue:</span>
               <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#10b981' }}>
                 ${revenue.toLocaleString()}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Cumulative:</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>Cumulative:</span>
               <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#a855f7' }}>
                 {cumulativePercent}%
               </span>

@@ -12,6 +12,7 @@ export default function AdminWriteUps() {
   const [targetTeamId, setTargetTeamId] = useState('all')
   const [socialPlatform, setSocialPlatform] = useState('')
   const [socialUrl, setSocialUrl] = useState('')
+  const [collectEmail, setCollectEmail] = useState(false)
   const [editingEventId, setEditingEventId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -60,7 +61,8 @@ export default function AdminWriteUps() {
         description,
         target_team_id: targetTeamId === 'all' ? null : targetTeamId,
         social_platform: socialPlatform || null,
-        social_url: socialPlatform ? socialUrl : null
+        social_url: socialPlatform ? socialUrl : null,
+        collect_email: collectEmail
       }
       
       if (editingEventId) {
@@ -108,6 +110,7 @@ export default function AdminWriteUps() {
     setTargetTeamId(ev.target_team_id || 'all')
     setSocialPlatform(ev.social_platform || '')
     setSocialUrl(ev.social_url || '')
+    setCollectEmail(ev.collect_email || false)
     setShowCreate(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -118,6 +121,7 @@ export default function AdminWriteUps() {
     setTargetTeamId('all')
     setSocialPlatform('')
     setSocialUrl('')
+    setCollectEmail(false)
     setEditingEventId(null)
     setShowCreate(false)
   }
@@ -153,6 +157,61 @@ export default function AdminWriteUps() {
     } catch (err) {
       console.error('Error deleting event:', err)
       alert('Failed to delete event.')
+    }
+  }
+
+  const handleDownloadCSV = async (eventId, eventTitle) => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          created_at,
+          title,
+          speaker_name,
+          speaker_email,
+          photo_url,
+          status,
+          profiles(first_name, last_name, email),
+          teams(name)
+        `)
+        .eq('event_id', eventId)
+
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        alert('No reviews found for this write-up.')
+        return
+      }
+
+      // Convert to CSV
+      const headers = ['Date', 'User First Name', 'User Last Name', 'User Email', 'Team', 'Speaker Name', 'Speaker Email', 'Review Title', 'Photo Link', 'Status']
+      const rows = data.map(r => [
+        new Date(r.created_at).toLocaleDateString(),
+        r.profiles?.first_name || '',
+        r.profiles?.last_name || '',
+        r.profiles?.email || '',
+        r.teams?.name || 'No Team',
+        r.speaker_name || '',
+        r.speaker_email || '',
+        `"${(r.title || '').replace(/"/g, '""')}"`,
+        r.photo_url || 'No Photo',
+        r.status || ''
+      ])
+
+      const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_reviews.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+    } catch (err) {
+      console.error('Error downloading CSV:', err)
+      alert('Failed to download data.')
     }
   }
 
@@ -246,6 +305,19 @@ export default function AdminWriteUps() {
                 className="apple-form-control"
                 style={{ resize: 'vertical' }}
               />
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="collectEmail"
+                checked={collectEmail}
+                onChange={(e) => setCollectEmail(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', appearance: 'auto', display: 'block' }}
+              />
+              <label htmlFor="collectEmail" className="apple-form-label" style={{ margin: 0, cursor: 'pointer' }}>
+                Collect Speaker Info (Name & Email)
+              </label>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -372,6 +444,15 @@ export default function AdminWriteUps() {
                 style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--apple-accent-red)', flex: '1 1 auto', justifyContent: 'center' }}
               >
                 <Trash2 size={14} /> Delete
+              </button>
+              
+              <button
+                onClick={() => handleDownloadCSV(ev.id, ev.title)}
+                className="apple-btn apple-btn-primary"
+                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 100%', justifyContent: 'center', marginTop: '4px' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
+                Download Excel (CSV)
               </button>
             </div>
           </div>
