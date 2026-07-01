@@ -47,7 +47,7 @@ export default function AdminRoleManager() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email, platform_role, feature_access')
+        .select('id, first_name, last_name, email, platform_role, feature_access, is_deactivated')
         .in('platform_role', ['admin', 'executive'])
         .neq('email', 'signatureglobalconferences@gmail.com') // Don't show master admin
         .order('first_name')
@@ -68,6 +68,25 @@ export default function AdminRoleManager() {
       console.error('Error fetching admins/executives:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleDeactivation = async (userId, currentValue) => {
+    setSavingId(userId)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_deactivated: !currentValue })
+        .eq('id', userId)
+
+      if (error) throw error
+
+      setUsers(users.map(u => u.id === userId ? { ...u, is_deactivated: !currentValue } : u))
+    } catch (err) {
+      console.error('Error updating deactivation status:', err)
+      alert('Failed to update access.')
+    } finally {
+      setSavingId(null)
     }
   }
 
@@ -160,6 +179,46 @@ export default function AdminRoleManager() {
                   <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', marginTop: '6px' }}>
                     {selectedUser.email}
                   </div>
+                </div>
+              </div>
+
+              {/* Access Control / Maintenance Mode */}
+              <div>
+                <h4 style={{ color: '#fff', marginBottom: '16px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldAlert size={18} style={{ color: 'var(--apple-accent-red)' }} /> Access Control
+                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    onClick={() => {
+                      if (savingId) return
+                      handleToggleDeactivation(selectedUser.id, selectedUser.is_deactivated)
+                    }}
+                    style={{
+                      width: '44px',
+                      height: '24px',
+                      background: selectedUser.is_deactivated ? 'var(--apple-accent-red)' : 'rgba(150, 150, 150, 0.25)',
+                      borderRadius: '12px',
+                      position: 'relative',
+                      cursor: savingId ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s var(--apple-ease)',
+                      opacity: savingId === selectedUser.id ? 0.5 : 1
+                    }}
+                  >
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      background: '#fff',
+                      borderRadius: '50%',
+                      position: 'absolute',
+                      top: '2px',
+                      left: selectedUser.is_deactivated ? '22px' : '2px',
+                      transition: 'all 0.3s var(--apple-ease)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }} />
+                  </div>
+                  <span style={{ color: selectedUser.is_deactivated ? 'var(--apple-accent-red)' : '#fff', fontSize: '0.95rem', transition: 'color 0.3s' }}>
+                    {selectedUser.is_deactivated ? 'System Maintenance Mode Enabled (Blocked)' : 'System Maintenance Mode Disabled (Active)'}
+                  </span>
                 </div>
               </div>
 
