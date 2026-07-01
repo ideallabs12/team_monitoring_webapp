@@ -120,6 +120,44 @@ export default function AdminUserControlPanel() {
     }
   }
 
+  // Toggle JSONB Feature Access
+  const handleToggleFeatureAccess = async (featureName) => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    
+    const currentFeatureAccess = user.feature_access || {}
+    const nextStatus = !currentFeatureAccess[featureName]
+    
+    const nextFeatureAccess = {
+      ...currentFeatureAccess,
+      [featureName]: nextStatus
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ feature_access: nextFeatureAccess })
+        .eq('id', user.id)
+      if (error) throw error
+
+      if (adminUser) {
+        await supabase.from('audit_logs').insert({
+          user_id: adminUser.id,
+          action_type: 'admin_activity',
+          details: { description: `Updated feature access '${featureName}' for ${user.email} to ${nextStatus}` }
+        })
+      }
+
+      setSuccessMsg(`Successfully updated feature access '${featureName}' to ${nextStatus ? 'ON' : 'OFF'}`)
+      setUser({ ...user, feature_access: nextFeatureAccess })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update feature access.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Toggle Account Activation/Deactivation
   const handleToggleDeactivation = async (currentStatus) => {
     setSaving(true)
@@ -421,9 +459,18 @@ export default function AdminUserControlPanel() {
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.is_sales_executive  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Attendance Tracking</span>
+              <button
+                onClick={() => handleToggleFeatureAccess('attendance')}
+                disabled={saving}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.feature_access?.attendance ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+              >
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.feature_access?.attendance ? '16px' : '0px', transition: 'left 150ms ease' }} />
+              </button>
+            </div>
           </div>
         </div>
-
         {/* Card 1.5: Attendance Settings */}
         <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <h3 className="apple-title-small" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -247,7 +247,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
         </div>
 
         <main className="admin-content" style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
-          {isDeactivated ? <RestrictedAccessView /> : <Outlet />}
+          {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ featureAccess }} />}
         </main>
       </div>
     </div>
