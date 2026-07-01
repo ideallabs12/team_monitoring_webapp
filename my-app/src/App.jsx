@@ -111,8 +111,13 @@ function App() {
         table: 'profiles',
         filter: `id=eq.${user.id}`
       }, payload => {
-        if (payload.new && typeof payload.new.is_deactivated !== 'undefined') {
-          setIsDeactivated(payload.new.is_deactivated === true)
+        if (payload.new) {
+          if (typeof payload.new.is_deactivated !== 'undefined') {
+            setIsDeactivated(payload.new.is_deactivated === true)
+          }
+          if (payload.new.feature_access !== undefined) {
+            setFeatureAccess(payload.new.feature_access || null)
+          }
         }
       })
       .subscribe()
@@ -286,7 +291,8 @@ function App() {
   // Handle Maintenance Mode
   // If the user is logged in but is NOT an admin, block them with the maintenance screen.
   // Unauthenticated users (user === null) will see the login screen, allowing admins to log in.
-  if (systemSettings.maintenance_mode && user && !isAdmin) {
+  // Additionally, if the admin is specifically forced into maintenance mode, block them.
+  if ((systemSettings.maintenance_mode && user && !isAdmin) || (user && featureAccess?.maintenanceModeForced)) {
     return <MaintenanceScreen />
   }
 

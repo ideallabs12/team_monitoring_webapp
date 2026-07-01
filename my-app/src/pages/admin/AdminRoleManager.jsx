@@ -187,38 +187,79 @@ export default function AdminRoleManager() {
                 <h4 style={{ color: '#fff', marginBottom: '16px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShieldAlert size={18} style={{ color: 'var(--apple-accent-red)' }} /> Access Control
                 </h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    onClick={() => {
-                      if (savingId) return
-                      handleToggleDeactivation(selectedUser.id, selectedUser.is_deactivated)
-                    }}
-                    style={{
-                      width: '44px',
-                      height: '24px',
-                      background: selectedUser.is_deactivated ? 'var(--apple-accent-red)' : 'rgba(150, 150, 150, 0.25)',
-                      borderRadius: '12px',
-                      position: 'relative',
-                      cursor: savingId ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.3s var(--apple-ease)',
-                      opacity: savingId === selectedUser.id ? 0.5 : 1
-                    }}
-                  >
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      background: '#fff',
-                      borderRadius: '50%',
-                      position: 'absolute',
-                      top: '2px',
-                      left: selectedUser.is_deactivated ? '22px' : '2px',
-                      transition: 'all 0.3s var(--apple-ease)',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                    }} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  
+                  {/* Deactivation Switch */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      onClick={() => {
+                        if (savingId) return
+                        handleToggleDeactivation(selectedUser.id, selectedUser.is_deactivated)
+                      }}
+                      style={{
+                        width: '44px',
+                        height: '24px',
+                        background: selectedUser.is_deactivated ? 'var(--apple-accent-red)' : 'rgba(150, 150, 150, 0.25)',
+                        borderRadius: '12px',
+                        position: 'relative',
+                        cursor: savingId ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s var(--apple-ease)',
+                        opacity: savingId === selectedUser.id ? 0.5 : 1
+                      }}
+                    >
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        background: '#fff',
+                        borderRadius: '50%',
+                        position: 'absolute',
+                        top: '2px',
+                        left: selectedUser.is_deactivated ? '22px' : '2px',
+                        transition: 'all 0.3s var(--apple-ease)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }} />
+                    </div>
+                    <span style={{ color: selectedUser.is_deactivated ? 'var(--apple-accent-red)' : '#fff', fontSize: '0.95rem', transition: 'color 0.3s' }}>
+                      {selectedUser.is_deactivated ? 'Account Deactivated (Blocked)' : 'Account Active'}
+                    </span>
                   </div>
-                  <span style={{ color: selectedUser.is_deactivated ? 'var(--apple-accent-red)' : '#fff', fontSize: '0.95rem', transition: 'color 0.3s' }}>
-                    {selectedUser.is_deactivated ? 'System Maintenance Mode Enabled (Blocked)' : 'System Maintenance Mode Disabled (Active)'}
-                  </span>
+
+                  {/* Maintenance Mode Switch */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      onClick={() => {
+                        if (savingId) return
+                        const isForced = !!selectedUser.feature_access.maintenanceModeForced
+                        handleToggle(selectedUser.id, 'maintenanceModeForced', isForced)
+                      }}
+                      style={{
+                        width: '44px',
+                        height: '24px',
+                        background: selectedUser.feature_access.maintenanceModeForced ? 'var(--apple-accent-orange, #f59e0b)' : 'rgba(150, 150, 150, 0.25)',
+                        borderRadius: '12px',
+                        position: 'relative',
+                        cursor: savingId ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s var(--apple-ease)',
+                        opacity: savingId === selectedUser.id ? 0.5 : 1
+                      }}
+                    >
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        background: '#fff',
+                        borderRadius: '50%',
+                        position: 'absolute',
+                        top: '2px',
+                        left: selectedUser.feature_access.maintenanceModeForced ? '22px' : '2px',
+                        transition: 'all 0.3s var(--apple-ease)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }} />
+                    </div>
+                    <span style={{ color: selectedUser.feature_access.maintenanceModeForced ? 'var(--apple-accent-orange, #f59e0b)' : '#fff', fontSize: '0.95rem', transition: 'color 0.3s' }}>
+                      {selectedUser.feature_access.maintenanceModeForced ? 'System Maintenance Mode Enabled' : 'System Maintenance Mode Disabled'}
+                    </span>
+                  </div>
+
                 </div>
               </div>
 
