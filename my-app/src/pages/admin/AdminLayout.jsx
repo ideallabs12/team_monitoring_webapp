@@ -28,7 +28,6 @@ import {
 
 const NAV_ITEMS = [
   { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
-  { path: '/admin/role-manager', label: 'Specials', icon: Shield },
   { path: '/admin/teams',     label: 'Teams',       icon: Network },
   { path: '/admin/users',     label: 'Users',       icon: User },
   { path: '/admin/dis',       label: 'DIS Reports', icon: FileText },
@@ -42,6 +41,7 @@ const NAV_ITEMS = [
   { path: '/admin/auditlogs', label: 'Audit Logs',  icon: ClipboardList },
   { path: '/admin/attendance', label: 'Attendance', icon: MapPin },
   { path: '/admin/settings',  label: 'Settings',    icon: Settings },
+  { path: '/admin/role-manager', label: 'Specials', icon: Shield },
 ]
 
 function RestrictedAccessView() {
