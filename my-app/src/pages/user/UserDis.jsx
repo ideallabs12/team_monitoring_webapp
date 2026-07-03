@@ -10,9 +10,14 @@ let globalDisCache = {
   secondaryTeam: null,
 }
 
+const getLocalDateString = () => {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+};
+
 // ─── Reusable DIS Form Component ─────────────────────────────────────────────
 function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-accent-blue)', systemSettings, holidays = [] }) {
-  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0])
+  const [reportDate, setReportDate] = useState(getLocalDateString())
   const [positiveLeads, setPositiveLeads] = useState('')
   const [expectedRevenue, setExpectedRevenue] = useState('')
   const [mtdRevenue, setMtdRevenue] = useState(0)
@@ -115,7 +120,7 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
     }
   }
 
-  const todayDateStr = new Date().toISOString().split('T')[0]
+  const todayDateStr = getLocalDateString()
   const isLocked = systemSettings?.dis_locked || false
   const allowPast = systemSettings?.dis_allow_past || false
   const isHoliday = holidays.includes(reportDate)
