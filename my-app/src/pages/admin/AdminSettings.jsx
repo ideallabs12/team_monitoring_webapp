@@ -53,7 +53,7 @@ export default function AdminSettings() {
   useEffect(() => {
     loadSettingsAndStats()
 
-    const channel = supabase.channel('system_settings_changes')
+    const channel = supabase.channel('admin_system_settings_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings', filter: 'id=eq.1' }, (payload) => {
         if (payload.new) {
           setMaintenanceMode(payload.new.maintenance_mode || false)
@@ -70,7 +70,7 @@ export default function AdminSettings() {
     }
   }, [])
 
-  const loadSettingsAndStats = async () => {
+  async function loadSettingsAndStats() {
     setLoading(true)
     try {
       // Load Settings
