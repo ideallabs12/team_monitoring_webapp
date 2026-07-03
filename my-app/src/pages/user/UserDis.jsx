@@ -373,6 +373,22 @@ export default function UserDis() {
       if (holidaysRes.data) setHolidays(holidaysRes.data.map(h => h.holiday_date))
     }
     fetchSystemSettings()
+
+    const settingsChannel = supabase.channel('user_dis_system_settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings', filter: 'id=eq.1' }, (payload) => {
+        if (payload.new) {
+          setSystemSettings(prev => ({
+            ...prev,
+            dis_locked: payload.new.dis_locked,
+            dis_allow_past: payload.new.dis_allow_past
+          }))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(settingsChannel)
+    }
   }, [])
 
   // Load History
