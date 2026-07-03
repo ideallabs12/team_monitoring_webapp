@@ -134,15 +134,15 @@ export default function AdminSettings() {
     try {
       const { error } = await supabase
         .from('system_settings')
-        .upsert({ 
-          id: 1,
+        .update({ 
           maintenance_mode: maintenanceMode,
           show_leaderboard: showLeaderboard,
           dis_locked: disLocked,
           dis_allow_past: disAllowPast,
           allow_review_paste: allowReviewPaste,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'id' })
+        })
+        .eq('id', 1)
         
       if (error) throw error
       setSuccessMsg('System settings updated successfully.')
