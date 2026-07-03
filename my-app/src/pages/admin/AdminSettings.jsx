@@ -52,6 +52,22 @@ export default function AdminSettings() {
 
   useEffect(() => {
     loadSettingsAndStats()
+
+    const channel = supabase.channel('system_settings_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings', filter: 'id=eq.1' }, (payload) => {
+        if (payload.new) {
+          setMaintenanceMode(payload.new.maintenance_mode || false)
+          setShowLeaderboard(payload.new.show_leaderboard ?? true)
+          setDisLocked(payload.new.dis_locked || false)
+          setDisAllowPast(payload.new.dis_allow_past || false)
+          setAllowReviewPaste(payload.new.allow_review_paste || false)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const loadSettingsAndStats = async () => {
