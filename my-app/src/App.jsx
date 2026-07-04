@@ -28,6 +28,7 @@ import SalesExecutive from './pages/user/SalesExecutive'
 import UserReviews from './pages/user/UserReviews'
 import UserSettings from './pages/user/UserSettings'
 import Attendance from './pages/user/Attendance'
+import UserAnnouncements from './pages/user/UserAnnouncements'
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminHome from './pages/admin/AdminHome'
@@ -43,6 +44,7 @@ import AdminWriteUps from './pages/admin/AdminWriteUps'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
 import AdminAttendance from './pages/admin/AdminAttendance'
+import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -100,6 +102,33 @@ function App() {
       supabase.removeChannel(channel)
     }
   }, [])
+
+  // Push Notifications for Announcements
+  useEffect(() => {
+    if (!user) return
+
+    // Request Notification permission
+    if (window.Notification && Notification.permission !== "granted") {
+      Notification.requestPermission()
+    }
+
+    const annChannel = supabase.channel('public:announcements')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcements' }, payload => {
+        if (payload.new && payload.new.status === 'published') {
+          if (window.Notification && Notification.permission === "granted") {
+            new Notification("New Announcement", {
+              body: payload.new.title,
+              icon: '/favicon.svg'
+            });
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(annChannel)
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -345,6 +374,7 @@ function App() {
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/announcements" element={hasProfile && !isAdmin && user?.email === 'user1@gmail.com' ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
         </Route>
 
         {/* Admin Routes */}
@@ -367,6 +397,7 @@ function App() {
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="attendance" element={<AdminAttendance />} />
+          <Route path="announcements" element={user?.email === 'signatureglobalconferences@gmail.com' ? <AdminAnnouncements /> : <Navigate to="home" replace />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

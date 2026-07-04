@@ -60,6 +60,7 @@ export default function Navbar({ user }) {
 
   const navLinks = [
     { to: '/home', label: 'Home' },
+    { to: '/announcements', label: 'Announcements' },
     { to: '/team', label: 'Team' }
   ]
   if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })

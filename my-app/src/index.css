@@ -2872,3 +2872,28 @@ select.apple-input {
     display: flex !important;
   }
 }
+
+/* ── React Quill Dark Theme Adjustments ── */
+.ql-toolbar.ql-snow {
+  border: 1px solid var(--apple-border) !important;
+  background: rgba(255, 255, 255, 0.05);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.ql-container.ql-snow {
+  border: 1px solid var(--apple-border) !important;
+  border-top: none !important;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+.ql-snow .ql-stroke { stroke: #ccc !important; }
+.ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: #ccc !important; }
+.ql-snow .ql-picker { color: #ccc !important; }
+
+/* ── Announcement Detail Content ── */
+.announcement-content p { margin-bottom: 1em; }
+.announcement-content ul, .announcement-content ol { margin-left: 20px; margin-bottom: 1em; }
+.announcement-content a { color: var(--apple-accent-blue); text-decoration: underline; }
+.announcement-content h1, .announcement-content h2, .announcement-content h3 { color: #fff; margin-bottom: 0.5em; margin-top: 1em; }

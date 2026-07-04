@@ -23,7 +23,8 @@ import {
   Star,
   Sparkles,
   MapPin,
-  Shield
+  Shield,
+  Megaphone
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { path: '/admin/milestones', label: 'Milestones',  icon: Crown },
   { path: '/admin/auditlogs', label: 'Audit Logs',  icon: ClipboardList },
   { path: '/admin/attendance', label: 'Attendance', icon: MapPin },
+  { path: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { path: '/admin/settings',  label: 'Settings',    icon: Settings },
   { path: '/admin/role-manager', label: 'Specials', icon: Shield },
 ]
@@ -161,6 +163,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
               if (item.path === '/admin/write-ups') return !!featureAccess.writeUps;
               if (item.path === '/admin/reviews') return !!featureAccess.reviews;
             }
+            if (item.path === '/admin/announcements' && user?.email !== 'signatureglobalconferences@gmail.com') return false;
             
             return true
           }).map(({ path, label, icon: Icon }) => {

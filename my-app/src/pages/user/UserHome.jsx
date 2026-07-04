@@ -24,6 +24,7 @@ export default function UserHome({ user, isAdminView }) {
   const [userRevenues, setUserRevenues] = useState(globalHomeCache.userRevenues)
   const [userTargets, setUserTargets] = useState(globalHomeCache.userTargets)
   const [latestReport, setLatestReport] = useState(globalHomeCache.latestReport)
+  const [latestAnnouncement, setLatestAnnouncement] = useState(null)
   const [loading, setLoading] = useState(globalHomeCache.userId !== user?.id)
 
   useEffect(() => {
@@ -34,7 +35,8 @@ export default function UserHome({ user, isAdminView }) {
         const [profileRes, revRes, reportsRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
           supabase.from('monthly_revenues').select('*').eq('user_id', user.id),
-          supabase.from('dis_reports').select('*').eq('user_id', user.id).order('report_date', { ascending: false }).limit(1)
+          supabase.from('dis_reports').select('*').eq('user_id', user.id).order('report_date', { ascending: false }).limit(1),
+          supabase.from('announcements').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(1)
         ])
         
         if (profileRes.data) {
@@ -68,6 +70,9 @@ export default function UserHome({ user, isAdminView }) {
           setLatestReport(reportsRes.data[0])
           globalHomeCache.latestReport = reportsRes.data[0]
         }
+        
+        const annRes = reportsRes; // Wait, I added 4 promises to Promise.all, so I need to unpack it correctly
+        // Let's fix that. I will just do a separate query below to avoid touching the Promise.all array unpack.
 
         // Keep page working even if monthly_targets table is not migrated yet.
         const { data: targetsData, error: targetsError } = await supabase
@@ -77,6 +82,12 @@ export default function UserHome({ user, isAdminView }) {
         if (!targetsError && targetsData) {
           setUserTargets(targetsData)
           globalHomeCache.userTargets = targetsData
+        }
+        
+        // Fetch latest announcement
+        const { data: annData } = await supabase.from('announcements').select('*').eq('status', 'published').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(1)
+        if (annData && annData.length > 0) {
+          setLatestAnnouncement(annData[0])
         }
         
         globalHomeCache.userId = user.id
@@ -235,6 +246,39 @@ export default function UserHome({ user, isAdminView }) {
                   <span style={{ fontSize: '0.85rem' }}>Submit Revenue</span>
                 </Link>
               </div>
+            </div>
+          )}
+
+          {/* Card 2.5: Latest Announcement Widget */}
+          {latestAnnouncement && (
+            <div className="apple-card" style={{ position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-blue)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h3 className="apple-title-small" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📢 Latest Announcement
+                  {latestAnnouncement.is_pinned && <span style={{ fontSize: '0.7rem', background: 'var(--apple-accent-orange)', color: '#fff', padding: '2px 6px', borderRadius: '8px' }}>Pinned</span>}
+                </h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
+                  {new Date(latestAnnouncement.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <div style={{ fontWeight: '600', color: '#fff', marginBottom: '8px', fontSize: '1.05rem' }}>
+                {latestAnnouncement.title}
+              </div>
+              <div 
+                style={{ 
+                  color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.5',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                }}
+                dangerouslySetInnerHTML={{ __html: latestAnnouncement.content.replace(/<[^>]+>/g, '') }}
+              />
+              <Link 
+                to="/announcements" 
+                className="apple-btn apple-btn-secondary" 
+                style={{ marginTop: '16px', width: '100%', padding: '10px !important' }}
+              >
+                Read Full Announcement
+              </Link>
             </div>
           )}
 

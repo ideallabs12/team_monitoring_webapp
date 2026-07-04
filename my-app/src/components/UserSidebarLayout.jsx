@@ -16,7 +16,8 @@ import {
   PhoneCall,
   Star,
   User as UserIcon,
-  MapPin
+  MapPin,
+  Megaphone
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -25,6 +26,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   const [profile, setProfile] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     if (!user?.id) return
@@ -34,6 +36,20 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => { if (data) setProfile(data) })
+
+    // Fetch unread announcements count
+    const fetchUnread = async () => {
+      const { data: announcements } = await supabase.from('announcements').select('id').eq('status', 'published')
+      if (announcements) {
+        const { data: views } = await supabase.from('announcement_views').select('announcement_id').eq('user_id', user.id)
+        if (views) {
+          const viewedIds = views.map(v => v.announcement_id)
+          const unread = announcements.filter(a => !viewedIds.includes(a.id)).length
+          setUnreadCount(unread)
+        }
+      }
+    }
+    fetchUnread()
   }, [user])
 
   const handleLogout = async () => {
@@ -54,8 +70,13 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   // Build nav links based on profile
   const navLinks = [
     { path: '/home', label: 'Home', icon: Home },
-    { path: '/team', label: 'Team', icon: Users }
   ]
+  
+  if (user?.email === 'user1@gmail.com') {
+    navLinks.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
+  }
+  
+  navLinks.push({ path: '/team', label: 'Team', icon: Users })
   
   if (profile?.has_revenue_logging !== false) {
     navLinks.push({ path: '/revenue', label: 'Revenue', icon: DollarSign })
@@ -143,8 +164,29 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
                   onClick={() => { if (window.innerWidth <= 768 || isMobileView) setSidebarOpen(false) }}
                   style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }}
                 >
-                  <Icon size={collapsed ? 22 : 18} strokeWidth={active ? 2.5 : 2} />
+                  <div style={{ position: 'relative' }}>
+                    <Icon size={collapsed ? 22 : 18} strokeWidth={active ? 2.5 : 2} />
+                    {navLinks.find(n => n.path === path)?.badge > 0 && (
+                      <span style={{
+                        position: 'absolute', top: '-4px', right: '-4px',
+                        background: 'var(--apple-accent-red)', color: '#fff',
+                        fontSize: '0.6rem', fontWeight: 'bold', width: '14px', height: '14px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '50%', border: '2px solid var(--apple-bg)'
+                      }}>
+                        {navLinks.find(n => n.path === path)?.badge}
+                      </span>
+                    )}
+                  </div>
                   {!collapsed && <span>{label}</span>}
+                  {!collapsed && navLinks.find(n => n.path === path)?.badge > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', background: 'var(--apple-accent-red)', color: '#fff',
+                      fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '10px'
+                    }}>
+                      {navLinks.find(n => n.path === path)?.badge} New
+                    </span>
+                  )}
                 </Link>
               )
             })}
