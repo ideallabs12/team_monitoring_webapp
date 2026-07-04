@@ -21,6 +21,13 @@ function RestrictedAccessView() {
 export default function Layout({ user, isDeactivated, featureAccess }) {
   const [navPref, setNavPref] = useState(null) // 'navbar' or 'sidebar'
   const [loading, setLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -42,8 +49,8 @@ export default function Layout({ user, isDeactivated, featureAccess }) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading layout...</div>
   }
 
-  // Sidebar Layout Mode
-  if (navPref === 'sidebar') {
+  // Sidebar Layout Mode (Force sidebar on mobile)
+  if (isMobile || navPref === 'sidebar') {
     return <UserSidebarLayout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} RestrictedAccessView={RestrictedAccessView} />
   }
 

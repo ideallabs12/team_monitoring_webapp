@@ -88,9 +88,27 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
     loadMTD()
   }, [currentUser, reportDate, team?.id])
 
+  const todayDateStr = getLocalDateString()
+  const isLocked = systemSettings?.dis_locked || false
+  const allowPast = systemSettings?.dis_allow_past || false
+  const isHoliday = holidays.includes(reportDate)
+  const isWeekend = new Date(reportDate).getDay() === 0 // Block Sundays by default
+  const isInvalidDate = !allowPast && reportDate !== todayDateStr
+  const isSubmitDisabled = submitting || isLocked || isHoliday || isWeekend || isInvalidDate
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!currentUser || !team?.id) return
+    
+    if (isLocked) {
+      setMessage({ type: 'error', text: 'DIS submissions are currently locked by the administrator.' })
+      return
+    }
+    if (isInvalidDate || isHoliday || isWeekend) {
+      setMessage({ type: 'error', text: 'Submission for this date is not allowed.' })
+      return
+    }
+    
     setSubmitting(true)
     setMessage({ type: '', text: '' })
     try {
@@ -119,14 +137,6 @@ function DisForm({ currentUser, team, teamLabel, accentColor = 'var(--apple-acce
       setSubmitting(false)
     }
   }
-
-  const todayDateStr = getLocalDateString()
-  const isLocked = systemSettings?.dis_locked || false
-  const allowPast = systemSettings?.dis_allow_past || false
-  const isHoliday = holidays.includes(reportDate)
-  const isWeekend = new Date(reportDate).getDay() === 0 // Block Sundays by default
-  const isInvalidDate = !allowPast && reportDate !== todayDateStr
-  const isSubmitDisabled = submitting || isLocked || isHoliday || isWeekend || isInvalidDate
 
   return (
     <div className="apple-card" style={{ borderTop: `3px solid ${accentColor}` }}>
