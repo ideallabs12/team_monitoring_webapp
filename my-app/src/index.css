@@ -640,6 +640,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
 /* Responsive Grid for DIS submissions */
 .dis-grid {
   display: grid;

@@ -695,8 +695,8 @@ export default function TeamManagement({ user }) {
               value={selectedDisDate}
               max={new Date().toISOString().split('T')[0]}
               onChange={(e) => setSelectedDisDate(e.target.value)}
-              className="form-control"
-              style={{ width: 'auto', padding: '6px 12px', fontSize: '0.82rem', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#fff', height: '34px' }}
+              className="apple-input"
+              style={{ width: 'auto', padding: '6px 12px', fontSize: '0.85rem', height: '34px' }}
             />
           </div>
         </div>

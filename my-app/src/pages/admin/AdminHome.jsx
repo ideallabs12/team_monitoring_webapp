@@ -7,7 +7,7 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts'
 import {
-  TrendingUp, TrendingDown, Users, FileText, Target,
+  TrendingUp, TrendingDown, Users, User, FileText, Target,
   Zap, Activity, ArrowUpRight, ArrowDownRight, Minus,
   AlertCircle, CheckCircle, Clock
 } from 'lucide-react'
@@ -483,6 +483,46 @@ export default function AdminHome() {
           margin: -36px -40px 24px -40px;
         }
         
+        .admin-clock {
+          text-align: right;
+        }
+
+        .admin-hero-card {
+          background: var(--apple-card);
+          border-radius: 24px;
+          padding: 32px;
+          border: 1px solid var(--apple-border);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+          margin-bottom: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 32px;
+        }
+
+        .admin-hero-header {
+          flex: 1;
+        }
+
+        .admin-hero-actions {
+          display: flex;
+          align-items: center;
+          gap: 32px;
+        }
+
+        .admin-hero-stats {
+          display: flex;
+          gap: 16px;
+        }
+
+        .admin-hero-utility {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          border-left: 1px solid var(--apple-border);
+          padding-left: 32px;
+        }
+
         .admin-header {
           display: flex;
           justify-content: space-between;
@@ -505,6 +545,29 @@ export default function AdminHome() {
         }
         
         @media (max-width: 900px) {
+          .admin-hero-card {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 24px;
+            padding: 24px;
+          }
+          .admin-hero-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 24px;
+          }
+          .admin-hero-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .admin-hero-utility {
+            border-left: none;
+            border-top: 1px solid var(--apple-border);
+            padding-left: 0;
+            padding-top: 20px;
+            justify-content: space-between;
+          }
           .admin-stats-grid {
             grid-template-columns: repeat(2, 1fr);
           }
@@ -529,11 +592,6 @@ export default function AdminHome() {
         }
 
         @media (max-width: 600px) {
-          .admin-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-          }
           .admin-stats-grid {
             grid-template-columns: 1fr 1fr;
             gap: 12px;
@@ -543,6 +601,9 @@ export default function AdminHome() {
           }
           .admin-header > div:last-child {
             text-align: left !important;
+          }
+          .admin-clock {
+            text-align: left;
           }
         }
 
@@ -565,35 +626,57 @@ export default function AdminHome() {
       </div>
 
       {/* ── HEADER ── */}
-      <div className="admin-header">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{
-              width: '8px', height: '8px', borderRadius: '50%', background: '#34d399',
-              boxShadow: '0 0 8px #34d399'
-            }} />
-            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '-0.02em' }}>
+      <div className="admin-hero-card">
+        <div className="admin-hero-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '800', color: 'var(--apple-text-primary)', letterSpacing: '-0.02em' }}>
               Admin Dashboard
             </h1>
-            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', padding: '2px 8px' }}>
               ADMIN
             </span>
           </div>
-          <p style={{ margin: '4px 0 0 18px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem' }}>
-            Real-time performance monitoring · {teams.length} teams · {totalMembers} members
+          <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.95rem', lineHeight: '1.4' }}>
+            Real-time performance across your organization.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div>
-            <div style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '0.02em', textAlign: 'right' }}>
-              {clock.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+
+        <div className="admin-hero-actions">
+          <div className="admin-hero-stats">
+            <div style={{ background: 'var(--apple-card)', borderRadius: '16px', padding: '16px', border: '1px solid var(--apple-border)', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', flex: 1 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(0,113,227,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--apple-accent-blue)' }}>
+                <Users size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--apple-text-primary)', lineHeight: '1' }}>{teams.length}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '4px' }}>Teams</div>
+              </div>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', marginTop: '4px', textAlign: 'right' }}>
-              {clock.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+            
+            <div style={{ background: 'var(--apple-card)', borderRadius: '16px', padding: '16px', border: '1px solid var(--apple-border)', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', flex: 1 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(48,213,200,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--apple-accent-green)' }}>
+                <User size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--apple-text-primary)', lineHeight: '1' }}>{totalMembers}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '4px' }}>Members</div>
+              </div>
             </div>
           </div>
-          <div style={{ '--toggle-size': '8px', display: 'flex', alignItems: 'center', height: '100%' }}>
-            <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+
+          <div className="admin-hero-utility">
+            <div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-text-primary)', letterSpacing: '0.01em' }}>
+                {clock.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>
+                {clock.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </div>
+            </div>
+            <div style={{ width: '1px', height: '36px', background: 'var(--apple-border)', display: 'none' /* Handled dynamically by flex gap on desktop, but keep for visual weight if needed, actually removed in favor of border-left on utility container */ }} />
+            <div style={{ '--toggle-size': '12px' }}>
+              <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+            </div>
           </div>
         </div>
       </div>
@@ -875,8 +958,8 @@ export default function AdminHome() {
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: '220px', width: '100%', minWidth: 0, minHeight: 0 }}>
-            <ResponsiveContainer width="99%" height={220}>
+          <div style={{ flex: 1, minHeight: '220px', width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <ResponsiveContainer width="99%" height="100%">
               <BarChart data={teamMonthlyData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" vertical={false} />
                 <XAxis
@@ -936,8 +1019,8 @@ export default function AdminHome() {
 
           {revenueShareData.length > 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <div style={{ flex: 1, minHeight: '200px', width: '100%', minWidth: 0, minHeight: 0 }}>
-                <ResponsiveContainer width="99%" height={200}>
+              <div style={{ flex: 1, minHeight: '200px', width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                <ResponsiveContainer width="99%" height="100%">
                   <PieChart>
                     <Pie
                       data={revenueShareData}
