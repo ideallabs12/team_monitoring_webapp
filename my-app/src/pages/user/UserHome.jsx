@@ -249,38 +249,7 @@ export default function UserHome({ user, isAdminView }) {
             </div>
           )}
 
-          {/* Card 2.5: Latest Announcement Widget */}
-          {latestAnnouncement && (
-            <div className="apple-card" style={{ position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-blue)' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h3 className="apple-title-small" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  📢 Latest Announcement
-                  {latestAnnouncement.is_pinned && <span style={{ fontSize: '0.7rem', background: 'var(--apple-accent-orange)', color: '#fff', padding: '2px 6px', borderRadius: '8px' }}>Pinned</span>}
-                </h3>
-                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
-                  {new Date(latestAnnouncement.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div style={{ fontWeight: '600', color: '#fff', marginBottom: '8px', fontSize: '1.05rem' }}>
-                {latestAnnouncement.title}
-              </div>
-              <div 
-                style={{ 
-                  color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.5',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                }}
-                dangerouslySetInnerHTML={{ __html: latestAnnouncement.content.replace(/<[^>]+>/g, '') }}
-              />
-              <Link 
-                to="/announcements" 
-                className="apple-btn apple-btn-secondary" 
-                style={{ marginTop: '16px', width: '100%', padding: '10px !important' }}
-              >
-                Read Full Announcement
-              </Link>
-            </div>
-          )}
+
 
         </div>
 
@@ -380,6 +349,39 @@ export default function UserHome({ user, isAdminView }) {
           </div>
 
         </div>
+
+        {/* FULL-WIDTH: Latest Announcement Widget */}
+        {latestAnnouncement && (
+          <div className="apple-card" style={{ gridColumn: '1 / -1', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--apple-accent-blue)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 className="apple-title-small" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📢 Latest Announcement
+                {latestAnnouncement.is_pinned && <span style={{ fontSize: '0.7rem', background: 'var(--apple-accent-orange)', color: '#fff', padding: '2px 6px', borderRadius: '8px' }}>Pinned</span>}
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
+                {new Date(latestAnnouncement.created_at).toLocaleDateString()}
+              </span>
+            </div>
+            <div style={{ fontWeight: '600', color: '#fff', marginBottom: '8px', fontSize: '1.05rem' }}>
+              {latestAnnouncement.title}
+            </div>
+            <div 
+              style={{ 
+                color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.5',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+              }}
+              dangerouslySetInnerHTML={{ __html: latestAnnouncement.content.replace(/<[^>]+>/g, '') }}
+            />
+            <Link 
+              to="/announcements" 
+              className="apple-btn apple-btn-secondary" 
+              style={{ marginTop: '16px', width: '100%', padding: '10px !important' }}
+            >
+              Read Full Announcement
+            </Link>
+          </div>
+        )}
 
         {/* BOTTOM FULL-WIDTH: Latest Daily DIS Report */}
         <div className="apple-card" style={{ gridColumn: '1 / -1' }}>

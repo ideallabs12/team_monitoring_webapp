@@ -50,6 +50,23 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
       }
     }
     fetchUnread()
+
+    const annChannel = supabase.channel(`sidebar-announcements-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+        fetchUnread()
+      })
+      .subscribe()
+
+    const viewsChannel = supabase.channel(`sidebar-views-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcement_views', filter: `user_id=eq.${user.id}` }, () => {
+        fetchUnread()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(annChannel)
+      supabase.removeChannel(viewsChannel)
+    }
   }, [user])
 
   const handleLogout = async () => {

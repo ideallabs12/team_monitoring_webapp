@@ -150,7 +150,7 @@ export default function UserAnnouncements({ user }) {
         <button 
           onClick={() => setActiveTab('announcements')}
           style={{
-            background: 'none', border: 'none', color: activeTab === 'announcements' ? '#fff' : 'var(--apple-text-secondary)',
+            background: 'none', border: 'none', color: activeTab === 'announcements' ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
             fontSize: '1.1rem', fontWeight: activeTab === 'announcements' ? '600' : '400',
             cursor: 'pointer', padding: '8px 16px', position: 'relative', transition: 'color 0.2s ease'
           }}
@@ -161,7 +161,7 @@ export default function UserAnnouncements({ user }) {
         <button 
           onClick={() => setActiveTab('notifications')}
           style={{
-            background: 'none', border: 'none', color: activeTab === 'notifications' ? '#fff' : 'var(--apple-text-secondary)',
+            background: 'none', border: 'none', color: activeTab === 'notifications' ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
             fontSize: '1.1rem', fontWeight: activeTab === 'notifications' ? '600' : '400',
             cursor: 'pointer', padding: '8px 16px', position: 'relative', transition: 'color 0.2s ease',
             display: 'flex', alignItems: 'center', gap: '8px'
@@ -178,12 +178,12 @@ export default function UserAnnouncements({ user }) {
           display: 'grid', 
           gridTemplateColumns: 'minmax(300px, 350px) 1fr', 
           gap: '24px',
-          alignItems: 'start',
+          alignItems: 'stretch',
           minHeight: '600px'
         }}>
         
         {/* Left Pane - List */}
-        <div className="apple-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+        <div className="apple-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
           <div style={{ position: 'relative' }}>
             <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
             <input 
@@ -219,7 +219,7 @@ export default function UserAnnouncements({ user }) {
                   onMouseLeave={e => { if (selectedAnnouncement?.id !== ann.id) e.currentTarget.style.background = 'transparent' }}
                 >
                   {ann.is_pinned && <Pin size={14} color="var(--apple-accent-orange)" style={{ position: 'absolute', top: '16px', right: '16px', transform: 'rotate(45deg)' }}/>}
-                  <div style={{ fontWeight: '600', color: selectedAnnouncement?.id === ann.id ? 'var(--apple-accent-blue)' : '#fff', marginBottom: '8px', paddingRight: '20px', fontSize: '1rem', lineHeight: '1.3' }}>
+                  <div style={{ fontWeight: '600', color: selectedAnnouncement?.id === ann.id ? 'var(--apple-accent-blue)' : 'var(--apple-text-primary)', marginBottom: '8px', paddingRight: '20px', fontSize: '1rem', lineHeight: '1.3' }}>
                     {ann.title}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
@@ -232,7 +232,7 @@ export default function UserAnnouncements({ user }) {
         </div>
 
         {/* Right Pane - Detail View */}
-        <div className="apple-card" style={{ height: '100%', padding: '40px', minHeight: '60vh' }}>
+        <div className="apple-card" style={{ padding: '40px' }}>
           {selectedAnnouncement ? (
             <div style={{ animation: 'fadeIn 0.3s ease' }}>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px' }}>
@@ -242,11 +242,11 @@ export default function UserAnnouncements({ user }) {
                 </span>
               </div>
               
-              <h2 style={{ fontSize: '2rem', color: '#fff', marginBottom: '32px', lineHeight: '1.2' }}>{selectedAnnouncement.title}</h2>
+              <h2 style={{ fontSize: '2rem', color: 'var(--apple-text-primary)', marginBottom: '32px', lineHeight: '1.2' }}>{selectedAnnouncement.title}</h2>
               
               <div 
                 className="announcement-content"
-                style={{ color: 'rgba(255,255,255,0.85)', lineHeight: '1.7', fontSize: '1.05rem' }}
+                style={{ color: 'var(--apple-text-primary)', opacity: 0.85, lineHeight: '1.7', fontSize: '1.05rem' }}
                 dangerouslySetInnerHTML={{ __html: selectedAnnouncement.content }}
               />
 
@@ -266,7 +266,7 @@ export default function UserAnnouncements({ user }) {
 
       {activeTab === 'notifications' && (
         <div className="apple-card" style={{ minHeight: '60vh', padding: '32px' }}>
-          <h2 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '24px' }}>Your Notifications</h2>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--apple-text-primary)', marginBottom: '24px' }}>Your Notifications</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {notifications.map(notification => {
               let Icon = Bell;
@@ -302,7 +302,7 @@ export default function UserAnnouncements({ user }) {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                      <h4 style={{ color: '#fff', fontSize: '1.1rem', margin: 0 }}>{notification.title}</h4>
+                      <h4 style={{ color: 'var(--apple-text-primary)', fontSize: '1.1rem', margin: 0 }}>{notification.title}</h4>
                       <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
                         {new Date(notification.date).toLocaleDateString()}
                       </span>
