@@ -592,7 +592,7 @@ export default function AdminDis() {
         </div>
 
         {filteredSubmissions.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          <div className="mobile-scroll-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {filteredSubmissions.map(row => {
               const monthStr = `${row.report_date.split('-')[0]}-${row.report_date.split('-')[1]}-01`
 
@@ -696,7 +696,7 @@ export default function AdminDis() {
             🌴 Holiday Declared: No missing reports for this date.
           </div>
         ) : filteredMissing.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          <div className="mobile-scroll-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {filteredMissing.map((item, idx) => (
               <div 
                 key={idx} 

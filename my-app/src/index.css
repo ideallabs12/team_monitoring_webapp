@@ -943,6 +943,201 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .admin-sidebar-wrapper { display: none; }
   .admin-mobile-topbar { display: flex !important; }
   .admin-sidebar-mobile { display: block; }
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--apple-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s var(--apple-ease), color 0.15s var(--apple-ease);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--apple-text-primary);
+}
+
+.admin-sidebar-link.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--apple-text-primary);
+  font-weight: 600;
+}
+
+.admin-sidebar-link.active svg {
+  color: var(--apple-text-primary);
+}
+
+/* ── Bottom: Profile + Sign Out ── */
+.admin-sidebar-bottom {
+  padding: 16px 10px 20px;
+  border-top: 1px solid var(--apple-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--apple-border);
+}
+
+.admin-sidebar-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--apple-accent-blue), #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.admin-sidebar-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.admin-sidebar-profile-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--apple-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-sidebar-role-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--apple-accent-red);
+  background: rgba(255, 69, 58, 0.12);
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  display: inline-block;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-sidebar-signout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--apple-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.admin-sidebar-signout:hover {
+  background: rgba(255, 69, 58, 0.08);
+  color: var(--apple-accent-red);
+}
+
+/* ── Main content area ── */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--apple-bg);
+}
+
+.admin-content {
+  flex: 1;
+  padding: 36px 40px;
+  max-width: 1300px;
+  width: 100%;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* Override the old admin-content-area class */
+.admin-content-area {
+  flex: 1;
+  padding: 36px 40px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0;
+}
+
+/* ── Mobile top bar ── */
+.admin-mobile-topbar {
+  display: none !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 14px;
+  padding: 14px 20px;
+  background: var(--apple-card);
+  border-bottom: 1px solid var(--apple-border);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.admin-mobile-menu-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Mobile sidebar (hidden by default) ── */
+.admin-sidebar-mobile {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: -240px;
+  width: 240px;
+  height: 100vh;
+  z-index: 50;
+  transition: left 0.25s ease;
+}
+
+.admin-sidebar-mobile.open {
+  left: 0;
+}
+
+/* ── Mobile overlay ── */
+.admin-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 45;
+  backdrop-filter: blur(2px);
+}
+
+/* ── Responsive: mobile breakpoint ── */
+@media (max-width: 1024px) {
+  .admin-sidebar-wrapper { display: none; }
+  .admin-mobile-topbar { display: flex !important; }
+  .admin-sidebar-mobile { display: block; }
   .admin-sidebar-overlay { display: block; }
   .admin-content { padding: 84px 20px 24px 20px; }
 }
@@ -2335,7 +2530,7 @@ select.apple-input {
 .liquid-glass-btn {
   background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px;
   padding: 12px 24px;
   color: #fff;
@@ -2361,7 +2556,7 @@ select.apple-input {
 
 .liquid-glass-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255,255,255,0.3);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
@@ -2901,3 +3096,27 @@ select.apple-input {
 .announcement-content ul, .announcement-content ol { margin-left: 20px; margin-bottom: 1em; }
 .announcement-content a { color: var(--apple-accent-blue); text-decoration: underline; }
 .announcement-content h1, .announcement-content h2, .announcement-content h3 { color: #fff; margin-bottom: 0.5em; margin-top: 1em; }
+
+/* ── Mobile Scroll Container (Internal Scrolling) ── */
+.mobile-scroll-container {
+  max-height: none;
+  overflow-y: visible;
+}
+
+@media (max-width: 900px) {
+  .mobile-scroll-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+    margin: 0 -10px -10px -10px;
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  
+  .mobile-scroll-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    background: transparent !important;
+  }
+}
