@@ -943,6 +943,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .admin-sidebar-wrapper { display: none; }
   .admin-mobile-topbar { display: flex !important; }
   .admin-sidebar-mobile { display: block; }
+}
+
+.admin-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 9px 12px;
   border-radius: 8px;
   color: var(--apple-text-secondary);
