@@ -66,6 +66,23 @@ export default function AdminAttendance() {
     }
   }
 
+  const handleDeleteLog = async (logId) => {
+    if (!window.confirm('Are you sure you want to delete this attendance log? This action cannot be undone.')) return
+    try {
+      const { error } = await supabase
+        .from('attendance_logs')
+        .delete()
+        .eq('id', logId)
+
+      if (error) throw error
+      
+      setLogs(logs.filter(log => log.id !== logId))
+    } catch (err) {
+      console.error('Failed to delete log:', err)
+      alert('Failed to delete log.')
+    }
+  }
+
   const filteredLogs = logs.filter(log => {
     if (filter === 'pending' && log.status !== 'pending_approval') return false
     if (filter === 'present' && log.status !== 'present') return false
@@ -194,14 +211,17 @@ export default function AdminAttendance() {
                       )}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'right' }}>
-                      {log.status === 'pending_approval' ? (
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                          <button onClick={() => handleApprove(log.id)} className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderColor: 'rgba(74, 222, 128, 0.2)' }}>Approve</button>
-                          <button onClick={() => handleReject(log.id)} className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Reject</button>
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>--</span>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        {log.status === 'pending_approval' && (
+                          <>
+                            <button onClick={() => handleApprove(log.id)} className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderColor: 'rgba(74, 222, 128, 0.2)' }}>Approve</button>
+                            <button onClick={() => handleReject(log.id)} className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Reject</button>
+                          </>
+                        )}
+                        <button onClick={() => handleDeleteLog(log.id)} className="apple-btn" style={{ padding: '6px', color: '#ef4444', background: 'transparent', border: 'none' }} title="Delete Log">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -282,6 +302,11 @@ export default function AdminAttendance() {
                     <button onClick={() => handleReject(log.id)} className="apple-btn" style={{ flex: 1, padding: '8px', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>Reject</button>
                   </div>
                 )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <button onClick={() => handleDeleteLog(log.id)} className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.8rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
               </div>
             ))
           )}

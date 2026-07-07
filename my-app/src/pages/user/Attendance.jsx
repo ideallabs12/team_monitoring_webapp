@@ -407,9 +407,14 @@ export default function Attendance({ user }) {
                   rows={3}
                   style={{ width: '100%', marginBottom: '16px', resize: 'vertical' }}
                 />
-                <button onClick={() => pendingAction === 'in' ? handleCheckIn(true) : handleCheckOut(true)} disabled={checking} className="apple-btn" style={{ width: '100%', background: '#ef4444', color: '#fff', border: 'none' }}>
-                  {checking ? 'Submitting...' : `Request Exception & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={() => runChecks(pendingAction)} disabled={checking} className="apple-btn" style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                    Verify Again
+                  </button>
+                  <button onClick={() => pendingAction === 'in' ? handleCheckIn(true) : handleCheckOut(true)} disabled={checking} className="apple-btn" style={{ flex: 2, background: '#ef4444', color: '#fff', border: 'none' }}>
+                    {checking ? 'Submitting...' : `Request Exception & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
+                  </button>
+                </div>
               </div>
             )}
           </div>
