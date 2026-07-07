@@ -163,7 +163,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
               if (item.path === '/admin/write-ups') return !!featureAccess.writeUps;
               if (item.path === '/admin/reviews') return !!featureAccess.reviews;
             }
-            if (item.path === '/admin/announcements' && user?.email !== 'signatureglobalconferences@gmail.com') return false;
+            if (item.path === '/admin/announcements' && user?.email !== 'user1@gmail.com') return false;
             
             return true
           }).map(({ path, label, icon: Icon }) => {

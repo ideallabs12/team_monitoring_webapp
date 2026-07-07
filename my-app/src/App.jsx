@@ -397,7 +397,7 @@ function App() {
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="attendance" element={<AdminAttendance />} />
-          <Route path="announcements" element={user?.email === 'signatureglobalconferences@gmail.com' ? <AdminAnnouncements /> : <Navigate to="home" replace />} />
+          <Route path="announcements" element={user?.email === 'user1@gmail.com' ? <AdminAnnouncements /> : <Navigate to="home" replace />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
