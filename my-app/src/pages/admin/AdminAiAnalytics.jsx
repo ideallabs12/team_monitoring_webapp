@@ -158,18 +158,15 @@ export default function AdminAiAnalytics() {
         `
       }
 
-      const response = await fetch('https://tohlagjzvjoqrutolcwf.supabase.co/functions/v1/ai-analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: finalPrompt })
+      const { data, error: invokeError } = await supabase.functions.invoke('ai-analytics', {
+        body: { prompt: finalPrompt }
       })
 
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error?.message || data.error || 'Failed to fetch AI analytics')
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to fetch AI analytics')
       }
       
-      if (data.error) {
+      if (data?.error) {
         throw new Error(data.error.message || JSON.stringify(data.error))
       }
       
