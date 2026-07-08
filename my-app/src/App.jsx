@@ -374,7 +374,7 @@ function App() {
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/announcements" element={hasProfile && !isAdmin && user?.email === 'user1@gmail.com' ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
+          <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
         </Route>
 
         {/* Admin Routes */}
@@ -397,7 +397,7 @@ function App() {
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="attendance" element={<AdminAttendance />} />
-          <Route path="announcements" element={user?.email === 'user1@gmail.com' ? <AdminAnnouncements /> : <Navigate to="home" replace />} />
+          <Route path="announcements" element={<AdminAnnouncements />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

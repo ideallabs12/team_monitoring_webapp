@@ -89,9 +89,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     { path: '/home', label: 'Home', icon: Home },
   ]
   
-  if (user?.email === 'user1@gmail.com') {
-    navLinks.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
-  }
+  navLinks.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
   
   navLinks.push({ path: '/team', label: 'Team', icon: Users })
   
