@@ -47,7 +47,8 @@ export default function AdminSettings() {
   }
 
   // DB Stats
-  const [dbSizeMb, setDbSizeMb] = useState(0)
+  const [dbStats, setDbStats] = useState({ used_space: '0 MB', remaining_space: '500 MB', percent_used: 0 })
+  const [dbErrorMsg, setDbErrorMsg] = useState(null)
   const [stats, setStats] = useState({ users: 0, logs: 0, dis: 0, revenue: 0 })
 
   useEffect(() => {
@@ -100,9 +101,27 @@ export default function AdminSettings() {
         setHolidays(holidaysData)
       }
 
-      // Load DB Size
-      const { data: sizeData, error: sizeError } = await supabase.rpc('get_db_size')
-      if (!sizeError) setDbSizeMb(Number(sizeData) || 0)
+      // Load DB Size from the small query
+      const { data: sizeData, error: sizeError } = await supabase.rpc('get_db_storage_stats')
+      
+      if (sizeError) {
+        setDbErrorMsg(sizeError.message || JSON.stringify(sizeError))
+      } else if (!sizeData) {
+        setDbErrorMsg('Function returned null or empty data.')
+      } else {
+        setDbErrorMsg(null)
+      }
+
+      if (!sizeError && sizeData && sizeData.used_space) {
+        setDbStats(sizeData)
+      } else {
+        // Fallback if they haven't run the new SQL snippet yet
+        setDbStats({
+          used_space: (Number(sizeData) || 0).toFixed(2) + ' MB',
+          remaining_space: Math.max(0, 500 - (Number(sizeData) || 0)).toFixed(2) + ' MB',
+          percent_used: ((Number(sizeData) || 0) / 500) * 100
+        })
+      }
 
       // Load Counts
       const [usersCount, logsCount, disCount, revCount] = await Promise.all([
@@ -382,19 +401,39 @@ export default function AdminSettings() {
 
       {/* Database Health Widget */}
       <div className="apple-card" style={{ padding: '24px', marginBottom: '32px', background: 'linear-gradient(135deg, rgba(15,23,42,0.6), rgba(30,41,59,0.6))', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Database size={18} style={{ color: '#38bdf8' }} /> Database Health Monitor
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 className="apple-title-small" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <Database size={18} style={{ color: '#38bdf8' }} /> Database Health Monitor
+          </h3>
+          <button 
+            onClick={loadSettingsAndStats}
+            disabled={loading}
+            className="apple-btn apple-btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {loading ? 'Refreshing...' : 'Refresh Storage'}
+          </button>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Storage Used</div>
             <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              {dbSizeMb.toFixed(2)} <span style={{ fontSize: '1rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>MB / 500 MB</span>
+              {dbStats.used_space.replace(' MB', '')} <span style={{ fontSize: '1rem', color: 'var(--apple-text-secondary)', fontWeight: '500' }}>MB / 500 MB</span>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
+              {dbStats.remaining_space} left ({dbStats.percent_used}% used)
             </div>
             {/* Progress bar */}
             <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min((dbSizeMb / 500) * 100, 100)}%`, height: '100%', background: dbSizeMb > 400 ? '#ef4444' : dbSizeMb > 300 ? '#f59e0b' : '#4ade80' }}></div>
+              <div style={{ width: `${Math.min(dbStats.percent_used, 100)}%`, height: '100%', background: dbStats.percent_used > 80 ? '#ef4444' : dbStats.percent_used > 60 ? '#f59e0b' : '#4ade80' }}></div>
             </div>
+            
+            {/* On-screen error rendering */}
+            {dbErrorMsg && (
+              <div style={{ marginTop: '12px', padding: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <strong>Error details:</strong> {dbErrorMsg}
+              </div>
+            )}
           </div>
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Users</div>
