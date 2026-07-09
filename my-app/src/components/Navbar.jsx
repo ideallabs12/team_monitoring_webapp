@@ -117,7 +117,7 @@ export default function Navbar({ user }) {
             fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px',
             fontSize: '1.25rem', letterSpacing: '-0.02em', color: 'var(--apple-text-primary)', textDecoration: 'none'
           }}>
-            <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '28px', height: '28px' }} />
+            <img src="/allhands_logo.png" alt="All-Hands Logo" style={{ width: '28px', height: '28px' }} />
             <span className="brand-logo-text">
               All-Hands
             </span>

@@ -118,7 +118,7 @@ function App() {
           if (window.Notification && Notification.permission === "granted") {
             new Notification("New Announcement", {
               body: payload.new.title,
-              icon: '/favicon.svg'
+              icon: '/allhands_logo.png'
             });
           }
         }

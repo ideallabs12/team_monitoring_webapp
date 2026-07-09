@@ -60,7 +60,7 @@ export default function Login({ user, isAdmin }) {
     <div className="auth-container login-auth-container">
       <section className="auth-identity" aria-label="Company application overview">
         <div className="auth-brand-mark">
-          <img src="/favicon.svg" alt="All-Hands Logo" style={{ width: '40px', height: '40px' }} />
+          <img src="/allhands_logo.png" alt="All-Hands Logo" style={{ width: '40px', height: '40px' }} />
         </div>
 
         <div>

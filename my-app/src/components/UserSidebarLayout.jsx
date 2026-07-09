@@ -160,7 +160,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
             <>
               <span className="admin-sidebar-brand-name" style={{ flex: 1, fontSize: '1.05rem', letterSpacing: '-0.02em' }}>All-Hands</span>
               <div className="admin-sidebar-brand-icon" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                <img src="/favicon.svg" alt="Logo" style={{ width: '20px', height: '20px' }} />
+                <img src="/allhands_logo.png" alt="Logo" style={{ width: '20px', height: '20px' }} />
               </div>
             </>
           )}
