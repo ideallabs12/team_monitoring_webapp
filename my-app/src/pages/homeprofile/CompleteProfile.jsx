@@ -48,22 +48,35 @@ export default function CompleteProfile({ user, onComplete }) {
     }
 
     try {
+      const profileData = {
+        id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email: user.email,
+        phone: phone,
+        team_id: selectedTeamId || null,
+        platform_role: 'employee',
+        has_revenue_logging: true,
+        has_dis_reporting: true,
+        profile_completed: true,
+        is_deactivated: true
+      };
+
       // 1. Insert/Update Profile with team_id
-      const { error: profileError } = await supabase
+      let { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          first_name: firstName,
-          last_name: lastName,
-          email: user.email,
-          phone: phone,
-          team_id: selectedTeamId || null,
-          platform_role: 'employee',
-          has_revenue_logging: true,
-          has_dis_reporting: true,
-          profile_completed: true,
-          is_deactivated: true
-        })
+        .upsert(profileData)
+
+      if (profileError && profileError.message && profileError.message.toLowerCase().includes('jwt expired')) {
+        console.log('JWT expired detected. Attempting to refresh session...');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error('Your session has expired. Please sign out and try logging in again.');
+        }
+        // Retry the upsert
+        const retry = await supabase.from('profiles').upsert(profileData);
+        profileError = retry.error;
+      }
 
       if (profileError) {
         console.error('Profile upsert failed:', profileError)
@@ -182,6 +195,26 @@ export default function CompleteProfile({ user, onComplete }) {
           <button type="submit" className="btn" style={{ width: '100%' }} disabled={loading}>
             {loading ? 'Saving...' : 'Save Profile & Continue'}
           </button>
+          
+          <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <button 
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/', { replace: true });
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              Sign out and try again
+            </button>
+          </div>
         </form>
       </div>
     </div>

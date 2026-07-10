@@ -12,6 +12,19 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "build": {
+    "appId": "com.ideallabs.allhands",
+    "productName": "All-Hands",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*",
+      "package.json"
+    ]
+  },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
     "@capacitor/core": "^8.4.1",

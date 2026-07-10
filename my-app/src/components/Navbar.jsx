@@ -117,7 +117,9 @@ export default function Navbar({ user }) {
             fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px',
             fontSize: '1.25rem', letterSpacing: '-0.02em', color: 'var(--apple-text-primary)', textDecoration: 'none'
           }}>
-            <img src="/allhands_logo.png" alt="All-Hands Logo" style={{ width: '28px', height: '28px' }} />
+            <div style={{ width: '44px', height: '44px', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="./allhands_logo_cropped.png" alt="All-Hands Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
             <span className="brand-logo-text">
               All-Hands
             </span>
