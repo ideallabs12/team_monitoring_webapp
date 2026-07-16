@@ -61,16 +61,16 @@ export default function Navbar({ user }) {
   const navLinks = [
     { to: '/home', label: 'Home' },
     { to: '/announcements', label: 'Announcements' },
+    { to: '/virtual-events', label: 'Virtual Events' },
     { to: '/team', label: 'Team' }
   ]
   if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
   navLinks.push({ to: '/dis', label: 'My DIS' })
 
-  navLinks.push({ to: '/profile', label: 'Profile' })
-  navLinks.push({ to: '/settings', label: 'Settings' })
-
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
+    { to: '/profile', label: 'Profile', desc: 'Manage your personal details' },
+    { to: '/settings', label: 'Settings', desc: 'App preferences and alerts' },
     { to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' },
     { to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' },
   ]

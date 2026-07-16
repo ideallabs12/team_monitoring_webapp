@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Copy, Download, RefreshCw, Upload, Eye, Edit3,
   Mail, User, Building2, Percent, Tag, FileText, Save,
-  CheckCircle2, Palette,
+  CheckCircle2, Palette, ArrowLeft
 } from 'lucide-react'
 
 /* ════════════════════════════════════════════════════════════
@@ -298,6 +299,7 @@ const labelStyle = {
    COMPONENT
    ════════════════════════════════════════════════════════════ */
 export default function Template2() {
+  const navigate = useNavigate()
   const [draft, setDraft] = useState({ ...DEFAULT_FIELDS })
   const [saved, setSaved] = useState({ ...DEFAULT_FIELDS })
   const [draftThemeId, setDraftThemeId] = useState('theme1')
@@ -471,6 +473,24 @@ export default function Template2() {
   /* ── UI ───────────────────────────────────────────────────── */
   return (
     <div style={{ minHeight: '100vh', background: 'var(--apple-bg, #0f0f0f)', padding: '24px 24px 40px', boxSizing: 'border-box' }}>
+
+      {/* Back Button */}
+      <button
+        onClick={() => {
+          const isAdminRoute = window.location.hash.startsWith('#/admin')
+          navigate(isAdminRoute ? '/admin/virtual-events' : '/virtual-events')
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'transparent', border: 'none', color: 'var(--apple-text-secondary, #888)',
+          cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, padding: '0',
+          marginBottom: '20px', transition: 'color 0.2s ease'
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--apple-text-primary, #fff)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--apple-text-secondary, #888)'}
+      >
+        <ArrowLeft size={16} /> Back to Templates
+      </button>
 
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>

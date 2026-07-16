@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Copy, Download, RefreshCw, Upload, Eye, Edit3,
   Mail, User, Building2, Percent, Tag, FileText, Save,
-  CheckCircle2, Palette,
+  CheckCircle2, Palette, ArrowLeft
 } from 'lucide-react'
 
 /* ════════════════════════════════════════════════════════════
@@ -55,21 +56,22 @@ const THEMES = {
   theme_wyn: {
     id: 'theme_wyn',
     name: 'WYN Theme',
-    label: 'Navy Gold',
-    preview: ['#00256B', '#FACC15', '#FFFFFF'],
-    bgOuter: '#051124',
-    bgCard: '#00256B',
-    bgSection: '#083382',
-    borderMuted: '#1A499E',
-    borderAccent: '#FACC15',
-    accent: '#FACC15',
-    accentText: '#00256B',
-    textPrimary: '#FFFFFF',
-    textSecondary: '#D1D5DB',
-    textMuted: '#9CA3AF',
-    textLabel: '#E5E7EB',
-    accentGlow: 'rgba(250,204,21,0.18)',
-    logoFilter: 'drop-shadow(0 0 10px rgba(250,204,21,0.3))',
+    label: 'Navy Sky',
+    preview: ['#FFFFFF', '#00256B', '#38BDF8'],
+    bgOuter: '#F0F4F8',
+    bgCard: '#FFFFFF',
+    bgSection: '#F8FAFC',
+    borderMuted: '#E2E8F0',
+    borderAccent: '#00256B',
+    accent: '#00256B',
+    accentBg: 'linear-gradient(135deg, #00256B, #38BDF8)',
+    accentText: '#FFFFFF',
+    textPrimary: '#0F172A',
+    textSecondary: '#334155',
+    textMuted: '#64748B',
+    textLabel: '#475569',
+    accentGlow: 'rgba(0,37,107,0.15)',
+    logoFilter: 'drop-shadow(0 2px 8px rgba(0,37,107,0.1))',
     linkedinBg: '#0A66C2',
   },
   theme_icon: {
@@ -96,20 +98,21 @@ const THEMES = {
     id: 'theme_idias',
     name: 'iDIAS Theme',
     label: 'White Orange',
-    preview: ['#FFFFFF', '#FE6102', '#111827'],
-    bgOuter: '#F3F4F6',
+    preview: ['#FFFFFF', '#FE5B00', '#000000'],
+    bgOuter: '#F9FAFB',
     bgCard: '#FFFFFF',
-    bgSection: '#FFF4ED',
+    bgSection: '#F8F9FA',
     borderMuted: '#E5E7EB',
-    borderAccent: '#FE6102',
-    accent: '#FE6102',
+    borderAccent: '#FE5B00',
+    accent: '#FE5B00',
+    accentBg: 'linear-gradient(135deg, #FE5B00, #FF823A)',
     accentText: '#FFFFFF',
-    textPrimary: '#111827',
-    textSecondary: '#4B5563',
+    textPrimary: '#000000',
+    textSecondary: '#374151',
     textMuted: '#6B7280',
-    textLabel: '#374151',
-    accentGlow: 'rgba(254,97,2,0.15)',
-    logoFilter: 'drop-shadow(0 2px 8px rgba(254,97,2,0.15))',
+    textLabel: '#4B5563',
+    accentGlow: 'rgba(254,91,0,0.15)',
+    logoFilter: 'drop-shadow(0 2px 8px rgba(254,91,0,0.15))',
     linkedinBg: '#0A66C2',
   },
   theme_prosummits: {
@@ -136,21 +139,21 @@ const THEMES = {
   theme_wynxtalks: {
     id: 'theme_wynxtalks',
     name: 'WYNxtalks Theme',
-    label: 'Modern Monochrome',
-    preview: ['#F5F5F5', '#000000', '#FFFFFF'],
-    bgOuter: '#E5E7EB',
-    bgCard: '#F9FAFB',
-    bgSection: '#FFFFFF',
-    borderMuted: '#D1D5DB',
-    borderAccent: '#000000',
-    accent: '#000000',
+    label: 'Dark Magenta',
+    preview: ['#000000', '#E51A66', '#FFFFFF'],
+    bgOuter: '#050505',
+    bgCard: '#000000',
+    bgSection: '#111111',
+    borderMuted: '#2A2A2A',
+    borderAccent: '#E51A66',
+    accent: '#E51A66',
     accentText: '#FFFFFF',
-    textPrimary: '#111827',
-    textSecondary: '#4B5563',
-    textMuted: '#6B7280',
-    textLabel: '#374151',
-    accentGlow: 'rgba(0,0,0,0.1)',
-    logoFilter: 'drop-shadow(0 0 10px rgba(0,0,0,0.1))',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#D1D5DB',
+    textMuted: '#9CA3AF',
+    textLabel: '#6B7280',
+    accentGlow: 'rgba(229,26,102,0.18)',
+    logoFilter: 'drop-shadow(0 2px 10px rgba(229,26,102,0.2))',
     linkedinBg: '#0A66C2',
   },
   theme_next: {
@@ -495,6 +498,7 @@ const labelStyle = {
    COMPONENT
    ════════════════════════════════════════════════════════════ */
 export default function Template3() {
+  const navigate = useNavigate()
   const [draft, setDraft] = useState({ ...DEFAULT_FIELDS })
   const [saved, setSaved] = useState({ ...DEFAULT_FIELDS })
   const [draftThemeId, setDraftThemeId] = useState('theme_wyn')
@@ -514,6 +518,15 @@ export default function Template3() {
   /* ── handlers ─────────────────────────────────────────────── */
   const handleChange = (key, value) => {
     setDraft(prev => ({ ...prev, [key]: value }))
+    
+    // Auto-select the corresponding company theme
+    if (key === 'companyId') {
+      const correspondingThemeId = `theme_${value.toLowerCase()}`
+      if (THEMES[correspondingThemeId]) {
+        setDraftThemeId(correspondingThemeId)
+      }
+    }
+    
     setHasUnsaved(true)
   }
 
@@ -681,6 +694,24 @@ export default function Template3() {
   /* ── UI ───────────────────────────────────────────────────── */
   return (
     <div style={{ minHeight: '100vh', background: 'var(--apple-bg, #0f0f0f)', padding: '24px 24px 40px', boxSizing: 'border-box' }}>
+
+      {/* Back Button */}
+      <button
+        onClick={() => {
+          const isAdminRoute = window.location.hash.startsWith('#/admin')
+          navigate(isAdminRoute ? '/admin/virtual-events' : '/virtual-events')
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'transparent', border: 'none', color: 'var(--apple-text-secondary, #888)',
+          cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, padding: '0',
+          marginBottom: '20px', transition: 'color 0.2s ease'
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--apple-text-primary, #fff)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--apple-text-secondary, #888)'}
+      >
+        <ArrowLeft size={16} /> Back to Templates
+      </button>
 
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>

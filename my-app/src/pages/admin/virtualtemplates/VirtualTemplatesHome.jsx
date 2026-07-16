@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { LayoutTemplate, ChevronRight } from 'lucide-react'
+import { LayoutTemplate, ChevronRight, Lock } from 'lucide-react'
 
 export default function VirtualTemplatesHome() {
   const navigate = useNavigate()
@@ -11,11 +11,12 @@ export default function VirtualTemplatesHome() {
       description: 'Experimental UI Template',
       icon: LayoutTemplate,
       color: '#10b981', // green accent to differentiate
+      locked: true,
     },
     {
       id: 'template3',
-      name: 'Template 3',
-      description: 'Experimental UI Template 2',
+      name: 'Virtual Event Review',
+      description: 'Generate customized event review invitations',
       icon: LayoutTemplate,
       color: '#3b82f6', // blue accent to differentiate
     },
@@ -46,6 +47,7 @@ export default function VirtualTemplatesHome() {
           <div
             key={tpl.id}
             onClick={() => {
+              if (tpl.locked) return;
               const isAdminRoute = window.location.hash.startsWith('#/admin')
               navigate(isAdminRoute ? `/admin/virtual-events/${tpl.id}` : `/virtual-events/${tpl.id}`)
             }}
@@ -54,7 +56,8 @@ export default function VirtualTemplatesHome() {
               border: '1px solid var(--apple-border, #2a2a2a)',
               borderRadius: '16px',
               padding: '24px',
-              cursor: 'pointer',
+              cursor: tpl.locked ? 'not-allowed' : 'pointer',
+              opacity: tpl.locked ? 0.5 : 1,
               transition: 'all 0.2s ease',
               display: 'flex',
               flexDirection: 'column',
@@ -62,11 +65,13 @@ export default function VirtualTemplatesHome() {
               overflow: 'hidden'
             }}
             onMouseEnter={e => {
+              if (tpl.locked) return;
               e.currentTarget.style.transform = 'translateY(-2px)'
               e.currentTarget.style.borderColor = tpl.color
               e.currentTarget.style.boxShadow = `0 8px 24px ${tpl.color}15`
             }}
             onMouseLeave={e => {
+              if (tpl.locked) return;
               e.currentTarget.style.transform = 'none'
               e.currentTarget.style.borderColor = 'var(--apple-border, #2a2a2a)'
               e.currentTarget.style.boxShadow = 'none'
@@ -80,7 +85,7 @@ export default function VirtualTemplatesHome() {
               }}>
                 <tpl.icon size={20} />
               </div>
-              <ChevronRight size={18} color="#666" />
+              {tpl.locked ? <Lock size={18} color="#666" /> : <ChevronRight size={18} color="#666" />}
             </div>
             
             <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', color: 'var(--apple-text-primary, #fff)' }}>
