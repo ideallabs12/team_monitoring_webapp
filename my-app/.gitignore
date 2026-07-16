@@ -23,3 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 release/
+
+# Custom ignored files
+users_teams.xlsx
+users_teams_final.xlsx
+users_export.csv
+src/pages/admin/AdminExportData.jsx
+debug2.js
+debug_teams.js
+export_users.js
+export_users_excel.js

@@ -24,26 +24,30 @@ import {
   Sparkles,
   MapPin,
   Shield,
-  Megaphone
+  Megaphone,
+  Download,
+  Video
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { path: '/admin/home',      label: 'Dashboard',   icon: LayoutDashboard },
-  { path: '/admin/teams',     label: 'Teams',       icon: Network },
-  { path: '/admin/users',     label: 'Users',       icon: User },
-  { path: '/admin/dis',       label: 'DIS Reports', icon: FileText },
-  { path: '/admin/write-ups',    label: 'Review Write-Ups',      icon: Calendar },
-  { path: '/admin/reviews',   label: 'Review Approvals',     icon: Star },
-  { path: '/admin/revenue',   label: 'Revenue',     icon: DollarSign },
-  { path: '/admin/analytics', label: 'Analytics',   icon: TrendingUp },
-  { path: '/admin/ai-analytics', label: 'AI Analytics', icon: Sparkles },
-  { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },
-  { path: '/admin/milestones', label: 'Milestones',  icon: Crown },
-  { path: '/admin/auditlogs', label: 'Audit Logs',  icon: ClipboardList },
-  { path: '/admin/attendance', label: 'Attendance', icon: MapPin },
-  { path: '/admin/announcements', label: 'Announcements', icon: Megaphone },
-  { path: '/admin/settings',  label: 'Settings',    icon: Settings },
-  { path: '/admin/role-manager', label: 'Specials', icon: Shield },
+  { path: '/admin/home',        label: 'Dashboard',      icon: LayoutDashboard },
+  { path: '/admin/teams',       label: 'Teams',          icon: Network },
+  { path: '/admin/users',       label: 'Users',          icon: User },
+  { path: '/admin/dis',         label: 'DIS Reports',    icon: FileText },
+  { path: '/admin/write-ups',   label: 'Review Write-Ups', icon: Calendar },
+  { path: '/admin/reviews',     label: 'Review Approvals', icon: Star },
+  { path: '/admin/revenue',     label: 'Revenue',        icon: DollarSign },
+  { path: '/admin/analytics',   label: 'Analytics',      icon: TrendingUp },
+  { path: '/admin/ai-analytics',label: 'AI Analytics',   icon: Sparkles },
+  { path: '/admin/leaderboard', label: 'Leaderboard',    icon: Trophy },
+  { path: '/admin/milestones',  label: 'Milestones',     icon: Crown },
+  { path: '/admin/auditlogs',   label: 'Audit Logs',     icon: ClipboardList },
+  { path: '/admin/attendance',  label: 'Attendance',     icon: MapPin },
+  { path: '/admin/announcements',label: 'Announcements', icon: Megaphone },
+  { path: '/admin/export-data', label: 'Export Data',    icon: Download },
+  { path: '/admin/virtual-events', label: 'Virtual Events', icon: Video },
+  { path: '/admin/settings',    label: 'Settings',       icon: Settings },
+  { path: '/admin/role-manager',label: 'Specials',       icon: Shield },
 ]
 
 function RestrictedAccessView() {

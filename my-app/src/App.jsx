@@ -45,6 +45,10 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
 import AdminAttendance from './pages/admin/AdminAttendance'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
+import AdminExportData from './pages/admin/AdminExportData'
+import VirtualTemplatesHome from './pages/admin/virtualtemplates/VirtualTemplatesHome'
+import Template1 from './pages/admin/virtualtemplates/Template1'
+import Template2 from './pages/admin/virtualtemplates/Template2'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -398,6 +402,12 @@ function App() {
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="export-data" element={<AdminExportData />} />
+          <Route path="virtual-events">
+            <Route index element={<VirtualTemplatesHome />} />
+            <Route path="template1" element={<Template1 />} />
+            <Route path="template2" element={<Template2 />} />
+          </Route>
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

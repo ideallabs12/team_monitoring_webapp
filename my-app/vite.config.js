@@ -8,6 +8,9 @@ export default defineConfig({
   server: {
     historyApiFallback: true,
   },
+  optimizeDeps: {
+    include: ['html2pdf.js'],
+  },
 })
 
 // Trigger restart
