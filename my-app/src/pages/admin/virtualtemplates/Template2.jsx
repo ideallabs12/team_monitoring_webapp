@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Copy, Download, RefreshCw, Upload, Eye, Edit3,
@@ -316,6 +316,13 @@ export default function Template2() {
 
   const savedTheme = THEMES[savedThemeId] || THEMES.theme1
   const savedHtml = buildHtml(saved, savedTheme)
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => {
+    setSaved({ ...draft })
+    setSavedThemeId(draftThemeId)
+    setHasUnsaved(false)
+  }, [draft, draftThemeId])
 
   /* ── handlers ─────────────────────────────────────────────── */
   const handleChange = (key, value) => {

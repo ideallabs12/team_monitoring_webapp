@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Copy, Download, RefreshCw, Upload, Eye, Edit3,
@@ -500,6 +500,7 @@ const labelStyle = {
 export default function Template3() {
   const navigate = useNavigate()
   const isAdminRoute = window.location.hash.startsWith('#/admin')
+  const [showThemes, setShowThemes] = useState(false)
   const [draft, setDraft] = useState({ ...DEFAULT_FIELDS })
   const [saved, setSaved] = useState({ ...DEFAULT_FIELDS })
   const [draftThemeId, setDraftThemeId] = useState('theme_wyn')
@@ -515,6 +516,13 @@ export default function Template3() {
 
   const savedTheme = THEMES[savedThemeId] || THEMES.theme_wyn
   const savedHtml = buildHtml(saved, savedTheme)
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => {
+    setSaved({ ...draft })
+    setSavedThemeId(draftThemeId)
+    setHasUnsaved(false)
+  }, [draft, draftThemeId])
 
   /* ── handlers ─────────────────────────────────────────────── */
   const handleChange = (key, value) => {
@@ -825,7 +833,22 @@ export default function Template3() {
             {/* ── COLOR THEME PICKER ── */}
             {isAdminRoute && (
               <>
-                <div style={{ marginBottom: '28px' }}>
+                <div style={{ marginBottom: showThemes ? '16px' : '28px', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
+                  <input
+                    type="checkbox"
+                    id="showThemesToggle"
+                    checked={showThemes}
+                    onChange={(e) => setShowThemes(e.target.checked)}
+                    style={{ cursor: 'pointer', accentColor: '#e8a13a' }}
+                  />
+                  <label htmlFor="showThemesToggle" style={{ fontSize: '0.82rem', color: '#888', cursor: 'pointer', fontWeight: 600 }}>
+                    Override Theme (Admin Only)
+                  </label>
+                </div>
+
+                {showThemes && (
+                  <>
+                    <div style={{ marginBottom: '28px' }}>
                   <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                     <Palette size={12} /> Color Theme
                   </label>
@@ -871,11 +894,11 @@ export default function Template3() {
                     })}
                   </div>
                 </div>
-
                 <div style={{ height: '1px', background: '#2a2a2a', marginBottom: '28px' }} />
+                  </>
+                )}
               </>
             )}
-
             {/* ── Speaker Image ── */}
             <div style={{ marginBottom: '28px' }}>
               <label style={labelStyle}>Speaker Image</label>
