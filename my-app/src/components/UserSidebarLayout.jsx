@@ -17,7 +17,10 @@ import {
   Star,
   User as UserIcon,
   MapPin,
-  Megaphone
+  Megaphone,
+  LayoutTemplate,
+  Flag,
+  CheckSquare
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -107,7 +110,10 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
 
   const othersLinks = [
     { path: '/revenue-history', label: 'Revenue History', icon: History },
+    { path: '/milestones', label: 'Milestones', icon: Flag },
+    { path: '/attendance', label: 'Attendance', icon: CheckSquare },
     { path: '/reviews', label: 'Reviews', icon: Star },
+    { path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
   ]
   
   if (profile?.platform_role?.toLowerCase() === 'teamlead') {

@@ -10,15 +10,12 @@ export default function UserReviews({ user }) {
   
   // Submission Form State
   const [selectedEventId, setSelectedEventId] = useState('')
-  const [title, setTitle] = useState('')
-  const [context, setContext] = useState('')
-  const [penname, setPenname] = useState('')
+  const [speakerName, setSpeakerName] = useState('')
+  const [speakerEmail, setSpeakerEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
-  const [speakerName, setSpeakerName] = useState('')
-  const [speakerEmail, setSpeakerEmail] = useState('')
   
   // Edit State
   const [editingReviewId, setEditingReviewId] = useState(null)
@@ -59,7 +56,7 @@ export default function UserReviews({ user }) {
       // 3. Load user's reviews FIRST to filter out already reviewed events
       const { data: reviewsData } = await supabase
         .from('reviews')
-        .select('*, events(title, description, is_active, social_platform, social_url, collect_email)')
+        .select('*, events(title, description, is_active, social_platform, social_url, collect_email, allow_multiple_submissions)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         
@@ -82,7 +79,7 @@ export default function UserReviews({ user }) {
       const allActive = eventsData || []
       setActiveEvents(allActive)
       
-      const unreviewed = allActive.filter(ev => !reviewedEventIds.includes(ev.id))
+      const unreviewed = allActive.filter(ev => ev.allow_multiple_submissions || !reviewedEventIds.includes(ev.id))
       if (unreviewed.length > 0 && !editingReviewId) {
         setSelectedEventId(unreviewed[0].id)
       }
@@ -170,22 +167,23 @@ export default function UserReviews({ user }) {
           setSubmitting(false)
           return
         }
-        if (!speakerName.trim()) {
-          setMessage({ type: 'error', text: 'Please enter a speaker name.' })
-          setSubmitting(false)
-          return
-        }
+      }
+
+      if (!speakerName.trim()) {
+        setMessage({ type: 'error', text: 'Please enter a speaker name.' })
+        setSubmitting(false)
+        return
       }
 
       if (editingReviewId) {
         const updateData = { 
-          title, 
-          context: eventDetails?.collect_email ? null : context, 
-          penname: eventDetails?.collect_email ? null : penname, 
+          title: 'Review Submission', 
+          context: null, 
+          penname: null, 
           status: 'pending', 
           admin_feedback: null, 
           updated_at: new Date().toISOString(),
-          speaker_name: eventDetails?.collect_email ? speakerName : null,
+          speaker_name: speakerName,
           speaker_email: eventDetails?.collect_email ? speakerEmail : null
         };
         if (uploadedPhotoUrl) updateData.photo_url = uploadedPhotoUrl;
@@ -202,10 +200,10 @@ export default function UserReviews({ user }) {
           event_id: selectedEventId,
           user_id: user.id,
           team_id: profile?.team_id,
-          title,
-          context: eventDetails?.collect_email ? null : context,
-          penname: eventDetails?.collect_email ? null : penname,
-          speaker_name: eventDetails?.collect_email ? speakerName : null,
+          title: 'Review Submission',
+          context: null,
+          penname: null,
+          speaker_name: speakerName,
           speaker_email: eventDetails?.collect_email ? speakerEmail : null
         };
         if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
@@ -219,9 +217,6 @@ export default function UserReviews({ user }) {
       }
       
       // Reset form
-      setTitle('')
-      setContext('')
-      setPenname('')
       setSpeakerName('')
       setSpeakerEmail('')
       setPhotoFile(null)
@@ -270,9 +265,6 @@ export default function UserReviews({ user }) {
   const handleEditClick = (review) => {
     setEditingReviewId(review.id)
     setSelectedEventId(review.event_id)
-    setTitle(review.title)
-    setContext(review.context)
-    setPenname(review.penname || '')
     setSpeakerName(review.speaker_name || '')
     setSpeakerEmail(review.speaker_email || '')
     setActiveTab('write')
@@ -281,9 +273,6 @@ export default function UserReviews({ user }) {
 
   const handleCancelEdit = () => {
     setEditingReviewId(null)
-    setTitle('')
-    setContext('')
-    setPenname('')
     setSpeakerName('')
     setSpeakerEmail('')
     setPhotoFile(null)
@@ -291,7 +280,7 @@ export default function UserReviews({ user }) {
     
     // Reset selection to the first unreviewed event if available
     const reviewedEventIds = reviews.map(r => r.event_id)
-    const unreviewed = activeEvents.filter(ev => !reviewedEventIds.includes(ev.id))
+    const unreviewed = activeEvents.filter(ev => ev.allow_multiple_submissions || !reviewedEventIds.includes(ev.id))
     if (unreviewed.length > 0) {
       setSelectedEventId(unreviewed[0].id)
     } else {
@@ -309,7 +298,7 @@ export default function UserReviews({ user }) {
   }
 
   const reviewedEventIds = reviews.map(r => r.event_id)
-  const unreviewedEvents = activeEvents.filter(ev => !reviewedEventIds.includes(ev.id))
+  const unreviewedEvents = activeEvents.filter(ev => ev.allow_multiple_submissions || !reviewedEventIds.includes(ev.id))
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0]
@@ -323,11 +312,7 @@ export default function UserReviews({ user }) {
     }
   }
 
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text)
-      .then(() => alert("Review copied to clipboard!"))
-      .catch(() => alert("Failed to copy."))
-  }
+
 
   const currentEventDetails = editingReviewId 
     ? reviews.find(r => r.id === editingReviewId)?.events
@@ -432,73 +417,29 @@ export default function UserReviews({ user }) {
               </div>
             )}
 
-            {!isEmailCollection && (
-              <div>
-                <label className="apple-form-label">Pen Name</label>
-                <input
-                  type="text"
-                  className="apple-form-control"
-                  placeholder="Name to display on your review..."
-                  required
-                  value={penname}
-                  onChange={(e) => setPenname(e.target.value)}
-                />
-              </div>
-            )}
-
             <div>
-              <label className="apple-form-label">Review Title</label>
+              <label className="apple-form-label">Speaker Name</label>
               <input
                 type="text"
                 className="apple-form-control"
-                placeholder="Summarize your review..."
+                placeholder="Enter speaker name"
                 required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onPaste={(e) => { if (!allowPaste) e.preventDefault() }} // Anti-paste feature
+                value={speakerName}
+                onChange={(e) => setSpeakerName(e.target.value)}
               />
             </div>
 
-            {!isEmailCollection && (
-              <div>
-                <label className="apple-form-label">Review Context</label>
-                <textarea
-                  className="apple-form-control"
-                  placeholder="Write your detailed review here..."
-                  required
-                  rows={6}
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                  onPaste={(e) => { if (!allowPaste) e.preventDefault() }} // Anti-paste feature
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-            )}
-            
             {isEmailCollection && (
-              <div className="apple-two-col-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <div>
-                  <label className="apple-form-label">Speaker Name</label>
-                  <input
-                    type="text"
-                    className="apple-form-control"
-                    placeholder="Enter speaker name"
-                    required
-                    value={speakerName}
-                    onChange={(e) => setSpeakerName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="apple-form-label">Speaker Email</label>
-                  <input
-                    type="email"
-                    className="apple-form-control"
-                    placeholder="Enter valid email"
-                    required
-                    value={speakerEmail}
-                    onChange={(e) => setSpeakerEmail(e.target.value)}
-                  />
-                </div>
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                <label className="apple-form-label">Speaker Email</label>
+                <input
+                  type="email"
+                  className="apple-form-control"
+                  placeholder="Enter valid email"
+                  required
+                  value={speakerEmail}
+                  onChange={(e) => setSpeakerEmail(e.target.value)}
+                />
               </div>
             )}
             
@@ -524,7 +465,7 @@ export default function UserReviews({ user }) {
                   Cancel Edit
                 </button>
               )}
-              <button type="submit" disabled={submitting || !title.trim() || (!isEmailCollection && !context.trim()) || (!isEmailCollection && !penname.trim())} className="apple-btn apple-btn-primary">
+              <button type="submit" disabled={submitting || !speakerName.trim()} className="apple-btn apple-btn-primary">
                 {submitting ? 'Submitting...' : editingReviewId ? 'Update Review' : 'Submit Review'}
               </button>
             </div>
@@ -588,17 +529,11 @@ export default function UserReviews({ user }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '700' }}>{review.title}</h3>
+                  <h3 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '700' }}>Review Submission</h3>
                   <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Star size={12} /> {review.events?.title || 'Unknown Event'}
                     <span style={{ margin: '0 4px' }}>•</span>
                     {new Date(review.created_at).toLocaleDateString()}
-                    {review.penname && (
-                      <>
-                        <span style={{ margin: '0 4px' }}>•</span>
-                        by {review.penname}
-                      </>
-                    )}
                   </div>
                 </div>
 
@@ -641,12 +576,6 @@ export default function UserReviews({ user }) {
               </div>
 
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)', marginBottom: '16px' }}>
-                {review.title && <h4 style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '1rem', fontWeight: '600' }}>{review.title}</h4>}
-                {review.context && (
-                  <p style={{ margin: 0, color: 'var(--apple-text-primary)', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                    {review.context}
-                  </p>
-                )}
                 
                 {(review.speaker_name || review.speaker_email) && (
                   <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.85rem' }}>
@@ -673,14 +602,8 @@ export default function UserReviews({ user }) {
                 </div>
               )}
 
-              {/* Actions - Always visible for Copy, conditional for others */}
+              {/* Actions - conditional for others */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--apple-border)', paddingTop: '16px', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={() => handleCopy(review.context)}
-                  className="apple-btn apple-btn-secondary" style={{ background: 'transparent', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <Copy size={14} /> Copy Context
-                </button>
                 
                 {(review.status === 'pending' || review.status === 'rejected') && (
                   <button 

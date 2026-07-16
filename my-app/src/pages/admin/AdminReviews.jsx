@@ -227,7 +227,6 @@ export default function AdminReviews() {
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: '700', color: 'var(--apple-text-primary, #f8fafc)', fontSize: '1rem', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {review.profiles?.first_name} {review.profiles?.last_name}
-                      {review.penname && <span style={{ color: 'var(--apple-text-secondary, #94a3b8)', fontSize: '0.82rem', fontWeight: '400', marginLeft: '8px' }}>(Pen Name: {review.penname})</span>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem' }}>
                       <span style={{ border: '1px solid rgba(0,113,227,0.3)', background: 'rgba(0,113,227,0.1)', color: 'var(--apple-accent-blue, #0071e3)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700' }}>
@@ -261,7 +260,7 @@ export default function AdminReviews() {
                       {review.events?.title || 'General Review'}
                     </div>
                     <p style={{ margin: 0, color: 'var(--apple-text-secondary, #94a3b8)', fontSize: '0.84rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {review.context}
+                      Review Submission
                     </p>
                   </div>
                 </div>
@@ -304,11 +303,6 @@ export default function AdminReviews() {
                   <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
                     ({selectedReview.profiles?.email})
                   </span>
-                  {selectedReview.penname && (
-                    <span className="apple-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem' }}>
-                      Pen Name: {selectedReview.penname}
-                    </span>
-                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.8rem' }}>
                   <span className="apple-badge apple-badge-blue">{selectedReview.teams?.name || 'No Team'}</span>
@@ -329,13 +323,21 @@ export default function AdminReviews() {
 
             {/* Review Content */}
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <h4 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '600' }}>{selectedReview.title}</h4>
-              <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                {selectedReview.context}
-              </p>
+              <h4 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '600' }}>Review Submission</h4>
+              
+              {(selectedReview.speaker_name || selectedReview.speaker_email) && (
+                <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.85rem' }}>
+                  <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>Speaker Information</div>
+                  {selectedReview.speaker_name && <div style={{ color: '#fff', marginBottom: '2px' }}><strong>Name:</strong> {selectedReview.speaker_name}</div>}
+                  {selectedReview.speaker_email && <div style={{ color: '#fff', marginBottom: '2px' }}><strong>Email:</strong> {selectedReview.speaker_email}</div>}
+                </div>
+              )}
+
               {selectedReview.photo_url && (
                 <div style={{ marginTop: '20px' }}>
-                  <img src={selectedReview.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', border: '1px solid var(--apple-border)' }} />
+                  <a href={selectedReview.photo_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', cursor: 'zoom-in' }} title="Click to view full image">
+                    <img src={selectedReview.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', border: '1px solid var(--apple-border)', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'} />
+                  </a>
                 </div>
               )}
             </div>

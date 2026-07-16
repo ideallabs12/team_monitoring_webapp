@@ -1,23 +1,23 @@
 import { useNavigate } from 'react-router-dom'
-import { LayoutTemplate, ChevronRight, Mail } from 'lucide-react'
+import { LayoutTemplate, ChevronRight } from 'lucide-react'
 
 export default function VirtualTemplatesHome() {
   const navigate = useNavigate()
 
   const templates = [
     {
-      id: 'template1',
-      name: 'Template 1',
-      description: 'One Minute to Your Next Speaking Opportunity',
-      icon: Mail,
-      color: '#e8a13a',
-    },
-    {
       id: 'template2',
       name: 'Template 2',
       description: 'Experimental UI Template',
       icon: LayoutTemplate,
       color: '#10b981', // green accent to differentiate
+    },
+    {
+      id: 'template3',
+      name: 'Template 3',
+      description: 'Experimental UI Template 2',
+      icon: LayoutTemplate,
+      color: '#3b82f6', // blue accent to differentiate
     },
     // Future templates can be added here
   ]
@@ -45,7 +45,10 @@ export default function VirtualTemplatesHome() {
         {templates.map((tpl) => (
           <div
             key={tpl.id}
-            onClick={() => navigate(`/admin/virtual-events/${tpl.id}`)}
+            onClick={() => {
+              const isAdminRoute = window.location.hash.startsWith('#/admin')
+              navigate(isAdminRoute ? `/admin/virtual-events/${tpl.id}` : `/virtual-events/${tpl.id}`)
+            }}
             style={{
               background: 'var(--card-bg, #1a1a1a)',
               border: '1px solid var(--apple-border, #2a2a2a)',

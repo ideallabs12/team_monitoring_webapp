@@ -47,8 +47,8 @@ import AdminAttendance from './pages/admin/AdminAttendance'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminExportData from './pages/admin/AdminExportData'
 import VirtualTemplatesHome from './pages/admin/virtualtemplates/VirtualTemplatesHome'
-import Template1 from './pages/admin/virtualtemplates/Template1'
 import Template2 from './pages/admin/virtualtemplates/Template2'
+import Template3 from './pages/admin/virtualtemplates/Template3'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -379,6 +379,9 @@ function App() {
           <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
+          <Route path="/virtual-events" element={hasProfile && !isAdmin ? <VirtualTemplatesHome /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/template2" element={hasProfile && !isAdmin ? <Template2 /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
         {/* Admin Routes */}
@@ -405,8 +408,8 @@ function App() {
           <Route path="export-data" element={<AdminExportData />} />
           <Route path="virtual-events">
             <Route index element={<VirtualTemplatesHome />} />
-            <Route path="template1" element={<Template1 />} />
             <Route path="template2" element={<Template2 />} />
+            <Route path="template3" element={<Template3 />} />
           </Route>
           <Route path="settings" element={<AdminSettings />} />
         </Route>

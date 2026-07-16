@@ -11,12 +11,12 @@ import {
    To add a new theme in future, add an entry to this object.
    Every theme must supply ALL the keys below.
    ════════════════════════════════════════════════════════════ */
-export const THEMES = {
+const THEMES = {
   theme1: {
     id: 'theme1',
     name: 'Theme 1',
     label: 'Amber Dark',
-    preview: ['#241a14', '#e8a13a', '#c9beb2'],  // swatch dots
+    preview: ['#241a14', '#e8a13a', '#c9beb2'],
     bgOuter: '#1c1410',
     bgCard: '#241a14',
     bgSection: '#2e2119',
@@ -52,25 +52,216 @@ export const THEMES = {
     logoFilter: 'drop-shadow(0 2px 10px rgba(26,92,42,0.3))',
     linkedinBg: '#0A66C2',
   },
-  // ─── Add future themes here ───────────────────────────────
+  theme_wyn: {
+    id: 'theme_wyn',
+    name: 'WYN Theme',
+    label: 'Navy Gold',
+    preview: ['#00256B', '#FACC15', '#FFFFFF'],
+    bgOuter: '#051124',
+    bgCard: '#00256B',
+    bgSection: '#083382',
+    borderMuted: '#1A499E',
+    borderAccent: '#FACC15',
+    accent: '#FACC15',
+    accentText: '#00256B',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#D1D5DB',
+    textMuted: '#9CA3AF',
+    textLabel: '#E5E7EB',
+    accentGlow: 'rgba(250,204,21,0.18)',
+    logoFilter: 'drop-shadow(0 0 10px rgba(250,204,21,0.3))',
+    linkedinBg: '#0A66C2',
+  },
+  theme_icon: {
+    id: 'theme_icon',
+    name: 'ICON Theme',
+    label: 'Ice Blue',
+    preview: ['#F0F7F9', '#002C74', '#FFFFFF'],
+    bgOuter: '#E2EEF3',
+    bgCard: '#F0F7F9',
+    bgSection: '#FFFFFF',
+    borderMuted: '#C2DFE9',
+    borderAccent: '#002C74',
+    accent: '#002C74',
+    accentText: '#FFFFFF',
+    textPrimary: '#0F172A',
+    textSecondary: '#334155',
+    textMuted: '#64748B',
+    textLabel: '#475569',
+    accentGlow: 'rgba(0,44,116,0.18)',
+    logoFilter: 'drop-shadow(0 0 10px rgba(0,44,116,0.1))',
+    linkedinBg: '#0A66C2',
+  },
+  theme_idias: {
+    id: 'theme_idias',
+    name: 'iDIAS Theme',
+    label: 'White Orange',
+    preview: ['#FFFFFF', '#FE6102', '#111827'],
+    bgOuter: '#F3F4F6',
+    bgCard: '#FFFFFF',
+    bgSection: '#FFF4ED',
+    borderMuted: '#E5E7EB',
+    borderAccent: '#FE6102',
+    accent: '#FE6102',
+    accentText: '#FFFFFF',
+    textPrimary: '#111827',
+    textSecondary: '#4B5563',
+    textMuted: '#6B7280',
+    textLabel: '#374151',
+    accentGlow: 'rgba(254,97,2,0.15)',
+    logoFilter: 'drop-shadow(0 2px 8px rgba(254,97,2,0.15))',
+    linkedinBg: '#0A66C2',
+  },
+  theme_prosummits: {
+    id: 'theme_prosummits',
+    name: 'PROSUMMITS Theme',
+    label: 'Rainbow Light',
+    preview: ['#FFFFFF', '#FF3366', '#3399FF'],
+    bgOuter: '#F3F4F6',
+    bgCard: '#FFFFFF',
+    bgSection: '#F9FAFB',
+    borderMuted: '#E5E7EB',
+    borderAccent: '#FF3366',
+    accent: '#FF3366',
+    accentBg: 'linear-gradient(135deg, #FF0000, #FF7F00, #FACC15, #10B981, #3B82F6, #8B5CF6)',
+    accentText: '#FFFFFF',
+    textPrimary: '#111827',
+    textSecondary: '#4B5563',
+    textMuted: '#6B7280',
+    textLabel: '#374151',
+    accentGlow: 'rgba(255,51,102,0.15)',
+    logoFilter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.1))',
+    linkedinBg: '#0A66C2',
+  },
+  theme_wynxtalks: {
+    id: 'theme_wynxtalks',
+    name: 'WYNxtalks Theme',
+    label: 'Modern Monochrome',
+    preview: ['#F5F5F5', '#000000', '#FFFFFF'],
+    bgOuter: '#E5E7EB',
+    bgCard: '#F9FAFB',
+    bgSection: '#FFFFFF',
+    borderMuted: '#D1D5DB',
+    borderAccent: '#000000',
+    accent: '#000000',
+    accentText: '#FFFFFF',
+    textPrimary: '#111827',
+    textSecondary: '#4B5563',
+    textMuted: '#6B7280',
+    textLabel: '#374151',
+    accentGlow: 'rgba(0,0,0,0.1)',
+    logoFilter: 'drop-shadow(0 0 10px rgba(0,0,0,0.1))',
+    linkedinBg: '#0A66C2',
+  },
+  theme_next: {
+    id: 'theme_next',
+    name: 'NEXT Theme',
+    label: 'Sky Cyber',
+    preview: ['#001E3C', '#279DEE', '#E7F2FF'],
+    bgOuter: '#0A1929',
+    bgCard: '#001E3C',
+    bgSection: '#072C54',
+    borderMuted: '#134074',
+    borderAccent: '#279DEE',
+    accent: '#279DEE',
+    accentText: '#FFFFFF',
+    textPrimary: '#F0F7FF',
+    textSecondary: '#99CCF3',
+    textMuted: '#66B2EC',
+    textLabel: '#B3D9F8',
+    accentGlow: 'rgba(39,157,238,0.25)',
+    logoFilter: 'drop-shadow(0 0 10px rgba(39,157,238,0.3))',
+    linkedinBg: '#0A66C2',
+  },
+  theme_voice: {
+    id: 'theme_voice',
+    name: 'VOICE Theme',
+    label: 'Royal Purple',
+    preview: ['#FFFFFF', '#270275', '#B6B6B7'],
+    bgOuter: '#EBE9F1',
+    bgCard: '#FFFFFF',
+    bgSection: '#F8F7FA',
+    borderMuted: '#DCD8E7',
+    borderAccent: '#270275',
+    accent: '#270275',
+    accentText: '#FFFFFF',
+    textPrimary: '#1E1B29',
+    textSecondary: '#4F4A61',
+    textMuted: '#7A758F',
+    textLabel: '#39344A',
+    accentGlow: 'rgba(39,2,117,0.15)',
+    logoFilter: 'drop-shadow(0 0 10px rgba(39,2,117,0.15))',
+    linkedinBg: '#0A66C2',
+  }
 }
+
+const COMPANIES = [
+  {
+    id: 'WYN',
+    name: 'WYN conferences',
+    handle: '@WYNconferences',
+    website: 'www.wynconferences.com',
+    linkedin: 'https://www.linkedin.com/company/wyn-global-conferences/posts/?feedView=all',
+    logo: '/company_logos/WYN.jpg'
+  },
+  {
+    id: 'ICON',
+    name: 'ICON conferences',
+    handle: '@ICONconferences',
+    website: 'www.iconconferences.org',
+    linkedin: 'https://www.linkedin.com/company/icon-global-conferences/',
+    logo: '/company_logos/ICON.jpg'
+  },
+  {
+    id: 'IDIAS',
+    name: 'iDIAS conferences',
+    handle: '@iDIASconferences',
+    website: 'www.idias.org',
+    linkedin: 'https://www.linkedin.com/company/idias-global-conferences/',
+    logo: '/company_logos/IDIAS.jpg'
+  },
+  {
+    id: 'PROSUMMITS',
+    name: 'PROSUMMITS',
+    handle: '@PROSUMMITS',
+    website: 'www.prosummits.org',
+    linkedin: 'https://www.linkedin.com/company/prosummits-hybrid-conferences/posts/?feedView=all',
+    logo: '/company_logos/PROSUMMITS.jpg'
+  },
+  {
+    id: 'WYNXTALKS',
+    name: 'WYNxtalks',
+    handle: '@WYNxtalks',
+    website: 'www.wynxtalks.com',
+    linkedin: 'https://www.linkedin.com/company/wynxtalks/posts/?feedView=all',
+    logo: '/company_logos/WYNXTALKS.jpg'
+  },
+  {
+    id: 'NEXT',
+    name: 'NEXT CONFERENCES',
+    handle: '@NEXTCONFERENCES',
+    website: 'www.nextconferences.org',
+    linkedin: 'https://www.linkedin.com/company/next-premier-conferences/posts/?feedView=all',
+    logo: '/company_logos/NEXT.jpg'
+  },
+  {
+    id: 'VOICE',
+    name: 'VOICETALKS',
+    handle: '@VOICETALKS',
+    website: 'www.voicetalks.org',
+    linkedin: 'https://www.linkedin.com/company/voicetalks/',
+    logo: '/company_logos/VOICE.jpg'
+  }
+]
 
 /* ════════════════════════════════════════════════════════════
    DEFAULT FIELD VALUES
    ════════════════════════════════════════════════════════════ */
 const DEFAULT_FIELDS = {
-  conferenceTag: 'W Y N   C O N F E R E N C E S',
-  headline: '🎙️ One Minute to Your Next Speaking Opportunity.',
+  companyId: 'WYN',
   speakerName: 'Dr. Emma Abalogun',
   focusAreas: 'Leadership, Health, Global Impact',
   peerScore: '81.2%',
-  linkedinHandle: '@WynConferences',
-  companyName: 'Women Leadership & Women Health Global Conference',
-  orgName: 'WYN Conferences',
-  websiteUrl: 'WWW.WYNCONFERENCES.COM',
-  quoteMain: 'SHARE TODAY. INSPIRE TOMORROW.',
-  quoteAccent: 'SPEAK AGAIN.',
-  footerNote: 'Selected testimonials will also be featured on the WYN Conferences website and official social media channels.',
   speakerImageUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
 }
 
@@ -78,7 +269,9 @@ const DEFAULT_FIELDS = {
    HTML BUILDER  — all colors driven by `theme`
    ════════════════════════════════════════════════════════════ */
 function buildHtml(fields, theme) {
-  const t = theme || THEMES.theme1
+  const t = theme || THEMES.theme_wyn
+  const company = COMPANIES.find(c => c.id === fields.companyId) || COMPANIES[0]
+  
   return `<!DOCTYPE html>
 <html style="height:100%;">
 <head>
@@ -90,27 +283,27 @@ function buildHtml(fields, theme) {
 <table id="pdf-page" role="presentation" width="800" align="center" cellpadding="0" cellspacing="0" style="background-color:${t.bgCard}; width:800px; height:1131px; margin:0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
 <tr><td align="center" style="vertical-align:top; height:100%; padding:0;">
 <table role="presentation" width="100%" height="100%" cellpadding="0" cellspacing="0" style="background-color:${t.bgCard}; width:100%; height:100%;">
+
   <!-- Header -->
   <tr>
-    <td style="background-color:${t.accent}; padding:28px 40px 24px 40px; border-bottom:1px solid ${t.borderMuted}; position:relative; overflow:hidden;">
+    <td style="background:${t.accentBg || t.accent}; padding:28px 40px 24px 40px; border-bottom:1px solid ${t.borderMuted}; position:relative; overflow:hidden;">
       <div style="position:absolute; top:-50px; right:-50px; width:170px; height:170px; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);"></div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <!-- Left: Badge + Headline -->
-          <td valign="middle" style="padding-right:16px;">
+          <td valign="middle" style="padding-right:16px; width: 75%;">
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
               <tr>
                 <td style="background-color:${t.accentText}; border-radius:16px; padding:4px 14px;">
-                  <p style="margin:0; font-size:10px; font-weight:bold; letter-spacing:2.5px; color:${t.accent}; font-family: Arial, sans-serif;">${fields.conferenceTag}</p>
+                  <p style="margin:0; font-size:11px; font-weight:bold; letter-spacing:2.5px; color:${t.accent}; font-family: Arial, sans-serif;">${company.name.split('').join(' ').toUpperCase()}</p>
                 </td>
               </tr>
             </table>
-            <p style="margin:0; font-size:26px; font-weight:bold; line-height:1.25; color:${t.accentText}; font-family: Arial, sans-serif;">${fields.headline}</p>
+            <p style="margin:0; font-size:28px; font-weight:bold; line-height:1.25; color:${t.accentText}; font-family: Arial, sans-serif;">🎙️ One Minute to Your Next Speaking Opportunity.</p>
           </td>
           <!-- Right: Logo -->
-          <td width="88" valign="middle" align="center" style="padding-left:8px;">
-            <img src="./OWW Forum Logo.png" alt="One World Women Forum" width="80" height="80"
-              style="display:block; opacity:0.95; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));">
+          <td valign="middle" align="right" style="width: 25%;">
+            <img src="${company.logo}" style="width: 130px; object-fit:contain; border-radius: 8px; background-color: #fff; padding: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);" alt="Logo">
           </td>
         </tr>
       </table>
@@ -120,22 +313,22 @@ function buildHtml(fields, theme) {
   <!-- Score Card -->
   <tr>
     <td style="padding:32px 40px 10px 40px;">
-      <p style="margin:0 0 12px 0; font-size:15px; font-weight:bold; color:${t.accent}; font-family: Arial, sans-serif;">🎉 Congratulations ${fields.speakerName},</p>
+      <p style="margin:0 0 12px 0; font-size:16.5px; font-weight:bold; color:${t.accent}; font-family: Arial, sans-serif;">🎉 Congratulations ${fields.speakerName},</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${t.bgSection}; border:1px solid ${t.borderMuted}; border-radius:10px;">
         <tr>
           <td width="60" style="padding:12px 0 12px 14px; border-right:1px solid ${t.borderMuted};">
             <img src="${fields.speakerImageUrl}" width="46" height="46" alt="Speaker" style="border-radius:50%; display:block; border:2px solid ${t.accent};">
           </td>
           <td style="padding:12px 14px; border-right:1px solid ${t.borderMuted};">
-            <p style="margin:0 0 3px 0; font-size:10px; font-weight:bold; letter-spacing:1px; color:${t.textLabel}; font-family: Arial, sans-serif;">KEY FOCUS AREAS</p>
-            <p style="margin:0; font-size:12.5px; color:${t.textSecondary}; font-family: Arial, sans-serif;">${fields.focusAreas}</p>
+            <p style="margin:0 0 3px 0; font-size:11px; font-weight:bold; letter-spacing:1px; color:${t.textLabel}; font-family: Arial, sans-serif;">KEY FOCUS AREAS</p>
+            <p style="margin:0; font-size:13.5px; color:${t.textSecondary}; font-family: Arial, sans-serif;">${fields.focusAreas}</p>
           </td>
           <td width="120" align="center" style="padding:0;">
-            <table role="presentation" width="100%" height="100%" cellpadding="0" cellspacing="0" style="background-color:${t.accent}; height:100%;">
+            <table role="presentation" width="100%" height="100%" cellpadding="0" cellspacing="0" style="background:${t.accentBg || t.accent}; height:100%;">
               <tr>
                 <td align="center" style="padding:14px 10px;">
-                  <p style="margin:0 0 2px 0; font-size:9.5px; font-weight:bold; letter-spacing:1px; color:${t.accentText}; font-family: Arial, sans-serif;">PEER SCORE</p>
-                  <p style="margin:0; font-size:20px; font-weight:bold; color:${t.accentText}; font-family: Arial, sans-serif;">${fields.peerScore}</p>
+                  <p style="margin:0 0 2px 0; font-size:10.5px; font-weight:bold; letter-spacing:1px; color:${t.accentText}; font-family: Arial, sans-serif;">PEER SCORE</p>
+                  <p style="margin:0; font-size:22px; font-weight:bold; color:${t.accentText}; font-family: Arial, sans-serif;">${fields.peerScore}</p>
                 </td>
               </tr>
             </table>
@@ -148,28 +341,47 @@ function buildHtml(fields, theme) {
   <!-- Intro paragraph -->
   <tr>
     <td style="padding:24px 40px 10px 40px;">
-      <p style="margin:0; font-size:15px; line-height:1.5; color:${t.textPrimary}; font-family: Arial, sans-serif;">
-        Convert your virtual talk into a <b style="color:${t.accent};">complimentary in-person speaking opportunity</b> by sharing a 1-minute testimonial on <span style="color:${t.accent}; text-decoration:underline;">LinkedIn</span>. It also helps increase your peer score.
+      <p style="margin:0; font-size:16px; line-height:1.5; color:${t.textPrimary}; font-family: Arial, sans-serif;">
+        Convert your virtual talk into a <b style="color:${t.accent};">complimentary in-person speaking opportunity</b> by sharing a 1-minute testimonial on <span style="color:${t.accent}; text-decoration:underline;">LinkedIn</span>. It also helps increase your <b style="color:${t.accent};">peer score</b>.
       </p>
     </td>
   </tr>
 
-  <!-- LinkedIn Box -->
+  <!-- Combined Action Box -->
   <tr>
     <td style="padding:28px 40px 12px 40px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${t.bgSection}; border:1px solid ${t.borderAccent}; border-radius:12px;">
+        
+        <!-- Top Part: Keynote Speaker Invitation -->
         <tr>
-          <td style="padding:20px 26px;">
-            <p style="margin:0 0 10px 0; font-size:13px; font-weight:bold; letter-spacing:2px; color:${t.accent}; font-family: Arial, sans-serif;">IT TAKES LESS THAN 1 MINUTE!</p>
+          <td style="padding:20px 26px 16px 26px;">
+            <p style="margin:0 0 8px 0; font-size:14px; font-weight:bold; letter-spacing:2px; color:${t.accent}; font-family: Arial, sans-serif;">KEYNOTE SPEAKER INVITATION</p>
+            <p style="margin:0; font-size:14px; color:${t.textSecondary}; line-height:1.55; font-family: Arial, sans-serif;">Share your testimonial and get a chance to be nominated as an in-person Keynote Speaker — includes complimentary 3-night stay and other speaker benefits.</p>
+          </td>
+        </tr>
+        
+        <!-- Divider -->
+        <tr>
+          <td style="padding: 0 26px;">
+            <div style="height:1px; background-color:${t.borderMuted};"></div>
+          </td>
+        </tr>
+
+        <!-- Bottom Part: LinkedIn CTA -->
+        <tr>
+          <td style="padding:16px 26px 20px 26px;">
+            <p style="margin:0 0 10px 0; font-size:14px; font-weight:bold; letter-spacing:2px; color:${t.accent}; font-family: Arial, sans-serif;">IT TAKES LESS THAN 1 MINUTE!</p>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td valign="middle" style="font-size:13px; line-height:1.55; color:${t.textSecondary}; font-family: Arial, sans-serif;">
-                  Post on LinkedIn — a short write-up or a 30-second video — and tag <b style="color:${t.textPrimary};">${fields.linkedinHandle}</b>
+                <td valign="middle" style="font-size:14px; line-height:1.55; color:${t.textSecondary}; font-family: Arial, sans-serif;">
+                  Post on LinkedIn — a short write-up or a 30-second video — and tag <b style="color:${t.textPrimary};">${company.handle}</b>
                 </td>
-                <td width="52" valign="middle" align="right">
+                <td width="130" valign="middle" align="right">
                   <table role="presentation" cellpadding="0" cellspacing="0">
                     <tr>
-                      <td align="center" style="width:40px; height:40px; background-color:${t.linkedinBg}; border-radius:8px; font-size:19px; font-weight:bold; color:#ffffff; font-family: Arial, sans-serif;">in</td>
+                      <td id="linkedin-btn" align="center" style="background-color:${t.linkedinBg}; border-radius:8px; padding: 10px 14px; font-size:14px; font-weight:bold; color:#ffffff; font-family: Arial, sans-serif;">
+                        <a href="${company.linkedin}" target="_blank" style="color:#ffffff; text-decoration:none; display:block;">Go to LinkedIn</a>
+                      </td>
                     </tr>
                   </table>
                 </td>
@@ -181,27 +393,13 @@ function buildHtml(fields, theme) {
     </td>
   </tr>
 
-  <!-- Keynote Box -->
-  <tr>
-    <td style="padding:24px 40px 12px 40px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${t.bgSection}; border:1px solid ${t.borderAccent}; border-radius:12px;">
-        <tr>
-          <td style="padding:20px 26px;">
-            <p style="margin:0 0 8px 0; font-size:13px; font-weight:bold; letter-spacing:2px; color:${t.accent}; font-family: Arial, sans-serif;">KEYNOTE SPEAKER INVITATION</p>
-            <p style="margin:0; font-size:13px; color:${t.textSecondary}; line-height:1.55; font-family: Arial, sans-serif;">Share your testimonial and get a chance to be nominated as an in-person Keynote Speaker — includes complimentary 3-night stay and other speaker benefits.</p>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-
   <!-- Quote -->
   <tr>
     <td style="padding:32px 40px 14px 40px; text-align:center;">
-      <p style="margin:0; font-size:19px; font-weight:bold; line-height:1.4; color:${t.textPrimary}; font-family: Arial, sans-serif;">
-        <span style="color:${t.accent};">&#8220;</span>${fields.quoteMain}<br><span style="color:${t.accent};">${fields.quoteAccent}</span><span style="color:${t.accent};">&#8221;</span>
+      <p style="margin:0; font-size:21px; font-weight:bold; line-height:1.4; color:${t.textPrimary}; font-family: Arial, sans-serif;">
+        <span style="color:${t.accent};">&#8220;</span>SHARE TODAY. INSPIRE TOMORROW.<br><span style="color:${t.accent};">SPEAK AGAIN.</span><span style="color:${t.accent};">&#8221;</span>
       </p>
-      <p style="margin:10px 0 0 0; font-size:11px; color:${t.textMuted}; font-family: Arial, sans-serif;">${fields.footerNote}</p>
+      <p style="margin:10px 0 0 0; font-size:12px; color:${t.textMuted}; font-family: Arial, sans-serif;">Selected testimonials will also be featured on the ${fields.companyName} website and official social media channels.</p>
     </td>
   </tr>
 
@@ -210,19 +408,54 @@ function buildHtml(fields, theme) {
     <td style="height: 100%;"></td>
   </tr>
 
+  <!-- 3-Step Timeline -->
+  <tr>
+    <td style="padding: 10px 40px 30px 40px;">
+      <p style="margin:0 0 24px 0; font-size:15px; font-weight:bold; letter-spacing:1px; color:${t.accent}; text-align:center; font-family: Arial, sans-serif;">INSTRUCTIONS</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          
+          <!-- Step 1 -->
+          <td width="33.33%" valign="top" align="center" style="padding: 0 12px; position:relative;">
+            <div style="position:absolute; top: 17px; left: 50%; width: 100%; height: 2px; background-color: ${t.borderMuted}; z-index: 1;"></div>
+            <div style="width:36px; height:36px; border-radius:50%; background:${t.accentBg || t.accent}; color:${t.accentText}; text-align:center; line-height:36px; font-size:15px; font-weight:bold; font-family: Arial, sans-serif; margin: 0 auto 12px auto; position: relative; z-index: 2;">1</div>
+            <p style="margin:0 0 6px 0; font-size:16px; font-weight:bold; color:${t.textPrimary}; font-family: Arial, sans-serif;">Post on LinkedIn</p>
+            <p style="margin:0; font-size:13.5px; line-height:1.4; color:${t.textSecondary}; font-family: Arial, sans-serif;">Share a video or photo of the conference you attended.</p>
+          </td>
+
+          <!-- Step 2 -->
+          <td width="33.33%" valign="top" align="center" style="padding: 0 12px; position:relative;">
+            <div style="position:absolute; top: 17px; left: 50%; width: 100%; height: 2px; background-color: ${t.borderMuted}; z-index: 1;"></div>
+            <div style="width:36px; height:36px; border-radius:50%; background:${t.accentBg || t.accent}; color:${t.accentText}; text-align:center; line-height:36px; font-size:15px; font-weight:bold; font-family: Arial, sans-serif; margin: 0 auto 12px auto; position: relative; z-index: 2;">2</div>
+            <p style="margin:0 0 6px 0; font-size:16px; font-weight:bold; color:${t.textPrimary}; font-family: Arial, sans-serif;">Tag Us</p>
+            <p style="margin:0; font-size:13.5px; line-height:1.4; color:${t.textSecondary}; font-family: Arial, sans-serif;">Make sure to tag <a href="${company.linkedin}" style="color:${t.accent}; text-decoration:none;">${company.handle}</a> in your post.</p>
+          </td>
+
+          <!-- Step 3 (No outgoing line) -->
+          <td width="33.33%" valign="top" align="center" style="padding: 0 12px; position:relative;">
+            <div style="width:36px; height:36px; border-radius:50%; background:${t.accentBg || t.accent}; color:${t.accentText}; text-align:center; line-height:36px; font-size:15px; font-weight:bold; font-family: Arial, sans-serif; margin: 0 auto 12px auto; position: relative; z-index: 2;">3</div>
+            <p style="margin:0 0 6px 0; font-size:16px; font-weight:bold; color:${t.textPrimary}; font-family: Arial, sans-serif;">Submit</p>
+            <p style="margin:0; font-size:13.5px; line-height:1.4; color:${t.textSecondary}; font-family: Arial, sans-serif;">share you post link with us</p>
+          </td>
+
+        </tr>
+      </table>
+    </td>
+  </tr>
+
   <!-- Footer -->
   <tr>
     <td style="padding:28px 40px 30px 40px; border-top:1px solid ${t.borderMuted};">
-      <p style="margin:0 0 3px 0; font-size:13px; color:${t.accent}; font-family: Arial, sans-serif;">Warm regards,</p>
-      <p style="margin:0 0 3px 0; font-size:14px; font-weight:bold; color:${t.textPrimary}; font-family: Arial, sans-serif;">${fields.companyName}</p>
-      <p style="margin:0; font-size:13px; color:${t.textSecondary}; font-family: Arial, sans-serif;">${fields.orgName}</p>
+      <p style="margin:0 0 3px 0; font-size:14px; color:${t.accent}; font-family: Arial, sans-serif;">Warm regards,</p>
+      <p style="margin:0 0 3px 0; font-size:15px; font-weight:bold; color:${t.textPrimary}; font-family: Arial, sans-serif;">Women Leadership & Women Health Global Conference</p>
+      <p style="margin:0; font-size:14px; color:${t.textSecondary}; font-family: Arial, sans-serif;">${company.name}</p>
     </td>
   </tr>
 
   <!-- Website bar -->
   <tr>
-    <td style="background-color:${t.accent}; padding:12px; text-align:center;">
-      <p style="margin:0; font-size:11.5px; letter-spacing:1px; font-weight:bold; color:${t.accentText}; font-family: Arial, sans-serif;">${fields.websiteUrl}</p>
+    <td id="website-btn" style="background:${t.accentBg || t.accent}; padding:12px; text-align:center;">
+      <a href="https://${company.website}" style="margin:0; font-size:13px; letter-spacing:1px; font-weight:bold; color:${t.accentText}; font-family: Arial, sans-serif; text-decoration:none;">${company.website.toUpperCase()}</a>
     </td>
   </tr>
 
@@ -237,18 +470,9 @@ function buildHtml(fields, theme) {
    FIELD CONFIG
    ════════════════════════════════════════════════════════════ */
 const FIELD_CONFIG = [
-  { key: 'conferenceTag', label: 'Conference Tag', icon: Tag, placeholder: 'e.g. W Y N   C O N F E R E N C E S', wide: false },
-  { key: 'headline', label: 'Headline', icon: Mail, placeholder: 'Email headline / subject line', wide: true },
   { key: 'speakerName', label: 'Speaker Name', icon: User, placeholder: 'Full name with title', wide: false },
   { key: 'focusAreas', label: 'Focus Areas', icon: Tag, placeholder: 'Leadership, Health, ...', wide: false },
   { key: 'peerScore', label: 'Peer Score', icon: Percent, placeholder: '81.2%', wide: false },
-  { key: 'linkedinHandle', label: 'LinkedIn Handle', icon: Tag, placeholder: '@YourConferences', wide: false },
-  { key: 'companyName', label: 'Company / Conference Full Name', icon: Building2, placeholder: 'Women Leadership...', wide: false },
-  { key: 'orgName', label: 'Organisation Name', icon: Building2, placeholder: 'WYN Conferences', wide: false },
-  { key: 'websiteUrl', label: 'Website URL', icon: FileText, placeholder: 'WWW.YOURWEBSITE.COM', wide: false },
-  { key: 'quoteMain', label: 'Quote (Main)', icon: Edit3, placeholder: 'SHARE TODAY. INSPIRE TOMORROW.', wide: false },
-  { key: 'quoteAccent', label: 'Quote (Accent)', icon: Edit3, placeholder: 'SPEAK AGAIN.', wide: false },
-  { key: 'footerNote', label: 'Footer Note', icon: FileText, placeholder: 'Selected testimonials will...', wide: true },
 ]
 
 /* ════════════════════════════════════════════════════════════
@@ -270,11 +494,11 @@ const labelStyle = {
 /* ════════════════════════════════════════════════════════════
    COMPONENT
    ════════════════════════════════════════════════════════════ */
-export default function Template1() {
+export default function Template3() {
   const [draft, setDraft] = useState({ ...DEFAULT_FIELDS })
   const [saved, setSaved] = useState({ ...DEFAULT_FIELDS })
-  const [draftThemeId, setDraftThemeId] = useState('theme1')
-  const [savedThemeId, setSavedThemeId] = useState('theme1')
+  const [draftThemeId, setDraftThemeId] = useState('theme_wyn')
+  const [savedThemeId, setSavedThemeId] = useState('theme_wyn')
   const [activeTab, setActiveTab] = useState('edit')
   const [savedToast, setSavedToast] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -284,7 +508,7 @@ export default function Template1() {
   const fileInputRef = useRef(null)
   const iframeRef = useRef(null)
 
-  const savedTheme = THEMES[savedThemeId] || THEMES.theme1
+  const savedTheme = THEMES[savedThemeId] || THEMES.theme_wyn
   const savedHtml = buildHtml(saved, savedTheme)
 
   /* ── handlers ─────────────────────────────────────────────── */
@@ -316,7 +540,7 @@ export default function Template1() {
 
   const handleReset = () => {
     setDraft({ ...DEFAULT_FIELDS })
-    setDraftThemeId('theme1')
+    setDraftThemeId('theme_wyn')
     setHasUnsaved(true)
   }
 
@@ -345,8 +569,7 @@ export default function Template1() {
     }
   }
 
-  /* ── PDF download: iframe → html2canvas → jsPDF ──
-     HTML is already full-width native, so no CSS injection is required. */
+  /* ── PDF download: iframe → html2canvas → jsPDF (single page, no trailing space) */
   const handleDownload = async () => {
     if (generating) return
     setGenerating(true)
@@ -360,21 +583,12 @@ export default function Template1() {
       // ── Pre-fetch images as data URLs to avoid CORS blank spots ──
       const speakerDataUrl = await toDataUrl(saved.speakerImageUrl)
 
-      // Fetch the OWW logo from the public folder
-      const logoDataUrl = await toDataUrl(
-        `${window.location.origin}/OWW Forum Logo.png`
-      ).catch(() => null)
-
-      // Build HTML with embedded images (replace src references)
       let pdfHtml = savedHtml
       if (speakerDataUrl !== saved.speakerImageUrl) {
         pdfHtml = pdfHtml.replace(
           new RegExp(saved.speakerImageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
           speakerDataUrl
         )
-      }
-      if (logoDataUrl) {
-        pdfHtml = pdfHtml.replace('./OWW Forum Logo.png', logoDataUrl)
       }
 
       // ── PDF download uses the native full-width HTML ──────────
@@ -424,7 +638,36 @@ export default function Template1() {
         const pdf = new jsPDF({ unit: 'px', format: [pxW, pxH], hotfixes: ['px_scaling'] })
         const pgW = pdf.internal.pageSize.getWidth()
         const pgH = pdf.internal.pageSize.getHeight()
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, pgW, pgH)
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pgW, pgH)
+        
+        // Map the button coordinates to add a clickable link in the PDF
+        const activeCompany = COMPANIES.find(c => c.id === saved.companyId) || COMPANIES[0]
+        
+        const btn = iframe.contentDocument.getElementById('linkedin-btn')
+        if (btn && activeCompany.linkedin) {
+          const pageRect = pdfPage.getBoundingClientRect()
+          const btnRect = btn.getBoundingClientRect()
+          
+          // getBoundingClientRect returns CSS pixels, which directly matches our PDF units
+          const linkX = btnRect.left - pageRect.left
+          const linkY = btnRect.top - pageRect.top
+          const linkW = btnRect.width
+          const linkH = btnRect.height
+          
+          pdf.link(linkX, linkY, linkW, linkH, { url: activeCompany.linkedin })
+        }
+
+        const webBtn = iframe.contentDocument.getElementById('website-btn')
+        if (webBtn && activeCompany.website) {
+          const pageRect = pdfPage.getBoundingClientRect()
+          const btnRect = webBtn.getBoundingClientRect()
+          const linkX = btnRect.left - pageRect.left
+          const linkY = btnRect.top - pageRect.top
+          const linkW = btnRect.width
+          const linkH = btnRect.height
+          pdf.link(linkX, linkY, linkW, linkH, { url: `https://${activeCompany.website}` })
+        }
+
         pdf.save(`${filename}.pdf`)
 
       } finally {
@@ -633,6 +876,25 @@ export default function Template1() {
 
             <div style={{ height: '1px', background: '#2a2a2a', marginBottom: '28px' }} />
 
+            {/* ── Company Dropdown ── */}
+            <div style={{ marginBottom: '28px' }}>
+              <label style={labelStyle}>
+                <Building2 size={11} style={{ display: 'inline', marginRight: '5px', verticalAlign: 'middle' }} />
+                Company
+              </label>
+              <select
+                value={draft.companyId}
+                onChange={e => handleChange('companyId', e.target.value)}
+                style={{ ...inputBase, cursor: 'pointer', appearance: 'none' }}
+                onFocus={e => e.target.style.borderColor = '#e8a13a'}
+                onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+              >
+                {COMPANIES.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            </div>
+
             {/* ── Two-column field grid ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 28px' }}>
               {FIELD_CONFIG.map(({ key, label, icon: Icon, placeholder, wide }) => (
@@ -788,7 +1050,9 @@ export default function Template1() {
                       const h = doc.documentElement.scrollHeight || doc.body.scrollHeight
                       iframeRef.current.style.height = h + 'px'
                     }
-                  } catch (_) { }
+                  } catch (e) {
+                    console.warn('Failed to resize iframe:', e)
+                  }
                 }}
               />
             ) : (

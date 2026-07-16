@@ -16,6 +16,7 @@ export default function AdminWriteUps() {
   const [socialPlatform, setSocialPlatform] = useState('')
   const [socialUrl, setSocialUrl] = useState('')
   const [collectEmail, setCollectEmail] = useState(false)
+  const [allowMultiple, setAllowMultiple] = useState(false)
   const [editingEventId, setEditingEventId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -65,7 +66,8 @@ export default function AdminWriteUps() {
         target_team_id: targetTeamId === 'all' ? null : targetTeamId,
         social_platform: socialPlatform || null,
         social_url: socialPlatform ? socialUrl : null,
-        collect_email: collectEmail
+        collect_email: collectEmail,
+        allow_multiple_submissions: allowMultiple
       }
       
       if (editingEventId) {
@@ -114,6 +116,7 @@ export default function AdminWriteUps() {
     setSocialPlatform(ev.social_platform || '')
     setSocialUrl(ev.social_url || '')
     setCollectEmail(ev.collect_email || false)
+    setAllowMultiple(ev.allow_multiple_submissions || false)
     setShowCreate(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -125,6 +128,7 @@ export default function AdminWriteUps() {
     setSocialPlatform('')
     setSocialUrl('')
     setCollectEmail(false)
+    setAllowMultiple(false)
     setEditingEventId(null)
     setShowCreate(false)
   }
@@ -312,17 +316,32 @@ export default function AdminWriteUps() {
               />
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="checkbox"
-                id="collectEmail"
-                checked={collectEmail}
-                onChange={(e) => setCollectEmail(e.target.checked)}
-                style={{ width: '18px', height: '18px', cursor: 'pointer', appearance: 'auto', display: 'block' }}
-              />
-              <label htmlFor="collectEmail" className="apple-form-label" style={{ margin: 0, cursor: 'pointer' }}>
-                Collect Speaker Info (Name & Email)
-              </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="checkbox"
+                  id="collectEmail"
+                  checked={collectEmail}
+                  onChange={(e) => setCollectEmail(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', appearance: 'auto', display: 'block' }}
+                />
+                <label htmlFor="collectEmail" className="apple-form-label" style={{ margin: 0, cursor: 'pointer' }}>
+                  Collect Speaker Info (Name & Email)
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="checkbox"
+                  id="allowMultiple"
+                  checked={allowMultiple}
+                  onChange={(e) => setAllowMultiple(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', appearance: 'auto', display: 'block' }}
+                />
+                <label htmlFor="allowMultiple" className="apple-form-label" style={{ margin: 0, cursor: 'pointer' }}>
+                  Allow Multiple Submissions (Users can submit multiple times)
+                </label>
+              </div>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
