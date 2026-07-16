@@ -300,6 +300,7 @@ const labelStyle = {
    ════════════════════════════════════════════════════════════ */
 export default function Template2() {
   const navigate = useNavigate()
+  const isAdminRoute = window.location.hash.startsWith('#/admin')
   const [draft, setDraft] = useState({ ...DEFAULT_FIELDS })
   const [saved, setSaved] = useState({ ...DEFAULT_FIELDS })
   const [draftThemeId, setDraftThemeId] = useState('theme1')
@@ -601,54 +602,58 @@ export default function Template2() {
           <div style={{ padding: '28px 32px' }}>
 
             {/* ── COLOR THEME PICKER ── */}
-            <div style={{ marginBottom: '28px' }}>
-              <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                <Palette size={12} /> Color Theme
-              </label>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {Object.values(THEMES).map(theme => {
-                  const isSelected = draftThemeId === theme.id
-                  return (
-                    <button
-                      key={theme.id}
-                      onClick={() => handleThemeChange(theme.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '10px 16px', borderRadius: '12px', cursor: 'pointer',
-                        border: isSelected ? '2px solid #e8a13a' : '2px solid #2a2a2a',
-                        background: isSelected ? 'rgba(232,161,58,0.1)' : '#111',
-                        transition: 'all 0.15s',
-                        boxShadow: isSelected ? '0 0 0 3px rgba(232,161,58,0.2)' : 'none',
-                      }}
-                    >
-                      {/* Color swatches */}
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {theme.preview.map((color, i) => (
-                          <div key={i} style={{
-                            width: '16px', height: '16px', borderRadius: '50%',
-                            background: color,
-                            border: '1px solid rgba(255,255,255,0.15)',
-                          }} />
-                        ))}
-                      </div>
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? '#e8a13a' : '#ccc' }}>
-                          {theme.name}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '1px' }}>
-                          {theme.label}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <CheckCircle2 size={14} color="#e8a13a" style={{ marginLeft: 'auto' }} />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            {isAdminRoute && (
+              <>
+                <div style={{ marginBottom: '28px' }}>
+                  <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                    <Palette size={12} /> Color Theme
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {Object.values(THEMES).map(theme => {
+                      const isSelected = draftThemeId === theme.id
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={() => handleThemeChange(theme.id)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '10px 16px', borderRadius: '12px', cursor: 'pointer',
+                            border: isSelected ? '2px solid #e8a13a' : '2px solid #2a2a2a',
+                            background: isSelected ? 'rgba(232,161,58,0.1)' : '#111',
+                            transition: 'all 0.15s',
+                            boxShadow: isSelected ? '0 0 0 3px rgba(232,161,58,0.2)' : 'none',
+                          }}
+                        >
+                          {/* Color swatches */}
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            {theme.preview.map((color, i) => (
+                              <div key={i} style={{
+                                width: '16px', height: '16px', borderRadius: '50%',
+                                background: color,
+                                border: '1px solid rgba(255,255,255,0.15)',
+                              }} />
+                            ))}
+                          </div>
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? '#e8a13a' : '#ccc' }}>
+                              {theme.name}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '1px' }}>
+                              {theme.label}
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle2 size={14} color="#e8a13a" style={{ marginLeft: 'auto' }} />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
 
-            <div style={{ height: '1px', background: '#2a2a2a', marginBottom: '28px' }} />
+                <div style={{ height: '1px', background: '#2a2a2a', marginBottom: '28px' }} />
+              </>
+            )}
 
             {/* ── Speaker Image ── */}
             <div style={{ marginBottom: '28px' }}>
