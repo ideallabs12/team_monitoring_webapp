@@ -60,7 +60,7 @@ export default function Login({ user, isAdmin }) {
     <div className="auth-container login-auth-container">
       <section className="auth-identity" aria-label="Company application overview">
         <div className="auth-brand-mark" style={{ width: '90px', height: '90px', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src="./allhands_logo_cropped.png" alt="All-Hands Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src="/allhands_logo_cropped.png" alt="All-Hands Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
 
         <div>

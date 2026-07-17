@@ -179,21 +179,22 @@ const THEMES = {
   theme_voice: {
     id: 'theme_voice',
     name: 'VOICE Theme',
-    label: 'Royal Purple',
-    preview: ['#FFFFFF', '#270275', '#B6B6B7'],
-    bgOuter: '#EBE9F1',
+    label: 'Vibrant Purple',
+    preview: ['#FFFFFF', '#B800FF', '#280088'],
+    bgOuter: '#F3F0F8',
     bgCard: '#FFFFFF',
-    bgSection: '#F8F7FA',
-    borderMuted: '#DCD8E7',
-    borderAccent: '#270275',
-    accent: '#270275',
+    bgSection: '#F8F5FB',
+    borderMuted: '#E2DBED',
+    borderAccent: '#B800FF',
+    accent: '#B800FF',
+    accentBg: 'linear-gradient(135deg, #B800FF, #280088)',
     accentText: '#FFFFFF',
-    textPrimary: '#1E1B29',
-    textSecondary: '#4F4A61',
-    textMuted: '#7A758F',
-    textLabel: '#39344A',
-    accentGlow: 'rgba(39,2,117,0.15)',
-    logoFilter: 'drop-shadow(0 0 10px rgba(39,2,117,0.15))',
+    textPrimary: '#1A0B2E',
+    textSecondary: '#413554',
+    textMuted: '#6C5E82',
+    textLabel: '#3D2F54',
+    accentGlow: 'rgba(184,0,255,0.2)',
+    logoFilter: 'drop-shadow(0 2px 10px rgba(184,0,255,0.25))',
     linkedinBg: '#0A66C2',
   }
 }
@@ -483,14 +484,15 @@ const FIELD_CONFIG = [
    ════════════════════════════════════════════════════════════ */
 const inputBase = {
   width: '100%', boxSizing: 'border-box',
-  padding: '9px 12px', borderRadius: '8px',
-  background: '#111', border: '1px solid #2a2a2a',
-  color: '#fff', fontSize: '0.875rem', outline: 'none',
-  transition: 'border-color 0.15s', fontFamily: 'inherit',
+  padding: '12px 16px', borderRadius: '10px',
+  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+  color: '#fff', fontSize: '0.9rem', outline: 'none',
+  transition: 'all 0.2s', fontFamily: 'inherit',
 }
 const labelStyle = {
-  display: 'block', fontSize: '0.72rem', fontWeight: 700,
-  color: '#e8a13a', marginBottom: '6px',
+  display: 'flex', alignItems: 'center', gap: '6px',
+  fontSize: '0.75rem', fontWeight: 700,
+  color: '#e8a13a', marginBottom: '8px',
   letterSpacing: '0.06em', textTransform: 'uppercase',
 }
 
@@ -499,7 +501,7 @@ const labelStyle = {
    ════════════════════════════════════════════════════════════ */
 export default function Template3() {
   const navigate = useNavigate()
-  const isAdminRoute = window.location.hash.startsWith('#/admin')
+  const isAdminRoute = window.location.pathname.startsWith('/admin')
   const [showThemes, setShowThemes] = useState(false)
   const [draft, setDraft] = useState({ ...DEFAULT_FIELDS })
   const [saved, setSaved] = useState({ ...DEFAULT_FIELDS })
@@ -526,6 +528,18 @@ export default function Template3() {
 
   /* ── handlers ─────────────────────────────────────────────── */
   const handleChange = (key, value) => {
+    if (key === 'peerScore') {
+      let numericVal = value.replace(/[^\d.]/g, '')
+      const parts = numericVal.split('.')
+      if (parts.length > 2) {
+        numericVal = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '')
+      }
+      if (!value.includes('%') && draft[key] && draft[key].includes('%') && value.length === draft[key].length - 1) {
+        numericVal = numericVal.slice(0, -1)
+      }
+      value = numericVal ? numericVal + '%' : ''
+    }
+
     setDraft(prev => ({ ...prev, [key]: value }))
     
     // Auto-select the corresponding company theme
@@ -707,7 +721,7 @@ export default function Template3() {
       {/* Back Button */}
       <button
         onClick={() => {
-          const isAdminRoute = window.location.hash.startsWith('#/admin')
+          const isAdminRoute = window.location.pathname.startsWith('/admin')
           navigate(isAdminRoute ? '/admin/virtual-events' : '/virtual-events')
         }}
         style={{
@@ -902,34 +916,47 @@ export default function Template3() {
             {/* ── Speaker Image ── */}
             <div style={{ marginBottom: '28px' }}>
               <label style={labelStyle}>Speaker Image</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div 
+                onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={e => {
+                  e.preventDefault(); e.stopPropagation();
+                  const file = e.dataTransfer.files[0];
+                  if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => handleChange('speakerImageUrl', ev.target.result);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '20px',
+                  padding: '20px', borderRadius: '12px',
+                  border: '2px dashed var(--apple-border, #2a2a2a)',
+                  background: 'rgba(255,255,255,0.02)', cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = '#e8a13a';
+                  e.currentTarget.style.background = 'rgba(232,161,58,0.05)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'var(--apple-border, #2a2a2a)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                }}
+              >
                 <img
                   src={draft.speakerImageUrl} alt="Speaker"
-                  style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid #e8a13a', objectFit: 'cover', flexShrink: 0 }}
+                  style={{ width: '70px', height: '70px', borderRadius: '50%', border: '2px solid #e8a13a', objectFit: 'cover', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
                   onError={e => { e.target.src = 'https://randomuser.me/api/portraits/women/68.jpg' }}
                 />
-                <div style={{ flex: 1, display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="text" value={draft.speakerImageUrl}
-                    onChange={e => handleChange('speakerImageUrl', e.target.value)}
-                    placeholder="Paste image URL..."
-                    style={{ ...inputBase, flex: 1 }}
-                    onFocus={e => e.target.style.borderColor = '#e8a13a'}
-                    onBlur={e => e.target.style.borderColor = '#2a2a2a'}
-                  />
-                  <button onClick={() => fileInputRef.current?.click()} style={{
-                    display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
-                    padding: '9px 16px', borderRadius: '8px',
-                    background: 'rgba(232,161,58,0.12)', border: '1px solid rgba(232,161,58,0.3)',
-                    color: '#e8a13a', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(232,161,58,0.22)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(232,161,58,0.12)'}
-                  >
-                    <Upload size={14} /> Upload
-                  </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <Upload size={16} color="#e8a13a" />
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#fff' }}>Click or drag to upload image</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>SVG, PNG, JPG or GIF (max. 5MB)</p>
                 </div>
+                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
               </div>
             </div>
 
@@ -938,7 +965,7 @@ export default function Template3() {
             {/* ── Company Dropdown ── */}
             <div style={{ marginBottom: '28px' }}>
               <label style={labelStyle}>
-                <Building2 size={11} style={{ display: 'inline', marginRight: '5px', verticalAlign: 'middle' }} />
+                <Building2 size={13} />
                 Company
               </label>
               <select
@@ -959,7 +986,7 @@ export default function Template3() {
               {FIELD_CONFIG.map(({ key, label, icon: Icon, placeholder, wide }) => (
                 <div key={key} style={{ gridColumn: wide ? '1 / -1' : 'auto' }}>
                   <label style={labelStyle}>
-                    <Icon size={11} style={{ display: 'inline', marginRight: '5px', verticalAlign: 'middle' }} />
+                    <Icon size={13} />
                     {label}
                   </label>
                   {wide ? (

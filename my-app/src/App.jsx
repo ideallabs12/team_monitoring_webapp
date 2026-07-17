@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import AdminRoleManager from './pages/admin/AdminRoleManager'
 import { supabase } from './supabaseClient'
 import { SpeedInsights } from "@vercel/speed-insights/react"
@@ -122,7 +122,7 @@ function App() {
           if (window.Notification && Notification.permission === "granted") {
             new Notification("New Announcement", {
               body: payload.new.title,
-              icon: './allhands_logo_cropped.png'
+              icon: '/allhands_logo_cropped.png'
             });
           }
         }

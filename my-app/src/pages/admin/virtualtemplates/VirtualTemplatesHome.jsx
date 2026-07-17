@@ -48,7 +48,7 @@ export default function VirtualTemplatesHome() {
             key={tpl.id}
             onClick={() => {
               if (tpl.locked) return;
-              const isAdminRoute = window.location.hash.startsWith('#/admin')
+              const isAdminRoute = window.location.pathname.startsWith('/admin')
               navigate(isAdminRoute ? `/admin/virtual-events/${tpl.id}` : `/virtual-events/${tpl.id}`)
             }}
             style={{

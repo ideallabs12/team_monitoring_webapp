@@ -147,7 +147,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
 
               {/* Logo pushed to the right */}
               <div className="admin-sidebar-brand-icon" style={{ marginLeft: 'auto', flexShrink: 0, width: '44px', height: '44px', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden' }}>
-                <img src="./allhands_logo_cropped.png" alt="All-Hands Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src="/allhands_logo_cropped.png" alt="All-Hands Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
             </>
           )}
