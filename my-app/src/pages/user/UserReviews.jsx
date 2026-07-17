@@ -17,8 +17,7 @@ export default function UserReviews({ user }) {
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
   
-  // Edit State
-  const [editingReviewId, setEditingReviewId] = useState(null)
+
   
   // Animation State
   const [snappingId, setSnappingId] = useState(null)
@@ -80,7 +79,7 @@ export default function UserReviews({ user }) {
       setActiveEvents(allActive)
       
       const unreviewed = allActive.filter(ev => ev.allow_multiple_submissions || !reviewedEventIds.includes(ev.id))
-      if (unreviewed.length > 0 && !editingReviewId) {
+      if (unreviewed.length > 0) {
         setSelectedEventId(unreviewed[0].id)
       }
     } catch (err) {
@@ -153,12 +152,7 @@ export default function UserReviews({ user }) {
       }
 
       // Check if event requires email/name
-      let eventDetails;
-      if (editingReviewId) {
-        eventDetails = reviews.find(r => r.id === editingReviewId)?.events;
-      } else {
-        eventDetails = activeEvents.find(ev => String(ev.id) === String(selectedEventId));
-      }
+      let eventDetails = activeEvents.find(ev => String(ev.id) === String(selectedEventId));
 
       if (eventDetails?.collect_email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -175,53 +169,30 @@ export default function UserReviews({ user }) {
         return
       }
 
-      if (editingReviewId) {
-        const updateData = { 
-          title: 'Review Submission', 
-          context: null, 
-          penname: null, 
-          status: 'pending', 
-          admin_feedback: null, 
-          updated_at: new Date().toISOString(),
-          speaker_name: speakerName,
-          speaker_email: eventDetails?.collect_email ? speakerEmail : null
-        };
-        if (uploadedPhotoUrl) updateData.photo_url = uploadedPhotoUrl;
+      const insertData = {
+        event_id: selectedEventId,
+        user_id: user.id,
+        team_id: profile?.team_id,
+        title: 'Review Submission',
+        context: null,
+        penname: null,
+        speaker_name: speakerName,
+        speaker_email: eventDetails?.collect_email ? speakerEmail : null
+      };
+      if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
+      
+      const { error } = await supabase
+        .from('reviews')
+        .insert([insertData])
         
-        const { error } = await supabase
-          .from('reviews')
-          .update(updateData)
-          .eq('id', editingReviewId)
-          
-        if (error) throw error
-        setMessage({ type: 'success', text: 'Review updated successfully!' })
-      } else {
-        const insertData = {
-          event_id: selectedEventId,
-          user_id: user.id,
-          team_id: profile?.team_id,
-          title: 'Review Submission',
-          context: null,
-          penname: null,
-          speaker_name: speakerName,
-          speaker_email: eventDetails?.collect_email ? speakerEmail : null
-        };
-        if (uploadedPhotoUrl) insertData.photo_url = uploadedPhotoUrl;
-        
-        const { error } = await supabase
-          .from('reviews')
-          .insert([insertData])
-          
-        if (error) throw error
-        setMessage({ type: 'success', text: 'Review submitted successfully!' })
-      }
+      if (error) throw error
+      setMessage({ type: 'success', text: 'Review submitted successfully!' })
       
       // Reset form
       setSpeakerName('')
       setSpeakerEmail('')
       setPhotoFile(null)
       setPhotoPreview(null)
-      setEditingReviewId(null)
       setSelectedEventId('')
       loadData()
     } catch (err) {
@@ -232,61 +203,7 @@ export default function UserReviews({ user }) {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return
-    
-    setSnappingId(id)
-    
-    // Wait for Thanos snap animation to complete before removing from DOM
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('reviews')
-          .delete()
-          .eq('id', id)
-          
-        if (error) throw error
-        setReviews(reviews.filter(r => r.id !== id))
-        
-        // If we were editing this review, cancel edit
-        if (editingReviewId === id) {
-          handleCancelEdit()
-        }
-      } catch (err) {
-        console.error('Error deleting review:', err)
-        alert('Failed to delete review.')
-      } finally {
-        setSnappingId(null)
-        loadData()
-      }
-    }, 2500)
-  }
 
-  const handleEditClick = (review) => {
-    setEditingReviewId(review.id)
-    setSelectedEventId(review.event_id)
-    setSpeakerName(review.speaker_name || '')
-    setSpeakerEmail(review.speaker_email || '')
-    setActiveTab('write')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleCancelEdit = () => {
-    setEditingReviewId(null)
-    setSpeakerName('')
-    setSpeakerEmail('')
-    setPhotoFile(null)
-    setPhotoPreview(null)
-    
-    // Reset selection to the first unreviewed event if available
-    const reviewedEventIds = reviews.map(r => r.event_id)
-    const unreviewed = activeEvents.filter(ev => ev.allow_multiple_submissions || !reviewedEventIds.includes(ev.id))
-    if (unreviewed.length > 0) {
-      setSelectedEventId(unreviewed[0].id)
-    } else {
-      setSelectedEventId('')
-    }
-  }
 
   if (loading && !profile) {
     return (
@@ -314,9 +231,7 @@ export default function UserReviews({ user }) {
 
 
 
-  const currentEventDetails = editingReviewId 
-    ? reviews.find(r => r.id === editingReviewId)?.events
-    : unreviewedEvents.find(ev => String(ev.id) === String(selectedEventId));
+  const currentEventDetails = unreviewedEvents.find(ev => String(ev.id) === String(selectedEventId));
   const isEmailCollection = currentEventDetails?.collect_email;
 
   return (
@@ -372,11 +287,11 @@ export default function UserReviews({ user }) {
       {/* ===== WRITE REVIEW TAB ===== */}
       {activeTab === 'write' && (
         <>
-          {unreviewedEvents.length > 0 || editingReviewId ? (
+          {unreviewedEvents.length > 0 ? (
             <div className="apple-card" style={{ padding: '24px', marginBottom: '40px', borderTop: '3px solid var(--apple-accent-blue)' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {editingReviewId ? <Edit size={18} style={{ color: 'var(--apple-accent-blue)' }} /> : <Star size={18} style={{ color: 'var(--apple-accent-blue)' }} />}
-            {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
+            <Star size={18} style={{ color: 'var(--apple-accent-blue)' }} />
+            Write a Review
           </h3>
           
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -387,15 +302,10 @@ export default function UserReviews({ user }) {
                   className="apple-form-control" 
                   value={selectedEventId} 
                   onChange={(e) => setSelectedEventId(e.target.value)}
-                  disabled={editingReviewId !== null} // Don't allow changing event while editing
                 >
-                  {editingReviewId ? (
-                    <option value={selectedEventId}>{reviews.find(r => r.id === editingReviewId)?.events?.title}</option>
-                  ) : (
-                    unreviewedEvents.map(ev => (
-                      <option key={ev.id} value={ev.id}>{ev.title}</option>
-                    ))
-                  )}
+                  {unreviewedEvents.map(ev => (
+                    <option key={ev.id} value={ev.id}>{ev.title}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -460,13 +370,8 @@ export default function UserReviews({ user }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
-              {editingReviewId && (
-                <button type="button" onClick={handleCancelEdit} className="apple-btn apple-btn-secondary">
-                  Cancel Edit
-                </button>
-              )}
               <button type="submit" disabled={submitting || !speakerName.trim()} className="apple-btn apple-btn-primary">
-                {submitting ? 'Submitting...' : editingReviewId ? 'Update Review' : 'Submit Review'}
+                {submitting ? 'Submitting...' : 'Submit Review'}
               </button>
             </div>
           </form>
@@ -604,23 +509,6 @@ export default function UserReviews({ user }) {
 
               {/* Actions - conditional for others */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--apple-border)', paddingTop: '16px', flexWrap: 'wrap' }}>
-                
-                {(review.status === 'pending' || review.status === 'rejected') && (
-                  <button 
-                    onClick={() => handleDelete(review.id)}
-                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                )}
-                {(review.status === 'pending' || review.status === 'feedback') && (
-                  <button 
-                    onClick={() => handleEditClick(review)}
-                    className="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Edit size={14} /> Edit Review
-                  </button>
-                )}
                 {review.status === 'approved' && review.events?.social_platform && review.events?.social_url && (
                   <a 
                     href={review.events.social_url} 
