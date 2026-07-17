@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin } from 'lucide-react'
+import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin, Calendar } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import UserRevenue from '../user/UserRevenue'
 
@@ -32,6 +32,45 @@ export default function AdminUsers() {
   const [userRevenues, setUserRevenues] = useState([])
   const [userSalesLogs, setUserSalesLogs] = useState([])
   const [loadingRevenues, setLoadingRevenues] = useState(false)
+
+  const currentYearStr = new Date().getFullYear().toString()
+  const currentMonthNum = new Date().getMonth() + 1
+  const [salesFilterYear, setSalesFilterYear] = useState(currentYearStr)
+  const [salesFilterMonth, setSalesFilterMonth] = useState('')
+
+  const availableSalesYears = useMemo(() => {
+    const years = new Set(['2024', currentYearStr])
+    userSalesLogs.forEach(log => {
+      if (log.call_date) years.add(log.call_date.substring(0, 4))
+    })
+    return Array.from(years).sort().reverse()
+  }, [userSalesLogs, currentYearStr])
+
+  const availableSalesMonthsList = useMemo(() => {
+    const maxMonth = (salesFilterYear === currentYearStr) ? currentMonthNum : 12
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    
+    const months = []
+    for (let i = 1; i <= maxMonth; i++) {
+      months.push({
+        value: i.toString().padStart(2, '0'),
+        label: monthNames[i - 1]
+      })
+    }
+    return months
+  }, [salesFilterYear, currentYearStr, currentMonthNum])
+
+  const filteredUserSalesLogs = useMemo(() => {
+    return userSalesLogs.filter(log => {
+      const logYear = log.call_date ? log.call_date.substring(0, 4) : ''
+      const logMonth = log.call_date ? log.call_date.substring(5, 7) : ''
+      
+      const matchYear = salesFilterYear ? logYear === salesFilterYear : true
+      const matchMonth = salesFilterMonth ? logMonth === salesFilterMonth : true
+      
+      return matchYear && matchMonth
+    })
+  }, [userSalesLogs, salesFilterYear, salesFilterMonth])
 
   // Load Details dynamically for the selected profile
   useEffect(() => {
@@ -840,22 +879,47 @@ export default function AdminUsers() {
               <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Phone size={18} style={{ color: '#4ade80' }} /> Sales Executive Analytics
               </h3>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Calendar size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  <select className="apple-input" style={{ paddingLeft: '32px', py: '6px', fontSize: '0.85rem', cursor: 'pointer' }} value={salesFilterYear} onChange={e => setSalesFilterYear(e.target.value)}>
+                    <option value="">All Years</option>
+                    {availableSalesYears.map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Calendar size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  <select className="apple-input" style={{ paddingLeft: '32px', py: '6px', fontSize: '0.85rem', cursor: 'pointer' }} value={salesFilterMonth} onChange={e => setSalesFilterMonth(e.target.value)}>
+                    <option value="">All Months</option>
+                    {availableSalesMonthsList.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {(salesFilterYear || salesFilterMonth) && (
+                  <button className="apple-btn" onClick={() => { setSalesFilterYear(currentYearStr); setSalesFilterMonth(''); }} style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+                    Clear
+                  </button>
+                )}
+              </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '24px' }}>
                 <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
                   <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Calls Logged</div>
-                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fff' }}>{userSalesLogs.length}</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fff' }}>{filteredUserSalesLogs.length}</div>
                 </div>
                 <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
                   <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>Total Revenue Generated</div>
                   <div style={{ fontSize: '2rem', fontWeight: '700', color: '#4ade80' }}>
-                    ${userSalesLogs.reduce((sum, log) => sum + Number(log.sales_revenue), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${filteredUserSalesLogs.reduce((sum, log) => sum + Number(log.sales_revenue), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
 
               <div style={{ maxHeight: '400px', overflowY: 'auto', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--apple-border)', borderRadius: '12px' }}>
-                {userSalesLogs.length > 0 ? (
+                {filteredUserSalesLogs.length > 0 ? (
                   <div style={{ minWidth: '600px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr auto', padding: '12px 16px', borderBottom: '1px solid var(--apple-border)', fontSize: '0.75rem', fontWeight: '600', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <div>Date</div>
@@ -863,7 +927,7 @@ export default function AdminUsers() {
                       <div>Speaker</div>
                       <div style={{ textAlign: 'right' }}>Revenue</div>
                     </div>
-                    {userSalesLogs.map(log => (
+                    {filteredUserSalesLogs.map(log => (
                       <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.5fr auto', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' }}>
                         <div style={{ fontSize: '0.9rem' }}>{new Date(log.call_date).toLocaleDateString()}</div>
                         <div>

@@ -9,7 +9,7 @@ import {
 import {
   TrendingUp, TrendingDown, Users, User, FileText, Target,
   Zap, Activity, ArrowUpRight, ArrowDownRight, Minus,
-  AlertCircle, CheckCircle, Clock
+  AlertCircle, CheckCircle, Clock, PhoneCall
 } from 'lucide-react'
 import {
   getLastNMonths,
@@ -35,7 +35,7 @@ const pctBorder= (v) => (v > 0 ? 'rgba(52,211,153,0.25)' : v < 0 ? 'rgba(255,69,
 
 const TEAM_COLORS = ['#0071e3', '#30d5c8', '#ff9f0a', '#af52de', '#ff2d55', '#ffcc00', '#5ac8fa']
 
-let adminHomeCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [], disReports: [] }
+let adminHomeCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [], disReports: [], salesLogs: [] }
 
 /* ─── Custom tooltip for charts ─────────────────────────────────────────────── */
 function ChartTooltip({ active, payload, label }) {
@@ -195,6 +195,7 @@ export default function AdminHome() {
   const [revenues, setRevenues]   = useState(adminHomeCache.revenues)
   const [targets, setTargets]     = useState(adminHomeCache.targets)
   const [disReports, setDisReports] = useState(adminHomeCache.disReports)
+  const [salesLogs, setSalesLogs] = useState(adminHomeCache.salesLogs)
   const [clock, setClock]         = useState(new Date())
   const [theme, setTheme]         = useState(getSystemTheme)
   const navigate = useNavigate()
@@ -221,20 +222,22 @@ export default function AdminHome() {
     async function loadData() {
       try {
         const today = new Date().toISOString().split('T')[0]
-        const [teamsRes, profilesRes, revRes, targetRes, disRes] = await Promise.all([
+        const [teamsRes, profilesRes, revRes, targetRes, disRes, salesRes] = await Promise.all([
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('profiles').select('*'),
           supabase.from('monthly_revenues').select('*'),
           supabase.from('monthly_targets').select('*'),
-          supabase.from('dis_reports').select('user_id').eq('report_date', today)
+          supabase.from('dis_reports').select('user_id').eq('report_date', today),
+          supabase.from('sales_analytics').select('entered_by, sales_revenue, call_date')
         ])
         const t  = teamsRes.data   || []
         const p  = profilesRes.data || []
         const r  = revRes.data      || []
         const tg = targetRes.data   || []
         const d  = disRes.data      || []
-        setTeams(t); setProfiles(p); setRevenues(r); setTargets(tg); setDisReports(d)
-        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tg, disReports: d }
+        const sl = salesRes.data    || []
+        setTeams(t); setProfiles(p); setRevenues(r); setTargets(tg); setDisReports(d); setSalesLogs(sl)
+        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tg, disReports: d, salesLogs: sl }
       } catch (err) {
         console.error('Error loading admin home data:', err)
       } finally {
@@ -249,6 +252,40 @@ export default function AdminHome() {
     () => profiles.filter(p => p.platform_role !== 'admin' && !p.is_deactivated),
     [profiles]
   )
+
+  const topSalesExecutive = useMemo(() => {
+    if (!salesLogs || !salesLogs.length || !profiles || !profiles.length) return null
+    const currentYearStr = new Date().getFullYear().toString()
+    const currentMonthNum = (new Date().getMonth() + 1).toString().padStart(2, '0')
+    const currentPrefix = `${currentYearStr}-${currentMonthNum}`
+    
+    const stats = {}
+    salesLogs.forEach(log => {
+      if (log.call_date && log.call_date.startsWith(currentPrefix)) {
+        if (!stats[log.entered_by]) stats[log.entered_by] = { calls: 0, revenue: 0 }
+        stats[log.entered_by].calls += 1
+        stats[log.entered_by].revenue += Number(log.sales_revenue || 0)
+      }
+    })
+    
+    let topId = null
+    let maxRev = -1
+    Object.keys(stats).forEach(id => {
+      if (stats[id].revenue > maxRev) {
+        maxRev = stats[id].revenue
+        topId = id
+      }
+    })
+    
+    if (!topId) return null
+    
+    const profile = profiles.find(p => p.id === topId)
+    return {
+      name: profile ? `${profile.first_name} ${profile.last_name}` : 'Unknown',
+      calls: stats[topId].calls,
+      revenue: stats[topId].revenue
+    }
+  }, [salesLogs, profiles])
 
   const months12 = useMemo(() => getLastNMonths(12).reverse(), [])
 
@@ -685,7 +722,7 @@ export default function AdminHome() {
       <div className="admin-stats-grid">
         <StatCard
           label="MTD REVENUE"
-          value={fmt(mtdRevenue)}
+          value={fmtFull(mtdRevenue)}
           sub="Month-to-date · all teams"
           color="var(--apple-accent-blue)"
           icon={TrendingUp}
@@ -693,11 +730,11 @@ export default function AdminHome() {
           pulse
         />
         <StatCard
-          label="ACTIVE MEMBERS"
-          value={totalMembers}
-          sub={`across ${teams.length} teams`}
+          label={`TOP SALES EXEC (${new Date().toLocaleString('en-US', { month: 'long' }).toUpperCase()})`}
+          value={topSalesExecutive ? fmtFull(topSalesExecutive.revenue) : '$0.00'}
+          sub={topSalesExecutive ? `${topSalesExecutive.name} • ${topSalesExecutive.calls} call logs` : 'No call logs this month'}
           color="var(--apple-accent-green)"
-          icon={Users}
+          icon={PhoneCall}
         />
         <StatCard
           label="DIS COMPLIANCE"
@@ -710,7 +747,7 @@ export default function AdminHome() {
         />
         <StatCard
           label="TOP TEAM MTD"
-          value={teamWatchlist[0] ? fmt(teamWatchlist[0].cur) : '$0'}
+          value={teamWatchlist[0] ? fmtFull(teamWatchlist[0].cur) : '$0.00'}
           sub={teamWatchlist[0]?.name || '—'}
           color="var(--apple-accent-orange)"
           icon={Target}

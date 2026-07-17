@@ -20,8 +20,12 @@ export default function SalesExecutive({ user }) {
   const [callDate, setCallDate] = useState(new Date().toISOString().split('T')[0])
   
   // Filters
+  const currentYearStr = new Date().getFullYear().toString()
+  const currentMonthNum = new Date().getMonth() + 1
+  
   const [filterTeam, setFilterTeam] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [filterYear, setFilterYear] = useState(currentYearStr)
+  const [filterMonth, setFilterMonth] = useState('')
   
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
@@ -141,7 +145,7 @@ export default function SalesExecutive({ user }) {
             team_id: selectedTeam,
             member_id: selectedMember,
             speaker_name: speakerName,
-            sales_revenue: parseFloat(salesRevenue),
+            sales_revenue: Number(salesRevenue),
             call_date: callDate
           })
           .eq('id', editingLogId)
@@ -161,7 +165,7 @@ export default function SalesExecutive({ user }) {
             team_id: selectedTeam,
             member_id: selectedMember,
             speaker_name: speakerName,
-            sales_revenue: parseFloat(salesRevenue),
+            sales_revenue: Number(salesRevenue),
             call_date: callDate,
             entered_by: user.id
           })
@@ -186,13 +190,41 @@ export default function SalesExecutive({ user }) {
     }
   }
 
+  const availableYears = useMemo(() => {
+    const years = new Set(['2024', currentYearStr])
+    logs.forEach(log => {
+      if (log.call_date) years.add(log.call_date.substring(0, 4))
+    })
+    return Array.from(years).sort().reverse()
+  }, [logs, currentYearStr])
+
+  const availableMonthsList = useMemo(() => {
+    const maxMonth = (filterYear === currentYearStr) ? currentMonthNum : 12
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    
+    const months = []
+    for (let i = 1; i <= maxMonth; i++) {
+      months.push({
+        value: i.toString().padStart(2, '0'),
+        label: monthNames[i - 1]
+      })
+    }
+    return months
+  }, [filterYear, currentYearStr, currentMonthNum])
+
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
       const matchTeam = filterTeam ? log.team_id === filterTeam : true
-      const matchDate = filterDate ? log.call_date === filterDate : true
-      return matchTeam && matchDate
+      
+      const logYear = log.call_date ? log.call_date.substring(0, 4) : ''
+      const logMonth = log.call_date ? log.call_date.substring(5, 7) : ''
+      
+      const matchYear = filterYear ? logYear === filterYear : true
+      const matchMonth = filterMonth ? logMonth === filterMonth : true
+      
+      return matchTeam && matchYear && matchMonth
     })
-  }, [logs, filterTeam, filterDate])
+  }, [logs, filterTeam, filterYear, filterMonth])
 
   const stats = useMemo(() => {
     const totalCalls = filteredLogs.length
@@ -306,18 +338,32 @@ export default function SalesExecutive({ user }) {
             
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Filter size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)' }} />
+                <Filter size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
                 <select className="apple-input" style={{ paddingLeft: '32px', py: '6px', fontSize: '0.85rem' }} value={filterTeam} onChange={e => setFilterTeam(e.target.value)}>
                   <option value="">All Teams</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </div>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Search size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)' }} />
-                <input type="date" className="apple-input" style={{ paddingLeft: '32px', py: '6px', fontSize: '0.85rem' }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+                <Calendar size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                <select className="apple-input" style={{ paddingLeft: '32px', py: '6px', fontSize: '0.85rem', cursor: 'pointer' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                  <option value="">All Years</option>
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
               </div>
-              {(filterTeam || filterDate) && (
-                <button className="apple-btn" onClick={() => { setFilterTeam(''); setFilterDate(''); }} style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Calendar size={14} style={{ position: 'absolute', left: '12px', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                <select className="apple-input" style={{ paddingLeft: '32px', py: '6px', fontSize: '0.85rem', cursor: 'pointer' }} value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+                  <option value="">All Months</option>
+                  {availableMonthsList.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              {(filterTeam || filterYear || filterMonth) && (
+                <button className="apple-btn" onClick={() => { setFilterTeam(''); setFilterYear(currentYearStr); setFilterMonth(''); }} style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
                   Clear
                 </button>
               )}
