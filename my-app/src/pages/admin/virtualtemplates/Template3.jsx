@@ -482,13 +482,7 @@ const FIELD_CONFIG = [
 /* ════════════════════════════════════════════════════════════
    SHARED STYLES
    ════════════════════════════════════════════════════════════ */
-const inputBase = {
-  width: '100%', boxSizing: 'border-box',
-  padding: '12px 16px', borderRadius: '10px',
-  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-  color: '#fff', fontSize: '0.9rem', outline: 'none',
-  transition: 'all 0.2s', fontFamily: 'inherit',
-}
+
 const labelStyle = {
   display: 'flex', alignItems: 'center', gap: '6px',
   fontSize: '0.75rem', fontWeight: 700,
@@ -971,9 +965,8 @@ export default function Template3() {
               <select
                 value={draft.companyId}
                 onChange={e => handleChange('companyId', e.target.value)}
-                style={{ ...inputBase, cursor: 'pointer', appearance: 'none' }}
-                onFocus={e => e.target.style.borderColor = '#e8a13a'}
-                onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+                className="apple-input"
+                style={{ cursor: 'pointer' }}
               >
                 {COMPANIES.map(company => (
                   <option key={company.id} value={company.id}>{company.name}</option>
@@ -995,18 +988,15 @@ export default function Template3() {
                       onChange={e => handleChange(key, e.target.value)}
                       placeholder={placeholder}
                       rows={key === 'footerNote' ? 3 : 2}
-                      style={{ ...inputBase, resize: 'vertical', lineHeight: '1.5' }}
-                      onFocus={e => e.target.style.borderColor = '#e8a13a'}
-                      onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+                      className="apple-input"
+                      style={{ resize: 'vertical', lineHeight: '1.5' }}
                     />
                   ) : (
                     <input
                       type="text" value={draft[key]}
                       onChange={e => handleChange(key, e.target.value)}
                       placeholder={placeholder}
-                      style={inputBase}
-                      onFocus={e => e.target.style.borderColor = '#e8a13a'}
-                      onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+                      className="apple-input"
                     />
                   )}
                 </div>
