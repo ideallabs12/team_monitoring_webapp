@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|allhands_logo_cropped.png|favicon_cropped.png|.*\\.).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
