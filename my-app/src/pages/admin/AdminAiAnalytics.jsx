@@ -222,62 +222,94 @@ export default function AdminAiAnalytics() {
               Generate Platform Health Report
             </button>
           </div>
-
-          <div style={{ height: '1px', background: 'var(--apple-border)', width: '100%' }} />
-
-          <div>
-            <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MessageSquare size={18} style={{ color: '#38bdf8' }} /> Ask AI About Growth & Trends
-            </h3>
-            <textarea
-              value={customQuestion}
-              onChange={(e) => setCustomQuestion(e.target.value)}
-              placeholder="e.g., 'What should we do to improve our lead generation compared to last month?'"
-              className="apple-input"
-              style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '12px', marginBottom: '12px', resize: 'vertical' }}
-            />
-            <button
-              onClick={() => handleGenerate('custom')}
-              disabled={!dataLoaded || generating || !customQuestion.trim() || !!errorMsg}
-              className="apple-btn-secondary"
-              style={{ width: '100%' }}
-            >
-              {generating && customQuestion ? <Loader2 size={18} className="spin" style={{ marginRight: '8px' }} /> : 'Ask AI Analyst'}
-            </button>
-          </div>
         </div>
 
-        {/* Results Card */}
-        <div className="apple-card" style={{ padding: '24px' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={18} style={{ color: '#8b5cf6' }} /> Strategic AI Insights
-          </h3>
-          
-          <div style={{ 
-            background: 'rgba(255,255,255,0.01)', 
-            border: '1px solid var(--apple-border)', 
-            borderRadius: '12px', 
-            padding: '24px',
-            minHeight: '300px',
-            color: 'var(--apple-text-primary)',
-            fontSize: '1rem',
-            lineHeight: '1.6',
-            overflowY: 'auto'
-          }}>
+        {/* AI Chat Interface */}
+        <div className="apple-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '540px', border: '1px solid var(--apple-border-strong)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+          {/* Header */}
+          <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={16} color="#fff" />
+            </div>
+            <div>
+              <h3 className="apple-title-small" style={{ margin: 0, fontSize: '1rem' }}>AI Analyst</h3>
+              <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 600 }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> Online
+              </span>
+            </div>
+          </div>
+
+          {/* Chat Area */}
+          <div style={{ flex: 1, padding: '24px', overflowY: 'auto', background: 'rgba(0,0,0,0.15)' }}>
             {generating ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--apple-text-secondary)', gap: '16px', paddingTop: '40px' }}>
-                <Loader2 size={32} className="spin" style={{ color: '#8b5cf6' }} />
-                <span>AI is analyzing MoM trends and performance data...</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', color: 'var(--apple-text-secondary)' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Loader2 size={16} className="spin" style={{ color: '#8b5cf6' }} />
+                </div>
+                <div style={{ background: 'var(--apple-card)', padding: '12px 16px', borderRadius: '16px', borderTopLeftRadius: '4px', border: '1px solid var(--apple-border)' }}>
+                  <span className="typing-dot">.</span><span className="typing-dot" style={{ animationDelay: '0.2s' }}>.</span><span className="typing-dot" style={{ animationDelay: '0.4s' }}>.</span>
+                </div>
               </div>
             ) : aiResponse ? (
-              <div className="markdown-content">
-                <ReactMarkdown>{aiResponse}</ReactMarkdown>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Sparkles size={16} color="#fff" />
+                </div>
+                <div className="markdown-content" style={{ background: 'var(--apple-card)', padding: '16px 20px', borderRadius: '16px', borderTopLeftRadius: '4px', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.6', maxWidth: '85%' }}>
+                  <ReactMarkdown>{aiResponse}</ReactMarkdown>
+                </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--apple-text-secondary)', fontStyle: 'italic', paddingTop: '40px' }}>
-                Click 'Generate' to receive strategic AI insights.
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '16px', color: 'var(--apple-text-secondary)', opacity: 0.6 }}>
+                <MessageSquare size={48} strokeWidth={1} />
+                <p style={{ margin: 0 }}>Ask a question about your growth, trends, or performance.</p>
               </div>
             )}
+          </div>
+
+          {/* Input Area */}
+          <div style={{ padding: '20px 24px', background: 'var(--apple-card)', borderTop: '1px solid var(--apple-border)' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <textarea
+                value={customQuestion}
+                onChange={(e) => setCustomQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (dataLoaded && !generating && customQuestion.trim()) handleGenerate('custom')
+                  }
+                }}
+                placeholder="Ask about revenue trends, top performers, or growth..."
+                style={{ 
+                  width: '100%', minHeight: '52px', maxHeight: '150px', padding: '14px 56px 14px 20px', 
+                  borderRadius: '26px', border: '1px solid var(--apple-border-strong)', 
+                  background: 'rgba(255,255,255,0.03)', color: 'var(--apple-text-primary)', 
+                  fontSize: '0.95rem', resize: 'none', overflowY: 'auto',
+                  lineHeight: '1.4', fontFamily: 'inherit',
+                  transition: 'border-color 0.2s, box-shadow 0.2s'
+                }}
+                onFocus={(e) => { e.target.style.borderColor = '#8b5cf6'; e.target.style.boxShadow = '0 0 0 3px rgba(139, 92, 246, 0.15)' }}
+                onBlur={(e) => { e.target.style.borderColor = 'var(--apple-border-strong)'; e.target.style.boxShadow = 'none' }}
+              />
+              <button
+                onClick={() => handleGenerate('custom')}
+                disabled={!dataLoaded || generating || !customQuestion.trim() || !!errorMsg}
+                style={{
+                  position: 'absolute', right: '8px', bottom: '8px',
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: (!dataLoaded || generating || !customQuestion.trim()) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
+                  border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: (!dataLoaded || generating || !customQuestion.trim()) ? 'rgba(255,255,255,0.3)' : '#fff',
+                  cursor: (!dataLoaded || generating || !customQuestion.trim()) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {generating && customQuestion ? <Loader2 size={16} className="spin" /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>}
+              </button>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textAlign: 'center', marginTop: '12px' }}>
+              AI Analyst uses advanced models to interpret your platform data. Press Enter to send, Shift+Enter for a new line.
+            </div>
           </div>
         </div>
 
@@ -286,6 +318,14 @@ export default function AdminAiAnalytics() {
       <style>{`
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .typing-dot {
+          display: inline-block;
+          animation: blink 1.4s infinite both;
+          font-size: 1.5rem;
+          line-height: 0.5;
+        }
+        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
         
         .markdown-content h1, .markdown-content h2, .markdown-content h3 {
           color: var(--apple-text-primary);

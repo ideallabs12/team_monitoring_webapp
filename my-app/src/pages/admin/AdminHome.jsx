@@ -29,6 +29,14 @@ const fmt = (n) =>
 const fmtFull = (n) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
+const fmtCompact = (n) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(n)
+
 const pctColor = (v) => (v > 0 ? '#34d399' : v < 0 ? '#ff453a' : '#86868b')
 const pctBg   = (v) => (v > 0 ? 'rgba(52,211,153,0.12)' : v < 0 ? 'rgba(255,69,58,0.12)' : 'rgba(255,255,255,0.05)')
 const pctBorder= (v) => (v > 0 ? 'rgba(52,211,153,0.25)' : v < 0 ? 'rgba(255,69,58,0.25)' : 'rgba(255,255,255,0.08)')
@@ -722,7 +730,7 @@ export default function AdminHome() {
       <div className="admin-stats-grid">
         <StatCard
           label="MTD REVENUE"
-          value={fmtFull(mtdRevenue)}
+          value={fmtCompact(mtdRevenue)}
           sub="Month-to-date · all teams"
           color="var(--apple-accent-blue)"
           icon={TrendingUp}
@@ -731,7 +739,7 @@ export default function AdminHome() {
         />
         <StatCard
           label={`TOP SALES EXEC (${new Date().toLocaleString('en-US', { month: 'long' }).toUpperCase()})`}
-          value={topSalesExecutive ? fmtFull(topSalesExecutive.revenue) : '$0.00'}
+          value={topSalesExecutive ? fmtCompact(topSalesExecutive.revenue) : '$0'}
           sub={topSalesExecutive ? `${topSalesExecutive.name} • ${topSalesExecutive.calls} call logs` : 'No call logs this month'}
           color="var(--apple-accent-green)"
           icon={PhoneCall}
@@ -747,7 +755,7 @@ export default function AdminHome() {
         />
         <StatCard
           label="TOP TEAM MTD"
-          value={teamWatchlist[0] ? fmtFull(teamWatchlist[0].cur) : '$0.00'}
+          value={teamWatchlist[0] ? fmtCompact(teamWatchlist[0].cur) : '$0'}
           sub={teamWatchlist[0]?.name || '—'}
           color="var(--apple-accent-orange)"
           icon={Target}

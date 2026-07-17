@@ -203,7 +203,7 @@ const COMPANIES = [
   {
     id: 'WYN',
     name: 'WYN conferences',
-    handle: '@WYNconferences',
+    handle: '@Wyn Global Conferences',
     website: 'www.wynconferences.com',
     linkedin: 'https://www.linkedin.com/company/wyn-global-conferences/posts/?feedView=all',
     logo: '/company_logos/WYN.jpg'
@@ -211,7 +211,7 @@ const COMPANIES = [
   {
     id: 'ICON',
     name: 'ICON conferences',
-    handle: '@ICONconferences',
+    handle: '@ICON Global Conferences',
     website: 'www.iconconferences.org',
     linkedin: 'https://www.linkedin.com/company/icon-global-conferences/',
     logo: '/company_logos/ICON.jpg'
@@ -219,7 +219,7 @@ const COMPANIES = [
   {
     id: 'IDIAS',
     name: 'iDIAS conferences',
-    handle: '@iDIASconferences',
+    handle: '@iDIAS Global Conferences',
     website: 'www.idias.org',
     linkedin: 'https://www.linkedin.com/company/idias-global-conferences/',
     logo: '/company_logos/IDIAS.jpg'
@@ -227,7 +227,7 @@ const COMPANIES = [
   {
     id: 'PROSUMMITS',
     name: 'PROSUMMITS',
-    handle: '@PROSUMMITS',
+    handle: '@Prosummits Hybrid Conferences',
     website: 'www.prosummits.org',
     linkedin: 'https://www.linkedin.com/company/prosummits-hybrid-conferences/posts/?feedView=all',
     logo: '/company_logos/PROSUMMITS.jpg'
@@ -235,7 +235,7 @@ const COMPANIES = [
   {
     id: 'WYNXTALKS',
     name: 'WYNxtalks',
-    handle: '@WYNxtalks',
+    handle: '@WYNx Talks',
     website: 'www.wynxtalks.com',
     linkedin: 'https://www.linkedin.com/company/wynxtalks/posts/?feedView=all',
     logo: '/company_logos/WYNXTALKS.jpg'
@@ -243,7 +243,7 @@ const COMPANIES = [
   {
     id: 'NEXT',
     name: 'NEXT CONFERENCES',
-    handle: '@NEXTCONFERENCES',
+    handle: '@Next Premier Conferences',
     website: 'www.nextconferences.org',
     linkedin: 'https://www.linkedin.com/company/next-premier-conferences/posts/?feedView=all',
     logo: '/company_logos/NEXT.jpg'
@@ -251,7 +251,7 @@ const COMPANIES = [
   {
     id: 'VOICE',
     name: 'VOICETALKS',
-    handle: '@VOICETALKS',
+    handle: '@VOICE Talks',
     website: 'www.voicetalks.org',
     linkedin: 'https://www.linkedin.com/company/voicetalks/',
     logo: '/company_logos/VOICE.jpg'
@@ -952,6 +952,17 @@ export default function Template3() {
                 </div>
               )}
               {hasUnsaved && <span style={{ fontSize: '0.8rem', color: '#666' }}>Changes not saved yet — won't appear in View until saved.</span>}
+              <button onClick={() => setActiveTab('view')} style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 28px', borderRadius: '10px', border: '1px solid #2a2a2a',
+                background: 'transparent', color: '#e8a13a',
+                cursor: 'pointer', fontSize: '0.95rem', fontWeight: 700,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,161,58,0.05)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <Eye size={16} /> View PDF
+              </button>
               <button onClick={handleSave} style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '10px 28px', borderRadius: '10px', border: 'none',
@@ -976,53 +987,41 @@ export default function Template3() {
 
           {/* View toolbar */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
+            display: 'flex', flexDirection: 'column', gap: '16px',
             background: 'var(--card-bg, #1a1a1a)',
             border: '1px solid var(--apple-border, #2a2a2a)',
-            borderRadius: '12px', padding: '10px 16px',
+            borderRadius: '12px', padding: '16px',
+            alignItems: 'center'
           }}>
 
-
-            {/* Active theme badge */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '4px 10px', borderRadius: '20px',
-              background: 'rgba(232,161,58,0.08)', border: '1px solid rgba(232,161,58,0.2)',
-            }}>
-              <div style={{ display: 'flex', gap: '3px' }}>
-                {savedTheme.preview.map((c, i) => (
-                  <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: c, border: '1px solid rgba(255,255,255,0.1)' }} />
-                ))}
-              </div>
-              <span style={{ fontSize: '0.72rem', color: '#e8a13a', fontWeight: 600 }}>{savedTheme.name}</span>
-            </div>
-
             {hasUnsaved && (
-              <span style={{
-                fontSize: '0.78rem', padding: '4px 10px', borderRadius: '20px',
-                background: 'rgba(255,159,10,0.12)', color: '#ff9f0a',
-                border: '1px solid rgba(255,159,10,0.3)', fontWeight: 600,
-              }}>⚠ Unsaved edits not reflected — save first</span>
+              <div style={{ textAlign: 'center', width: '100%' }}>
+                <span style={{
+                  fontSize: '0.85rem', padding: '6px 14px', borderRadius: '20px',
+                  background: 'rgba(255,159,10,0.12)', color: '#ff9f0a',
+                  border: '1px solid rgba(255,159,10,0.3)', fontWeight: 600,
+                  display: 'inline-block'
+                }}>⚠ Unsaved edits not reflected — save first</span>
+              </div>
             )}
 
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-              <button
-                onClick={handleDownload}
-                disabled={generating}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '7px 18px', borderRadius: '8px', border: 'none',
-                  background: generating ? 'rgba(232,161,58,0.3)' : 'linear-gradient(135deg, #e8a13a, #d4881e)',
-                  color: '#241a14', cursor: generating ? 'not-allowed' : 'pointer',
-                  fontSize: '0.82rem', fontWeight: 700,
-                  boxShadow: generating ? 'none' : '0 3px 12px rgba(232,161,58,0.4)',
-                  opacity: generating ? 0.7 : 1,
-                }}
-              >
-                <Download size={13} />
-                {generating ? 'Generating…' : 'Download PDF'}
-              </button>
-            </div>
+            <button
+              onClick={handleDownload}
+              disabled={generating}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                padding: '14px 20px', borderRadius: '10px', border: 'none',
+                background: generating ? 'rgba(232,161,58,0.3)' : 'linear-gradient(135deg, #e8a13a, #d4881e)',
+                color: '#241a14', cursor: generating ? 'not-allowed' : 'pointer',
+                fontSize: '1.05rem', fontWeight: 700,
+                boxShadow: generating ? 'none' : '0 4px 16px rgba(232,161,58,0.4)',
+                opacity: generating ? 0.7 : 1,
+                width: '100%', boxSizing: 'border-box'
+              }}
+            >
+              <Download size={18} />
+              {generating ? 'Generating…' : 'Download PDF'}
+            </button>
           </div>
 
           {/* Preview / Code panel */}
