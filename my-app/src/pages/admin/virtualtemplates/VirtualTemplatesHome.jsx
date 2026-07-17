@@ -6,14 +6,6 @@ export default function VirtualTemplatesHome() {
 
   const templates = [
     {
-      id: 'template2',
-      name: 'Template 2',
-      description: 'Experimental UI Template',
-      icon: LayoutTemplate,
-      color: '#10b981', // green accent to differentiate
-      locked: true,
-    },
-    {
       id: 'template3',
       name: 'Virtual Event Review',
       description: 'Generate customized event review invitations',

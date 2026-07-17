@@ -17,6 +17,9 @@ export default function AdminUsers() {
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterTeam, setFilterTeam] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterRole, setFilterRole] = useState('all')
 
   // Profile Detail View State
   const [viewingProfileUser, setViewingProfileUser] = useState(null)
@@ -405,13 +408,38 @@ export default function AdminUsers() {
       const userTeam = user.team_id ? teams.find(t => t.id === user.team_id)?.name.toLowerCase() : ''
 
       const query = searchQuery.toLowerCase()
-      return (
+      const matchesSearch = (
         fullName.includes(query) ||
         email.includes(query) ||
         userTeam.includes(query)
       )
+
+      const matchesTeam = filterTeam === 'all' 
+                          ? true 
+                          : filterTeam === 'noteam' 
+                            ? !user.team_id 
+                            : user.team_id === filterTeam
+      
+      const isDeactivated = !!user.is_deactivated
+      const matchesStatus = filterStatus === 'all'
+                            ? true
+                            : filterStatus === 'active'
+                              ? !isDeactivated
+                              : isDeactivated // 'deactivated'
+
+      const userRole = (user.platform_role || 'user').toLowerCase().trim()
+      const isTeamLead = userRole === 'teamlead' || userRole === 'team lead'
+      const matchesRole = filterRole === 'all'
+                          ? true
+                          : filterRole === 'teamlead'
+                            ? isTeamLead
+                            : filterRole === 'user'
+                              ? !isTeamLead
+                              : false
+
+      return matchesSearch && matchesTeam && matchesStatus && matchesRole
     })
-  }, [nonAdminUsers, teams, searchQuery])
+  }, [nonAdminUsers, teams, searchQuery, filterTeam, filterStatus, filterRole])
 
   // End modal logic removal
 
@@ -1009,27 +1037,73 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Directory Search & Statistics */}
+      {/* Directory Search & Filters */}
       <div className="card" style={{ marginBottom: '24px', padding: '20px' }}>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '14px', top: '14px', color: '#64748b' }} />
-            <input
-              type="text"
-              placeholder="Search by name, email, or team assignment..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-control"
-              style={{ paddingLeft: '42px' }}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Original Search & Stats Row */}
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+              <Search size={18} style={{ position: 'absolute', left: '14px', top: '14px', color: '#64748b' }} />
+              <input
+                type="text"
+                placeholder="Search by name, email, or team assignment..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="form-control"
+                style={{ paddingLeft: '42px' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', fontSize: '0.88rem', fontWeight: '500' }}>
+                Total Users: {filteredUsers.length}
+              </span>
+              <span style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', fontSize: '0.88rem', fontWeight: '500', color: '#ef4444' }}>
+                Deactivated: {filteredUsers.filter(u => u.is_deactivated).length}
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', fontSize: '0.88rem', fontWeight: '500' }}>
-              Total Users: {nonAdminUsers.length}
-            </span>
-            <span style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', fontSize: '0.88rem', fontWeight: '500', color: '#ef4444' }}>
-              Deactivated: {nonAdminUsers.filter(u => u.is_deactivated).length}
-            </span>
+
+          {/* Filters Row (Columns) */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <select 
+              value={filterTeam} 
+              onChange={e => setFilterTeam(e.target.value)}
+              className="apple-input"
+              style={{ flex: 1, minWidth: '160px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.85rem' }}
+            >
+              <option value="all">All Teams</option>
+              <option value="noteam">No Team Assigned</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <select 
+              value={filterStatus} 
+              onChange={e => setFilterStatus(e.target.value)}
+              className="apple-input"
+              style={{ flex: 1, minWidth: '160px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.85rem' }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Accounts</option>
+              <option value="deactivated">Deactivated Accounts</option>
+            </select>
+            <select 
+              value={filterRole} 
+              onChange={e => setFilterRole(e.target.value)}
+              className="apple-input"
+              style={{ flex: 1, minWidth: '160px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.85rem' }}
+            >
+              <option value="all">All Roles</option>
+              <option value="user">Users</option>
+              <option value="teamlead">Team Leads</option>
+            </select>
+            {(filterTeam !== 'all' || filterStatus !== 'all' || filterRole !== 'all') && (
+              <button 
+                onClick={() => { setFilterTeam('all'); setFilterStatus('all'); setFilterRole('all'); }}
+                className="apple-btn-secondary"
+                style={{ flex: '0 0 auto', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--apple-border)', background: 'transparent', color: 'var(--apple-text-secondary)', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -266,7 +266,7 @@ const DEFAULT_FIELDS = {
   speakerName: 'Dr. Emma Abalogun',
   focusAreas: 'Leadership, Health, Global Impact',
   peerScore: '81.2%',
-  speakerImageUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
+  speakerImageUrl: '/company_logos/person-dummy.jpg',
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -346,7 +346,7 @@ function buildHtml(fields, theme) {
   <tr>
     <td style="padding:24px 40px 10px 40px;">
       <p style="margin:0; font-size:16px; line-height:1.5; color:${t.textPrimary}; font-family: Arial, sans-serif;">
-        Convert your virtual talk into a <b style="color:${t.accent};">complimentary in-person speaking opportunity</b> by sharing a 1-minute testimonial on <span style="color:${t.accent}; text-decoration:underline;">LinkedIn</span>. It also helps increase your <b style="color:${t.accent};">peer score</b>.
+        An opportunity to convert your virtual talk into a <b style="color:${t.accent};">complimentary in-person speaking opportunity</b> by sharing a 1-minute testimonial on <span style="color:${t.accent}; text-decoration:underline;">LinkedIn</span>. It also helps increase your <b style="color:${t.accent};">peer score</b>.
       </p>
     </td>
   </tr>
@@ -838,75 +838,7 @@ export default function Template3() {
           {/* Form body */}
           <div style={{ padding: '28px 32px' }}>
 
-            {/* ── COLOR THEME PICKER ── */}
-            {isAdminRoute && (
-              <>
-                <div style={{ marginBottom: showThemes ? '16px' : '28px', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
-                  <input
-                    type="checkbox"
-                    id="showThemesToggle"
-                    checked={showThemes}
-                    onChange={(e) => setShowThemes(e.target.checked)}
-                    style={{ cursor: 'pointer', accentColor: '#e8a13a' }}
-                  />
-                  <label htmlFor="showThemesToggle" style={{ fontSize: '0.82rem', color: '#888', cursor: 'pointer', fontWeight: 600 }}>
-                    Override Theme (Admin Only)
-                  </label>
-                </div>
 
-                {showThemes && (
-                  <>
-                    <div style={{ marginBottom: '28px' }}>
-                  <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                    <Palette size={12} /> Color Theme
-                  </label>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    {Object.values(THEMES).map(theme => {
-                      const isSelected = draftThemeId === theme.id
-                      return (
-                        <button
-                          key={theme.id}
-                          onClick={() => handleThemeChange(theme.id)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 16px', borderRadius: '12px', cursor: 'pointer',
-                            border: isSelected ? '2px solid #e8a13a' : '2px solid #2a2a2a',
-                            background: isSelected ? 'rgba(232,161,58,0.1)' : '#111',
-                            transition: 'all 0.15s',
-                            boxShadow: isSelected ? '0 0 0 3px rgba(232,161,58,0.2)' : 'none',
-                          }}
-                        >
-                          {/* Color swatches */}
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            {theme.preview.map((color, i) => (
-                              <div key={i} style={{
-                                width: '16px', height: '16px', borderRadius: '50%',
-                                background: color,
-                                border: '1px solid rgba(255,255,255,0.15)',
-                              }} />
-                            ))}
-                          </div>
-                          <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? '#e8a13a' : '#ccc' }}>
-                              {theme.name}
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '1px' }}>
-                              {theme.label}
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <CheckCircle2 size={14} color="#e8a13a" style={{ marginLeft: 'auto' }} />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div style={{ height: '1px', background: '#2a2a2a', marginBottom: '28px' }} />
-                  </>
-                )}
-              </>
-            )}
             {/* ── Speaker Image ── */}
             <div style={{ marginBottom: '28px' }}>
               <label style={labelStyle}>Speaker Image</label>
@@ -941,7 +873,7 @@ export default function Template3() {
                 <img
                   src={draft.speakerImageUrl} alt="Speaker"
                   style={{ width: '70px', height: '70px', borderRadius: '50%', border: '2px solid #e8a13a', objectFit: 'cover', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
-                  onError={e => { e.target.src = 'https://randomuser.me/api/portraits/women/68.jpg' }}
+                  onError={e => { e.target.src = '/company_logos/person-dummy.jpg' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -1009,6 +941,16 @@ export default function Template3() {
               borderTop: '1px solid #2a2a2a',
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px',
             }}>
+              {savedToast && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '7px 14px', borderRadius: '8px',
+                  background: 'rgba(52,199,89,0.15)', border: '1px solid rgba(52,199,89,0.3)',
+                  color: '#34c759', fontSize: '0.85rem', fontWeight: 600,
+                }}>
+                  <CheckCircle2 size={15} /> Saved successfully
+                </div>
+              )}
               {hasUnsaved && <span style={{ fontSize: '0.8rem', color: '#666' }}>Changes not saved yet — won't appear in View until saved.</span>}
               <button onClick={handleSave} style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
@@ -1039,19 +981,7 @@ export default function Template3() {
             border: '1px solid var(--apple-border, #2a2a2a)',
             borderRadius: '12px', padding: '10px 16px',
           }}>
-            <div style={{ display: 'flex', gap: '4px', background: '#0f0f0f', borderRadius: '8px', padding: '3px' }}>
-              {[{ id: 'preview', label: 'Preview', icon: Eye }, { id: 'code', label: 'HTML Code', icon: FileText }].map(t => (
-                <button key={t.id} onClick={() => setViewMode(t.id)} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '6px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                  fontSize: '0.82rem', fontWeight: 600, transition: 'all 0.15s',
-                  background: viewMode === t.id ? '#e8a13a' : 'transparent',
-                  color: viewMode === t.id ? '#241a14' : '#888',
-                }}>
-                  <t.icon size={13} /> {t.label}
-                </button>
-              ))}
-            </div>
+
 
             {/* Active theme badge */}
             <div style={{
@@ -1076,16 +1006,6 @@ export default function Template3() {
             )}
 
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-              <button onClick={handleCopy} style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '8px',
-                border: '1px solid #2a2a2a',
-                background: copied ? 'rgba(52,199,89,0.15)' : 'transparent',
-                color: copied ? '#34c759' : '#888',
-                cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
-              }}>
-                <Copy size={13} /> {copied ? 'Copied!' : 'Copy HTML'}
-              </button>
               <button
                 onClick={handleDownload}
                 disabled={generating}
@@ -1111,7 +1031,6 @@ export default function Template3() {
             border: '1px solid var(--apple-border, #2a2a2a)',
             borderRadius: '16px', overflow: 'hidden',
           }}>
-            {viewMode === 'preview' ? (
               <iframe
                 ref={iframeRef}
                 srcDoc={savedHtml}
@@ -1131,16 +1050,6 @@ export default function Template3() {
                   }
                 }}
               />
-            ) : (
-              <pre style={{
-                margin: 0, padding: '24px',
-                fontSize: '0.75rem', lineHeight: '1.65',
-                color: '#c9beb2', fontFamily: "'Fira Code', 'Courier New', monospace",
-                whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-              }}>
-                {savedHtml}
-              </pre>
-            )}
           </div>
         </div>
       )}
