@@ -48,6 +48,7 @@ import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminExportData from './pages/admin/AdminExportData'
 import VirtualTemplatesHome from './pages/admin/virtualtemplates/VirtualTemplatesHome'
 import Template3 from './pages/admin/virtualtemplates/Template3'
+import Testing from './pages/admin/virtualtemplates/Testing'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -380,6 +381,7 @@ function App() {
           <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
           <Route path="/virtual-events" element={hasProfile && !isAdmin ? <VirtualTemplatesHome /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/testing" element={hasProfile && !isAdmin ? <Testing /> : <Navigate to="/complete-profile" replace />} />
         </Route>
 
         {/* Admin Routes */}
@@ -407,6 +409,7 @@ function App() {
           <Route path="virtual-events">
             <Route index element={<VirtualTemplatesHome />} />
             <Route path="template3" element={<Template3 />} />
+            <Route path="testing" element={<Testing />} />
           </Route>
           <Route path="settings" element={<AdminSettings />} />
         </Route>

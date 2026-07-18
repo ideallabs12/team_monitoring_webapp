@@ -31,3 +31,9 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Ignored assets
+my-app/public/company_logos/Authenticate Domain - Brevo.html
+my-app/public/company_logos/Authenticate Domain - Brevo_files/
+my-app/public/company_logos/mail_footer.png
+my-app/public/company_logos/mail_header.png

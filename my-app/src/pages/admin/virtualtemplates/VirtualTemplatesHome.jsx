@@ -6,11 +6,11 @@ export default function VirtualTemplatesHome() {
 
   const templates = [
     {
-      id: 'template3',
-      name: 'Virtual Event Review',
-      description: 'Generate customized event review invitations',
+      id: 'testing',
+      name: 'Speaker Pass Invite',
+      description: 'Generate complimentary speaker pass invitations',
       icon: LayoutTemplate,
-      color: '#3b82f6', // blue accent to differentiate
+      color: '#e8a13a', // amber accent
     },
     // Future templates can be added here
   ]
