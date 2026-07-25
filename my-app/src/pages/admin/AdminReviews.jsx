@@ -126,15 +126,58 @@ export default function AdminReviews() {
     let result = reviews
     
     if (selectedWriteUpId !== 'all') {
-      result = result.filter(r => r.event_id === selectedWriteUpId)
+      result = result.filter(r => String(r.event_id) === String(selectedWriteUpId))
     }
     
-    if (filterStatus !== 'all') {
+    if (filterStatus !== 'all' && filterStatus !== 'analysis') {
       result = result.filter(r => r.status === filterStatus)
     }
     
     return result
   }, [reviews, filterStatus, selectedWriteUpId])
+
+  const analyticsData = useMemo(() => {
+    if (filterStatus !== 'analysis') return null;
+
+    const totalReviews = filteredReviews.length;
+    const approvedReviews = filteredReviews.filter(r => r.status === 'approved').length;
+    const rejectedReviews = filteredReviews.filter(r => r.status === 'rejected').length;
+    const pendingReviews = filteredReviews.filter(r => r.status === 'pending').length;
+    const feedbackReviews = filteredReviews.filter(r => r.status === 'feedback').length;
+
+    const userMap = {};
+    filteredReviews.forEach(r => {
+      const userId = r.user_id || (r.profiles?.email) || 'Unknown';
+      if (!userMap[userId]) {
+        userMap[userId] = {
+          name: `${r.profiles?.first_name || 'Unknown'} ${r.profiles?.last_name || ''}`.trim(),
+          email: r.profiles?.email,
+          count: 0,
+          approved: 0,
+          rejected: 0,
+          pending: 0,
+          feedback: 0,
+          team: r.teams?.name || 'No Team'
+        };
+      }
+      userMap[userId].count++;
+      if (r.status === 'approved') userMap[userId].approved++;
+      if (r.status === 'rejected') userMap[userId].rejected++;
+      if (r.status === 'pending') userMap[userId].pending++;
+      if (r.status === 'feedback') userMap[userId].feedback++;
+    });
+
+    const userStats = Object.values(userMap).sort((a, b) => b.count - a.count);
+
+    return {
+      totalReviews,
+      approvedReviews,
+      rejectedReviews,
+      pendingReviews,
+      feedbackReviews,
+      userStats
+    };
+  }, [filteredReviews, filterStatus]);
 
   if (loading && reviews.length === 0) {
     return (
@@ -197,10 +240,81 @@ export default function AdminReviews() {
         <button className={`apple-pill-tab ${filterStatus === 'feedback' ? 'active' : ''}`} onClick={() => setFilterStatus('feedback')}>
           Needs Revision
         </button>
+        <button className={`apple-pill-tab ${filterStatus === 'analysis' ? 'active' : ''}`} onClick={() => setFilterStatus('analysis')}>
+          Analysis
+        </button>
       </div>
 
       {/* ===== REVIEWS LIST ===== */}
-      {filteredReviews.length > 0 ? (
+      {filterStatus === 'analysis' && analyticsData ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
+            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(0,113,227,0.1)', border: '1px solid rgba(0,113,227,0.2)' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>{analyticsData.totalReviews}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Total Reviews</div>
+            </div>
+            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#34d399' }}>{analyticsData.approvedReviews}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Approved</div>
+            </div>
+            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#fbbf24' }}>{analyticsData.pendingReviews}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Pending</div>
+            </div>
+            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.2)' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>{analyticsData.feedbackReviews}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Needs Revision</div>
+            </div>
+            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#f87171' }}>{analyticsData.rejectedReviews}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Rejected</div>
+            </div>
+          </div>
+
+          <div className="apple-card" style={{ padding: '24px' }}>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '1.3rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="var(--apple-accent-blue)" /> Submissions by Person
+            </h3>
+            {analyticsData.userStats.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <th style={{ padding: '16px 12px', fontWeight: '600' }}>Name</th>
+                      <th style={{ padding: '16px 12px', fontWeight: '600' }}>Team</th>
+                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Total</th>
+                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Approved</th>
+                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Pending</th>
+                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Needs Rev.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analyticsData.userStats.map((user, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--apple-border)', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <td style={{ padding: '16px 12px', color: '#fff' }}>
+                          <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{user.name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{user.email || 'No Email'}</div>
+                        </td>
+                        <td style={{ padding: '16px 12px' }}>
+                          <span className="apple-badge apple-badge-blue">{user.team}</span>
+                        </td>
+                        <td style={{ padding: '16px 12px', textAlign: 'center', fontWeight: '700', color: 'var(--apple-accent-blue)', fontSize: '1.1rem' }}>{user.count}</td>
+                        <td style={{ padding: '16px 12px', textAlign: 'center', color: '#34d399', fontWeight: '600' }}>{user.approved}</td>
+                        <td style={{ padding: '16px 12px', textAlign: 'center', color: '#fbbf24', fontWeight: '600' }}>{user.pending}</td>
+                        <td style={{ padding: '16px 12px', textAlign: 'center', color: 'var(--apple-accent-orange)', fontWeight: '600' }}>{user.feedback}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '40px 20px' }}>
+                No submissions found.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : filteredReviews.length > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {filteredReviews.map(review => (
             <div key={review.id} onClick={() => setSelectedReview(review)} style={{ 
