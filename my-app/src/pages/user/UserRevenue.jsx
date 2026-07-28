@@ -51,7 +51,7 @@ export default function UserRevenue({ user, isAdminView }) {
 
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear())
   const [historyMonth, setHistoryMonth] = useState(new Date().getMonth()) // 0-indexed
-  const [isAllTime, setIsAllTime] = useState(false)
+  const [isAllTime, setIsAllTime] = useState(isAdminView ? true : false)
 
   const [allTeams, setAllTeams] = useState(revenueCache.userId === user?.id ? revenueCache.allTeams : [])
 
@@ -120,11 +120,9 @@ export default function UserRevenue({ user, isAdminView }) {
   const last12Total = useMemo(() => sumRevenues(filterRevenuesByPeriod(revenues, 12)), [revenues])
 
   const uniqueTeamIds = useMemo(() => {
-    if (teams.length > 0) {
-      return teams.map(t => t.id)
-    }
+    const currentTeamIds = teams.map(t => t.id)
     const revTeamIds = revenues.map(r => r.team_id)
-    return [...new Set(revTeamIds)]
+    return [...new Set([...currentTeamIds, ...revTeamIds])]
   }, [teams, revenues])
 
   // Generate the last 12 months for the breakdown grid

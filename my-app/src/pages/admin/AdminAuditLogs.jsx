@@ -9,7 +9,8 @@ const TABS = [
   { id: 'login', label: 'Login Activity', icon: LogIn },
   { id: 'active', label: 'Active Members', icon: Users },
   { id: 'admin', label: 'Admin Activity', icon: ShieldAlert },
-  { id: 'page_view', label: 'Page Activity', icon: Activity },
+  { id: 'user_page_view', label: 'Users Page Activity', icon: Activity },
+  { id: 'admin_page_view', label: 'Admin Page Activity', icon: Activity },
 ]
 
 const EXCLUDED_EMAILS = ['signatureglobalconferences@gmail.com', 'user1@gmail.com']
@@ -25,8 +26,8 @@ export default function AdminAuditLogs() {
   
   const allowedTabs = TABS.filter(tab => {
     if (isMasterAdmin) return true
-    // Map 'page_view' to 'page' since our feature key is 'auditLogs_page'
-    const keyMap = { page_view: 'page' }
+    // Map 'user_page_view' and 'admin_page_view' to 'page' since our feature key is 'auditLogs_page'
+    const keyMap = { user_page_view: 'page', admin_page_view: 'page' }
     const featureKey = `auditLogs_${keyMap[tab.id] || tab.id}`
     return !!featureAccess?.[featureKey]
   })
@@ -64,8 +65,8 @@ export default function AdminAuditLogs() {
       actionFilter = ['login']
     } else if (activeTab === 'admin') {
       actionFilter = ['admin_activity']
-    } else if (activeTab === 'page_view') {
-      actionFilter = ['page_view']
+    } else if (activeTab === 'user_page_view' || activeTab === 'admin_page_view') {
+      actionFilter = ['page_view', 'user_page_view', 'admin_page_view']
     }
 
     if (activeTab !== 'active') {
@@ -77,12 +78,27 @@ export default function AdminAuditLogs() {
         `)
         .in('action_type', actionFilter)
         .order('created_at', { ascending: false })
-        .limit(200) // fetch more to account for client-side filtering
+        .limit(500) // fetch more to account for client-side filtering
       
       if (error) {
         console.error('Error fetching audit logs:', error)
       } else if (data) {
-        const filtered = data.filter(log => !EXCLUDED_EMAILS.includes(log.user?.email))
+        let filtered = data.filter(log => !EXCLUDED_EMAILS.includes(log.user?.email))
+        
+        if (activeTab === 'user_page_view') {
+          filtered = filtered.filter(log => {
+            if (log.action_type === 'user_page_view') return true;
+            if (log.action_type === 'admin_page_view') return false;
+            return !log.details?.path?.startsWith('/admin/');
+          })
+        } else if (activeTab === 'admin_page_view') {
+          filtered = filtered.filter(log => {
+            if (log.action_type === 'admin_page_view') return true;
+            if (log.action_type === 'user_page_view') return false;
+            return log.details?.path?.startsWith('/admin/');
+          })
+        }
+        
         setLogs(filtered.slice(0, 100))
       }
     }
@@ -109,8 +125,10 @@ export default function AdminAuditLogs() {
       actionFilter = ['login']
     } else if (activeTab === 'admin') {
       actionFilter = ['admin_activity']
-    } else if (activeTab === 'page_view') {
-      actionFilter = ['page_view']
+    } else if (activeTab === 'user_page_view') {
+      actionFilter = ['user_page_view']
+    } else if (activeTab === 'admin_page_view') {
+      actionFilter = ['admin_page_view']
     }
 
     if (actionFilter.length > 0) {
@@ -168,7 +186,7 @@ export default function AdminAuditLogs() {
       const dev = details.device ? ` from ${details.device}` : ''
       return (details.description || JSON.stringify(details)) + dev
     }
-    if (action_type === 'page_view') {
+    if (action_type === 'page_view' || action_type === 'user_page_view' || action_type === 'admin_page_view') {
       return `Navigated to ${details.page_name}`
     }
     return JSON.stringify(details)

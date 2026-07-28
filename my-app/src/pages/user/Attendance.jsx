@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { MapPin, Wifi, CheckCircle, AlertTriangle, Clock, Map } from 'lucide-react'
+import { MapPin, CheckCircle, AlertTriangle, Clock, Map } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
-
 
 // Haversine formula to calculate distance between two coordinates
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
@@ -27,11 +26,8 @@ export default function Attendance({ user }) {
   const [profile, setProfile] = useState(null)
   const [todayLog, setTodayLog] = useState(null)
   const [officeLocations, setOfficeLocations] = useState([])
-  const [officeIps, setOfficeIps] = useState([])
   
-  const [ipStatus, setIpStatus] = useState('pending') // pending, success, fail
   const [gpsStatus, setGpsStatus] = useState('pending')
-  const [currentIp, setCurrentIp] = useState('')
   const [currentLocation, setCurrentLocation] = useState(null)
   
   const [errorMsg, setErrorMsg] = useState('')
@@ -52,11 +48,10 @@ export default function Attendance({ user }) {
 
     async function loadInitialData() {
       try {
-        const [profileRes, logRes, locRes, ipRes] = await Promise.all([
-          supabase.from('profiles').select('require_gps_attendance, require_ip_attendance, wfh_enabled').eq('id', user.id).single(),
+        const [profileRes, logRes, locRes] = await Promise.all([
+          supabase.from('profiles').select('require_gps_attendance, wfh_enabled').eq('id', user.id).single(),
           supabase.from('attendance_logs').select('*').eq('user_id', user.id).eq('attendance_date', new Date().toISOString().split('T')[0]).maybeSingle(),
-          supabase.from('office_locations').select('*').eq('is_active', true),
-          supabase.from('office_ips').select('*')
+          supabase.from('office_locations').select('*').eq('is_active', true)
         ])
 
         if (profileRes.error) throw profileRes.error
@@ -64,10 +59,8 @@ export default function Attendance({ user }) {
         // Defaults to true if null in DB
         const pData = profileRes.data
         if (pData.require_gps_attendance === null) pData.require_gps_attendance = true
-        if (pData.require_ip_attendance === null) pData.require_ip_attendance = true
         setProfile(pData)
         setOfficeLocations(locRes.data || [])
-        setOfficeIps(ipRes.data || [])
 
         if (logRes.data) {
           setTodayLog(logRes.data)
@@ -87,14 +80,10 @@ export default function Attendance({ user }) {
     setChecking(true)
     setErrorMsg('')
     setSuccessMsg('')
-    setIpStatus('pending')
     setGpsStatus('pending')
     setShowExceptionForm(false)
 
-    let ipPassed = true
     let gpsPassed = true
-
-    let fetchedIp = ''
     let fetchedLocation = null
     let validLocations = []
 
@@ -111,7 +100,7 @@ export default function Attendance({ user }) {
         
         if (profile.wfh_enabled || officeLocations.length === 0) {
           setGpsStatus('skipped')
-          validLocations = [...officeLocations] // WFH bypasses, so any IP (if required) can technically pass, though usually IP is also bypassed
+          validLocations = [...officeLocations] 
         } else {
           for (const loc of officeLocations) {
             const distance = getDistanceFromLatLonInMeters(lat, lng, loc.latitude, loc.longitude)
@@ -135,62 +124,23 @@ export default function Attendance({ user }) {
       }
     } else {
       setGpsStatus('skipped')
-      validLocations = [...officeLocations] // If GPS is not required, any active location's IP is allowed
-    }
-
-    // 2. IP Check
-    if (profile?.require_ip_attendance) {
-      try {
-        const res = await fetch('https://api.ipify.org?format=json')
-        const data = await res.json()
-        fetchedIp = data.ip
-        setCurrentIp(data.ip)
-        
-        if (profile.wfh_enabled || officeLocations.length === 0) {
-          setIpStatus('skipped')
-        } else {
-          // Determine allowed IPs based on valid locations
-          let isAllowedIp = false
-          for (const loc of validLocations) {
-            const locIps = officeIps.filter(ip => ip.location_id === loc.id)
-            if (locIps.some(ipConfig => ipConfig.ip_address.split(',').map(i => i.trim()).includes(data.ip))) {
-              isAllowedIp = true
-              break
-            }
-          }
-          
-          if (isAllowedIp) {
-            setIpStatus('success')
-          } else {
-            setIpStatus('fail')
-            ipPassed = false
-          }
-        }
-      } catch (err) {
-        console.error('IP fetch error:', err)
-        if (!profile.wfh_enabled) {
-          setIpStatus('fail')
-          ipPassed = false
-        }
-      }
-    } else {
-      setIpStatus('skipped')
+      validLocations = [...officeLocations] 
     }
 
     setChecking(false)
 
-    if (!ipPassed || !gpsPassed) {
+    if (!gpsPassed) {
       setShowExceptionForm(true)
     } else {
       if (action === 'in') {
-        handleCheckIn(false, fetchedIp, fetchedLocation)
+        handleCheckIn(false, fetchedLocation)
       } else {
-        handleCheckOut(false, fetchedIp, fetchedLocation)
+        handleCheckOut(false, fetchedLocation)
       }
     }
   }
 
-  const handleCheckIn = async (isException = false, overrideIp = currentIp, overrideLocation = currentLocation) => {
+  const handleCheckIn = async (isException = false, overrideLocation = currentLocation) => {
     setChecking(true)
     setErrorMsg('')
     
@@ -206,7 +156,6 @@ export default function Attendance({ user }) {
         check_in_time: new Date().toISOString(),
         latitude: overrideLocation?.lat || null,
         longitude: overrideLocation?.lng || null,
-        ip_address: overrideIp || null,
         status: isException ? 'pending_approval' : 'present',
         exception_reason: isException ? exceptionReason : null
       }
@@ -226,7 +175,7 @@ export default function Attendance({ user }) {
     }
   }
 
-  const handleCheckOut = async (isException = false, overrideIp = currentIp, overrideLocation = currentLocation) => {
+  const handleCheckOut = async (isException = false, overrideLocation = currentLocation) => {
     if (!todayLog) return
     setChecking(true)
     setErrorMsg('')
@@ -340,32 +289,12 @@ export default function Attendance({ user }) {
         </div>
 
         {/* Verification Checks Panel (Only show when checking in or failed) */}
-        {(!isCheckedIn || showExceptionForm) && (ipStatus !== 'pending' || gpsStatus !== 'pending' || checking) && (
+        {(!isCheckedIn || showExceptionForm) && (gpsStatus !== 'pending' || checking) && (
           <div className="apple-card" style={{ padding: '24px' }}>
             <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Verification Checks</h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              {/* IP Check */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Wifi size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>Office Network</h4>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                    {profile?.wfh_enabled ? 'Not required (WFH bypass enabled)' : profile?.require_ip_attendance ? 'Must be connected to an office Wi-Fi' : 'Not required for your profile'}
-                  </p>
-                  {currentIp && <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: ipStatus === 'fail' ? '#ef4444' : '#94a3b8' }}>Detected IP: {currentIp}</p>}
-                </div>
-                <div>
-                  {ipStatus === 'pending' && checking && <span style={{ color: 'var(--apple-text-secondary)' }}>Checking...</span>}
-                  {ipStatus === 'skipped' && <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500' }}>SKIPPED</span>}
-                  {ipStatus === 'success' && <CheckCircle style={{ color: '#4ade80' }} size={24} />}
-                  {ipStatus === 'fail' && <AlertTriangle style={{ color: '#ef4444' }} size={24} />}
-                </div>
-              </div>
-
               {/* GPS Check */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -388,8 +317,6 @@ export default function Attendance({ user }) {
 
             </div>
 
-            {/* Success State is now handled automatically via auto-checkin */}
-
             {/* Exception Form */}
             {showExceptionForm && (
               <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -401,7 +328,7 @@ export default function Attendance({ user }) {
                 </p>
                 <textarea
                   className="apple-input"
-                  placeholder="E.g., I am at a client site today, or office Wi-Fi is down..."
+                  placeholder="E.g., I am at a client site today..."
                   value={exceptionReason}
                   onChange={(e) => setExceptionReason(e.target.value)}
                   rows={3}

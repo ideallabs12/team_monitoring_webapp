@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { CheckCircle, XCircle, Clock, Search, MapPin, Wifi, AlertTriangle, Settings, Plus, Trash2, Pencil, Check, X, ToggleLeft, ToggleRight } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Search, MapPin, AlertTriangle, Settings, Plus, Trash2, Pencil, Check, X } from 'lucide-react'
+
+// Haversine formula to calculate distance between two coordinates
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Radius of the earth in m
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+  const d = R * c; 
+  return d;
+}
 
 export default function AdminAttendance() {
   const [logs, setLogs] = useState([])
+  const [officeLocations, setOfficeLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // all, pending, present
   const [search, setSearch] = useState('')
@@ -16,17 +32,21 @@ export default function AdminAttendance() {
   const fetchLogs = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('attendance_logs')
-        .select(`
-          *,
-          profiles:user_id (first_name, last_name, email, team_id)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100)
+      const [logsRes, locRes] = await Promise.all([
+        supabase
+          .from('attendance_logs')
+          .select(`
+            *,
+            profiles:user_id (first_name, last_name, email, team_id)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase.from('office_locations').select('*').eq('is_active', true)
+      ])
 
-      if (error) throw error
-      setLogs(data || [])
+      if (logsRes.error) throw logsRes.error
+      setLogs(logsRes.data || [])
+      setOfficeLocations(locRes.data || [])
     } catch (err) {
       console.error('Error fetching attendance logs:', err)
     } finally {
@@ -95,6 +115,18 @@ export default function AdminAttendance() {
     }
     return true
   })
+
+  const getDistanceText = (log) => {
+    if (!log.latitude || !log.longitude) return 'No Location Recorded'
+    if (officeLocations.length === 0) return `${log.latitude.toFixed(5)}, ${log.longitude.toFixed(5)}`
+    
+    let minDistance = Infinity
+    for (const loc of officeLocations) {
+      const dist = getDistanceFromLatLonInMeters(log.latitude, log.longitude, loc.latitude, loc.longitude)
+      if (dist < minDistance) minDistance = dist
+    }
+    return `${Math.round(minDistance)} meters away from office`
+  }
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -173,7 +205,7 @@ export default function AdminAttendance() {
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.email}</div>
                     </td>
-                    <td style={{ padding: '16px', color: '#e2e8f0', fontSize: '0.9rem' }}>
+                    <td style={{ padding: '16px', color: '#fff', fontSize: '0.9rem', fontWeight: '500' }}>
                       {new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                     </td>
                     <td style={{ padding: '16px' }}>
@@ -191,10 +223,7 @@ export default function AdminAttendance() {
                     <td style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                          <Wifi size={14} /> {log.ip_address || 'No IP Recorded'}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                          <MapPin size={14} /> {log.latitude ? `${log.latitude}, ${log.longitude}` : 'No Location Recorded'}
+                          <MapPin size={14} /> {getDistanceText(log)}
                         </div>
                       </div>
                     </td>
@@ -252,7 +281,7 @@ export default function AdminAttendance() {
                     <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>{log.profiles?.email}</div>
                   </div>
                   <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '500' }}>
                       {new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                     </div>
                     <div style={{ marginTop: '4px' }}>
@@ -282,10 +311,7 @@ export default function AdminAttendance() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                    <Wifi size={14} /> {log.ip_address || 'No IP'}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                    <MapPin size={14} /> {log.latitude ? `${log.latitude}, ${log.longitude}` : 'No Location'}
+                    <MapPin size={14} /> {getDistanceText(log)}
                   </div>
                 </div>
 
@@ -354,7 +380,6 @@ const AppleToggle = ({ checked, onChange }) => {
 
 function AttendanceSettings() {
   const [locations, setLocations] = useState([])
-  const [ips, setIps] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Location form
@@ -363,15 +388,10 @@ function AttendanceSettings() {
   const [locLng, setLocLng] = useState('')
   const [locRadius, setLocRadius] = useState('300')
 
-  // IP forms by location
-  const [ipForms, setIpForms] = useState({})
-
   // Editing state
   const [editingLoc, setEditingLoc] = useState(null)
   const [editLocName, setEditLocName] = useState('')
   const [editLocRadius, setEditLocRadius] = useState('')
-  const [editingIp, setEditingIp] = useState(null)
-  const [editIpName, setEditIpName] = useState('')
 
   useEffect(() => {
     fetchSettings()
@@ -379,12 +399,8 @@ function AttendanceSettings() {
 
   const fetchSettings = async () => {
     setLoading(true)
-    const [locRes, ipRes] = await Promise.all([
-      supabase.from('office_locations').select('*').order('created_at', { ascending: true }),
-      supabase.from('office_ips').select('*').order('created_at', { ascending: true })
-    ])
-    if (locRes.data) setLocations(locRes.data)
-    if (ipRes.data) setIps(ipRes.data)
+    const { data } = await supabase.from('office_locations').select('*').order('created_at', { ascending: true })
+    if (data) setLocations(data)
     setLoading(false)
   }
 
@@ -402,41 +418,9 @@ function AttendanceSettings() {
     }
   }
 
-  const handleIpFormChange = (locId, field, value) => {
-    setIpForms(prev => ({
-      ...prev,
-      [locId]: { ...prev[locId], [field]: value }
-    }))
-  }
-
-  const addIpToLocation = async (e, locId) => {
-    e.preventDefault()
-    const form = ipForms[locId]
-    if (!form?.name || !form?.ip) return
-
-    const { data, error } = await supabase
-      .from('office_ips')
-      .insert({ location_id: locId, name: form.name, ip_address: form.ip })
-      .select()
-
-    if (!error && data) {
-      setIps([...ips, ...data])
-      handleIpFormChange(locId, 'name', '')
-      handleIpFormChange(locId, 'ip', '')
-    } else {
-      alert('Error adding IP')
-    }
-  }
-
   const deleteLocation = async (id) => {
     await supabase.from('office_locations').delete().eq('id', id)
     setLocations(locations.filter(l => l.id !== id))
-    setIps(ips.filter(i => i.location_id !== id))
-  }
-
-  const deleteIp = async (id) => {
-    await supabase.from('office_ips').delete().eq('id', id)
-    setIps(ips.filter(i => i.id !== id))
   }
 
   const startEditLoc = (loc) => {
@@ -456,21 +440,6 @@ function AttendanceSettings() {
     }
   }
 
-  const startEditIp = (ip) => {
-    setEditingIp(ip.id)
-    setEditIpName(ip.name)
-  }
-
-  const saveEditIp = async (id) => {
-    const { error } = await supabase.from('office_ips').update({ name: editIpName }).eq('id', id)
-    if (!error) {
-      setIps(ips.map(i => i.id === id ? { ...i, name: editIpName } : i))
-      setEditingIp(null)
-    } else {
-      alert('Error updating network name')
-    }
-  }
-
   const toggleLocationActive = async (id, currentStatus) => {
     const { error } = await supabase.from('office_locations').update({ is_active: !currentStatus }).eq('id', id)
     if (!error) {
@@ -484,88 +453,42 @@ function AttendanceSettings() {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '24px', justifyContent: 'center' }}>
       
       {/* Office Locations */}
-      {locations.map(loc => {
-        const locationIps = ips.filter(ip => ip.location_id === loc.id)
-        const ipForm = ipForms[loc.id] || { name: '', ip: '' }
-
-        return (
-          <div key={loc.id} className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Location Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1, paddingRight: '12px' }}>
-                {editingLoc === loc.id ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                    <MapPin size={18} style={{ color: '#ec4899' }} />
-                    <input className="apple-input" style={{ padding: '4px 8px', fontSize: '0.9rem', flex: 1, minWidth: '150px' }} value={editLocName} onChange={e => setEditLocName(e.target.value)} autoFocus placeholder="Location Name" />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input type="number" className="apple-input" style={{ padding: '4px 8px', fontSize: '0.9rem', width: '80px' }} value={editLocRadius} onChange={e => setEditLocRadius(e.target.value)} placeholder="Radius" />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>m radius</span>
-                    </div>
-                    <button onClick={() => saveEditLoc(loc.id)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', padding: '4px' }}><Check size={16} /></button>
-                    <button onClick={() => setEditingLoc(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><X size={16} /></button>
+      {locations.map(loc => (
+        <div key={loc.id} className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Location Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, paddingRight: '12px' }}>
+              {editingLoc === loc.id ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                  <MapPin size={18} style={{ color: '#ec4899' }} />
+                  <input className="apple-input" style={{ padding: '4px 8px', fontSize: '0.9rem', flex: 1, minWidth: '150px' }} value={editLocName} onChange={e => setEditLocName(e.target.value)} autoFocus placeholder="Location Name" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input type="number" className="apple-input" style={{ padding: '4px 8px', fontSize: '0.9rem', width: '80px' }} value={editLocRadius} onChange={e => setEditLocRadius(e.target.value)} placeholder="Radius" />
+                    <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>m radius</span>
                   </div>
-                ) : (
-                  <h3 className="apple-title-small" style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px', opacity: loc.is_active ? 1 : 0.5 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                      <MapPin size={18} style={{ color: '#ec4899' }} /> 
-                      <span style={{ textDecoration: loc.is_active ? 'none' : 'line-through' }}>{loc.name}</span>
-                    </div>
-                    <AppleToggle checked={loc.is_active} onChange={() => toggleLocationActive(loc.id, loc.is_active)} />
-                    <button onClick={() => startEditLoc(loc)} style={{ background: 'none', border: 'none', color: 'var(--apple-text-secondary)', cursor: 'pointer', padding: '4px' }}><Pencil size={14} /></button>
-                  </h3>
-                )}
-                <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', paddingLeft: '26px' }}>
-                  {loc.latitude}, {loc.longitude} ({loc.radius_meters}m radius)
+                  <button onClick={() => saveEditLoc(loc.id)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', padding: '4px' }}><Check size={16} /></button>
+                  <button onClick={() => setEditingLoc(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><X size={16} /></button>
                 </div>
-              </div>
-              <button onClick={() => deleteLocation(loc.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '6px', borderRadius: '8px', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                <Trash2 size={16} />
-              </button>
-            </div>
-
-            {/* Nested IPs */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <h4 style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Wifi size={14} style={{ color: '#4ade80' }} /> Associated Wi-Fi Networks
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                {locationIps.map(ip => (
-                  <div key={ip.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', opacity: loc.is_active ? 1 : 0.5 }}>
-                    {editingIp === ip.id ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        <input className="apple-input" style={{ flex: 1, padding: '4px 8px', fontSize: '0.85rem' }} value={editIpName} onChange={e => setEditIpName(e.target.value)} autoFocus />
-                        <button onClick={() => saveEditIp(ip.id)} style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', padding: '4px' }}><Check size={14} /></button>
-                        <button onClick={() => setEditingIp(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><X size={14} /></button>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontWeight: '500', color: '#fff', fontSize: '0.85rem' }}>{ip.name}</span>
-                            <button onClick={() => startEditIp(ip)} style={{ background: 'none', border: 'none', color: 'var(--apple-text-secondary)', cursor: 'pointer', padding: '2px' }}><Pencil size={12} /></button>
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>{ip.ip_address}</div>
-                        </div>
-                        <button onClick={() => deleteIp(ip.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
-                          <Trash2 size={14} />
-                        </button>
-                      </>
-                    )}
+              ) : (
+                <h3 className="apple-title-small" style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px', opacity: loc.is_active ? 1 : 0.5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <MapPin size={18} style={{ color: '#ec4899' }} /> 
+                    <span style={{ textDecoration: loc.is_active ? 'none' : 'line-through' }}>{loc.name}</span>
                   </div>
-                ))}
-                {locationIps.length === 0 && <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>No IPs added yet.</div>}
+                  <AppleToggle checked={loc.is_active} onChange={() => toggleLocationActive(loc.id, loc.is_active)} />
+                  <button onClick={() => startEditLoc(loc)} style={{ background: 'none', border: 'none', color: 'var(--apple-text-secondary)', cursor: 'pointer', padding: '4px' }}><Pencil size={14} /></button>
+                </h3>
+              )}
+              <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', paddingLeft: '26px' }}>
+                {loc.latitude}, {loc.longitude} ({loc.radius_meters}m radius)
               </div>
-
-              {/* Add IP Form */}
-              <form onSubmit={(e) => addIpToLocation(e, loc.id)} style={{ display: 'flex', gap: '8px' }}>
-                <input className="apple-input" style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem' }} placeholder="Network Name" value={ipForm.name} onChange={e => handleIpFormChange(loc.id, 'name', e.target.value)} required />
-                <input className="apple-input" style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem' }} placeholder="IP Address" value={ipForm.ip} onChange={e => handleIpFormChange(loc.id, 'ip', e.target.value)} required />
-                <button type="submit" className="apple-btn apple-btn-primary" style={{ padding: '8px 12px', fontSize: '0.8rem' }}><Plus size={14} /></button>
-              </form>
             </div>
+            <button onClick={() => deleteLocation(loc.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '6px', borderRadius: '8px', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+              <Trash2 size={16} />
+            </button>
           </div>
-        )
-      })}
+        </div>
+      ))}
 
       {/* Add New Location Card */}
       <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', borderStyle: 'dashed', background: 'rgba(255,255,255,0.01)' }}>
@@ -586,4 +509,3 @@ function AttendanceSettings() {
     </div>
   )
 }
-

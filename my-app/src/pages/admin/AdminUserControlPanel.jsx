@@ -108,7 +108,6 @@ export default function AdminUserControlPanel() {
       else if (field === 'has_dis_reporting') readableField = 'DIS Reporting'
       else if (field === 'is_sales_executive') readableField = 'Sales Executive'
       else if (field === 'require_gps_attendance') readableField = 'Require GPS Attendance'
-      else if (field === 'require_ip_attendance') readableField = 'Require IP Attendance'
       else if (field === 'wfh_enabled') readableField = 'Work From Home'
 
       setSuccessMsg(`Successfully updated ${readableField} to ${nextStatus ? 'ON' : 'OFF'}`)
@@ -531,20 +530,6 @@ export default function AdminUserControlPanel() {
                 style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_gps_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.require_gps_attendance !== false  ? '16px' : '0px', transition: 'left 150ms ease' }} />
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Require Office Wi-Fi/IP</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>Must be connected to office network</span>
-              </div>
-              <button
-                onClick={() => handleToggleAccess('require_ip_attendance', user.require_ip_attendance !== false)}
-                disabled={saving}
-                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: user.require_ip_attendance !== false  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
-              >
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: user.require_ip_attendance !== false  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
           </div>

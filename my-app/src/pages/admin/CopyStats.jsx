@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Copy, Check, X } from 'lucide-react'
+import { Copy, Check, X, Image as ImageIcon } from 'lucide-react'
+import html2canvas from 'html2canvas'
 import { normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
 
 export default function CopyStats() {
@@ -33,6 +34,11 @@ export default function CopyStats() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
   const [disCopied, setDisCopied] = useState(false)
+  const [disJpegGenerating, setDisJpegGenerating] = useState(false)
+  const disCaptureRef = useRef(null)
+
+  const [revJpegGenerating, setRevJpegGenerating] = useState(false)
+  const revCaptureRef = useRef(null)
 
   const loadAllData = async () => {
     try {
@@ -352,6 +358,52 @@ export default function CopyStats() {
     setTimeout(() => setDisCopied(false), 2000);
   }
 
+  const handleDownloadJpeg = async () => {
+    if (!disCaptureRef.current || !disFormattedText) return;
+    setDisJpegGenerating(true);
+    try {
+      const canvas = await html2canvas(disCaptureRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      const safeTeamName = (disStats?.selectedTeamName || 'All_Teams').replace(/[^a-zA-Z0-9]/g, '_');
+      link.download = `DIS_Report_${safeTeamName}_${disStartDate}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error generating JPEG', err);
+      alert('Failed to generate JPEG image.');
+    } finally {
+      setDisJpegGenerating(false);
+    }
+  }
+
+  const handleDownloadRevJpeg = async () => {
+    if (!revCaptureRef.current) return;
+    setRevJpegGenerating(true);
+    try {
+      const canvas = await html2canvas(revCaptureRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      const safeTitle = (analysisMode === 'brackets' ? 'Revenue_Report' : 'Zero_Revenue_Streak').replace(/[^a-zA-Z0-9]/g, '_');
+      link.download = `${safeTitle}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error generating JPEG', err);
+      alert('Failed to generate JPEG image.');
+    } finally {
+      setRevJpegGenerating(false);
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-secondary)' }}>
@@ -400,6 +452,20 @@ export default function CopyStats() {
                   Zero-Revenue Streaks
                 </button>
               </div>
+              <button
+                onClick={handleDownloadRevJpeg}
+                disabled={analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0 || revJpegGenerating}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: (analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0 || revJpegGenerating) ? 'not-allowed' : 'pointer', minHeight: '44px',
+                  opacity: (analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0 || revJpegGenerating) ? 0.5 : 1
+                }}
+              >
+                <ImageIcon size={16} />
+                {revJpegGenerating ? 'Generating...' : 'Save as JPEG'}
+              </button>
               <button
                 onClick={handleCopyResults}
                 disabled={analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0}
@@ -595,7 +661,88 @@ export default function CopyStats() {
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+
+        {/* Hidden Div for high-quality JPEG export for Revenue/Streak */}
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <div 
+            ref={revCaptureRef}
+            style={{
+              padding: '40px',
+              background: 'linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)',
+              color: '#102a43',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              width: '1000px',
+              borderRadius: '24px',
+              boxSizing: 'border-box',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '32px', background: '#ffffff', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <h2 style={{ margin: '0 0 12px 0', color: '#102a43', fontSize: '32px', fontWeight: '800', letterSpacing: '-0.02em' }}>
+                {analysisMode === 'streak' 
+                  ? `Zero Revenue in Last ${streakDuration} Month${streakDuration > 1 ? 's' : ''}`
+                  : `Revenue: ${revFilterRange === '0' ? '$0' : revFilterRange.includes('-') ? '$' + revFilterRange.replace('-', ' - $') : '$' + revFilterRange}`
+                }
+              </h2>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '15px', color: '#486581', fontWeight: '600' }}>
+                {analysisMode === 'brackets' && (
+                   <>
+                     <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Team: {revFilterTeamId === 'all' ? 'All Teams' : (teams.find(t => String(t.id) === String(revFilterTeamId))?.name || 'Selected Team')}</span>
+                     <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Month: {MONTH_NAMES[revFilterMonth]} {revFilterYear}</span>
+                   </>
+                )}
+                <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>
+                   Total Users: {analysisMode === 'brackets' ? usersInRevenueRange.length : streakUsers.length}
+                </span>
+              </div>
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '16px'
+            }}>
+              {(analysisMode === 'brackets' ? usersInRevenueRange : streakUsers).map((u, i) => (
+                <div key={i} style={{
+                  background: '#ffffff',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #e2e8f0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', color: '#334155', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {u.first_name} {u.last_name}
+                      </h4>
+                      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {u.teamName}
+                      </div>
+                    </div>
+                    {analysisMode === 'brackets' && (
+                      <div style={{ 
+                        background: u.totalRev > 0 ? '#d1fae5' : '#fee2e2',
+                        color: u.totalRev > 0 ? '#10b981' : '#ef4444',
+                        padding: '4px 10px', 
+                        borderRadius: '20px', 
+                        fontSize: '14px', 
+                        fontWeight: '800',
+                        border: `1px solid ${u.totalRev > 0 ? '#10b98140' : '#ef444440'}`,
+                        marginLeft: '12px'
+                      }}>
+                        ${u.totalRev.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
       {/* ── DIS SUBMISSION STATS ── */}
       <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
@@ -607,20 +754,36 @@ export default function CopyStats() {
                 Copy DIS compliance stats for users over a date range (excluding Sundays). <span style={{ color: 'var(--apple-accent-blue)', fontWeight: '600' }}>({disStats ? disStats.results.length : 0} found)</span>
               </p>
             </div>
-            <button
-              onClick={handleCopyDis}
-              disabled={!disStats || disStats.results.length === 0}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
-                background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
-                border: '1px solid var(--apple-border)', cursor: (!disStats || disStats.results.length === 0) ? 'not-allowed' : 'pointer', minHeight: '44px',
-                opacity: (!disStats || disStats.results.length === 0) ? 0.5 : 1
-              }}
-            >
-              {disCopied ? <Check size={16} color="var(--apple-accent-green)" /> : <Copy size={16} />}
-              {disCopied ? 'Copied!' : 'Copy Format'}
-            </button>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleDownloadJpeg}
+                disabled={!disStats || disStats.results.length === 0 || disJpegGenerating}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: (!disStats || disStats.results.length === 0 || disJpegGenerating) ? 'not-allowed' : 'pointer', minHeight: '44px',
+                  opacity: (!disStats || disStats.results.length === 0 || disJpegGenerating) ? 0.5 : 1
+                }}
+              >
+                <ImageIcon size={16} />
+                {disJpegGenerating ? 'Generating...' : 'Save as JPEG'}
+              </button>
+              <button
+                onClick={handleCopyDis}
+                disabled={!disStats || disStats.results.length === 0}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: (!disStats || disStats.results.length === 0) ? 'not-allowed' : 'pointer', minHeight: '44px',
+                  opacity: (!disStats || disStats.results.length === 0) ? 0.5 : 1
+                }}
+              >
+                {disCopied ? <Check size={16} color="var(--apple-accent-green)" /> : <Copy size={16} />}
+                {disCopied ? 'Copied!' : 'Copy Format'}
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 16px', background: 'var(--apple-bg-secondary)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
@@ -717,6 +880,107 @@ export default function CopyStats() {
               {disFormattedText}
             </div>
           )}
+
+          {/* Hidden Div for high-quality JPEG export without scrollbars */}
+          <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+            <div 
+              ref={disCaptureRef}
+              style={{
+                padding: '40px',
+                background: 'linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)',
+                color: '#102a43',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                width: '850px',
+                borderRadius: '24px',
+                boxSizing: 'border-box',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              }}
+            >
+              {disStats && disStats.results.length > 0 ? (
+                <>
+                  <div style={{ textAlign: 'center', marginBottom: '32px', background: '#ffffff', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                    <h2 style={{ margin: '0 0 12px 0', color: '#102a43', fontSize: '32px', fontWeight: '800', letterSpacing: '-0.02em' }}>
+                      {disStats.filterMode === 'team' && disStats.selectedTeamName 
+                        ? `Team Report: ${disStats.selectedTeamName}`
+                        : 'DIS Compliance Report'}
+                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '15px', color: '#486581', fontWeight: '600' }}>
+                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Start: {disStats.startDate}</span>
+                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>End: {disStats.currentDate}</span>
+                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Days: {disStats.totalDays}</span>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '24px'
+                  }}>
+                    {disStats.results.map((r, i) => {
+                      const pct = parseInt(r.percentage);
+                      let pctColor = '#ef4444';
+                      let pctBg = '#fee2e2';
+                      if (pct >= 80) {
+                        pctColor = '#10b981';
+                        pctBg = '#d1fae5';
+                      } else if (pct >= 50) {
+                        pctColor = '#f59e0b';
+                        pctBg = '#fef3c7';
+                      }
+
+                      return (
+                        <div key={i} style={{
+                          background: '#ffffff',
+                          padding: '24px',
+                          borderRadius: '16px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '16px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '20px', color: '#334155', fontWeight: '700' }}>{r.name}</h4>
+                              {disStats.filterMode !== 'team' && (
+                                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  {r.team}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ 
+                              background: pctBg,
+                              color: pctColor,
+                              padding: '6px 14px', 
+                              borderRadius: '24px', 
+                              fontSize: '16px', 
+                              fontWeight: '800',
+                              border: `1px solid ${pctColor}40`
+                            }}>
+                              {r.percentage}
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ flex: 1, background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                              <div style={{ fontSize: '28px', fontWeight: '800', color: '#10b981', lineHeight: '1' }}>{r.submitted}</div>
+                              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', marginTop: '6px', letterSpacing: '0.05em' }}>Submitted</div>
+                            </div>
+                            <div style={{ flex: 1, background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                              <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444', lineHeight: '1' }}>{r.missed}</div>
+                              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', marginTop: '6px', letterSpacing: '0.05em' }}>Missed</div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '18px', whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>{disFormattedText}</div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

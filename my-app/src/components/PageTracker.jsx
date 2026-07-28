@@ -46,9 +46,10 @@ export default function PageTracker({ user }) {
     const trackPage = async () => {
       try {
         const pageName = getPageName(location.pathname);
+        const isAdminPage = location.pathname.startsWith('/admin/');
         await supabase.from('audit_logs').insert({
           user_id: user.id,
-          action_type: 'page_view',
+          action_type: isAdminPage ? 'admin_page_view' : 'user_page_view',
           details: {
             path: location.pathname,
             page_name: pageName
