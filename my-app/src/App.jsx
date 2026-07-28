@@ -42,6 +42,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminWriteUps from './pages/admin/AdminWriteUps'
 import AdminReviews from './pages/admin/AdminReviews'
+import CopyStats from './pages/admin/CopyStats'
 import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
 import AdminAttendance from './pages/admin/AdminAttendance'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
@@ -396,6 +397,7 @@ function App() {
           <Route path="revenue" element={<AdminRevenue />} />
           <Route path="dis" element={<AdminDis />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="copystats" element={<CopyStats />} />
           <Route path="ai-analytics" element={<AdminAiAnalytics />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
           <Route path="write-ups" element={<AdminWriteUps />} />

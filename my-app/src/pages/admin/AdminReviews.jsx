@@ -12,6 +12,11 @@ export default function AdminReviews() {
   const [filterStatus, setFilterStatus] = useState('pending')
   const [selectedWriteUpId, setSelectedWriteUpId] = useState('all')
   
+  // Temporary Filters
+  const [filterTeam, setFilterTeam] = useState('all')
+  const [filterUser, setFilterUser] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  
   // Modals for Actions
   const [selectedReview, setSelectedReview] = useState(null)
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, reviewId: null, feedback: '' })
@@ -122,6 +127,30 @@ export default function AdminReviews() {
 
 
 
+  const availableTeams = useMemo(() => {
+    const teamsSet = new Set()
+    reviews.forEach(r => {
+      if (r.teams?.name) teamsSet.add(r.teams.name)
+    })
+    return Array.from(teamsSet).sort()
+  }, [reviews])
+
+  const availableUsers = useMemo(() => {
+    const usersMap = new Map()
+    reviews.forEach(r => {
+      if (filterTeam !== 'all' && r.teams?.name !== filterTeam) return;
+      const userName = `${r.profiles?.first_name || ''} ${r.profiles?.last_name || ''}`.trim()
+      if (userName && r.user_id) {
+        usersMap.set(r.user_id, userName)
+      }
+    })
+    return Array.from(usersMap.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [reviews, filterTeam])
+
+  useEffect(() => {
+    setFilterUser('all')
+  }, [filterTeam])
+
   const filteredReviews = useMemo(() => {
     let result = reviews
     
@@ -132,9 +161,26 @@ export default function AdminReviews() {
     if (filterStatus !== 'all' && filterStatus !== 'analysis') {
       result = result.filter(r => r.status === filterStatus)
     }
+
+    if (filterTeam !== 'all') {
+      result = result.filter(r => r.teams?.name === filterTeam)
+    }
+
+    if (filterUser !== 'all') {
+      result = result.filter(r => String(r.user_id) === filterUser)
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(r => {
+        const userName = `${r.profiles?.first_name || ''} ${r.profiles?.last_name || ''}`.toLowerCase()
+        const speakerName = (r.speaker_name || '').toLowerCase()
+        return userName.includes(q) || speakerName.includes(q)
+      })
+    }
     
     return result
-  }, [reviews, filterStatus, selectedWriteUpId])
+  }, [reviews, filterStatus, selectedWriteUpId, filterTeam, filterUser, searchQuery])
 
   const analyticsData = useMemo(() => {
     if (filterStatus !== 'analysis') return null;
@@ -221,6 +267,42 @@ export default function AdminReviews() {
             <option key={w.id} value={w.id}>{w.title}</option>
           ))}
         </select>
+      </div>
+
+      {/* ===== TEMPORARY ADVANCED FILTERS ===== */}
+      <div style={{ marginBottom: '24px', padding: '16px', background: 'var(--apple-bg, rgba(255,255,255,0.02))', borderRadius: '12px', border: '1px dashed var(--apple-border)', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <label className="apple-form-label">Search Name/Speaker</label>
+          <input 
+            type="text" 
+            className="apple-form-control" 
+            placeholder="Search..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <label className="apple-form-label">Team</label>
+          <select 
+            className="apple-form-control" 
+            value={filterTeam}
+            onChange={e => setFilterTeam(e.target.value)}
+          >
+            <option value="all">All Teams</option>
+            {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <label className="apple-form-label">User</label>
+          <select 
+            className="apple-form-control" 
+            value={filterUser}
+            onChange={e => setFilterUser(e.target.value)}
+          >
+            <option value="all">All Users</option>
+            {availableUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* ===== STATUS FILTERS ===== */}
@@ -375,6 +457,7 @@ export default function AdminReviews() {
                     </div>
                     <p style={{ margin: 0, color: 'var(--apple-text-secondary, #94a3b8)', fontSize: '0.84rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       Review Submission
+                      {review.speaker_name && <><br />Speaker: {review.speaker_name}</>}
                     </p>
                   </div>
                 </div>

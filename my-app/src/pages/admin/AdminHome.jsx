@@ -9,7 +9,7 @@ import {
 import {
   TrendingUp, TrendingDown, Users, User, FileText, Target,
   Zap, Activity, ArrowUpRight, ArrowDownRight, Minus,
-  AlertCircle, CheckCircle, Clock, PhoneCall
+  AlertCircle, CheckCircle, Clock, PhoneCall, Copy
 } from 'lucide-react'
 import {
   getLastNMonths,
@@ -1246,6 +1246,7 @@ export default function AdminHome() {
           { label: 'DIS REPORTS',    sub: 'Audit submissions',          color: 'var(--apple-accent-blue)', path: '/admin/dis',       icon: FileText },
           { label: 'REVENUE',        sub: 'Targets & actuals',          color: 'var(--apple-accent-green)', path: '/admin/revenue',   icon: TrendingUp },
           { label: 'ANALYTICS',      sub: 'Performance trends',         color: 'var(--apple-accent-orange)', path: '/admin/analytics', icon: Activity },
+          { label: 'COPY STATS',     sub: 'Exportable metrics',         color: 'var(--apple-accent-purple)', path: '/admin/copystats', icon: Copy },
           { label: 'TEAMS',          sub: 'Rosters & members',          color: 'var(--apple-accent-blue)', path: '/admin/teams',     icon: Users },
         ].map(item => (
           <div

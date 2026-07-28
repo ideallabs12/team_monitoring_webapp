@@ -26,7 +26,8 @@ import {
   Shield,
   Megaphone,
   Download,
-  Video
+  Video,
+  Copy
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { path: '/admin/reviews',     label: 'Review Approvals', icon: Star },
   { path: '/admin/revenue',     label: 'Revenue',        icon: DollarSign },
   { path: '/admin/analytics',   label: 'Analytics',      icon: TrendingUp },
+  { path: '/admin/copystats',   label: 'Copy Stats',     icon: Copy },
   { path: '/admin/ai-analytics',label: 'AI Analytics',   icon: Sparkles },
   { path: '/admin/leaderboard', label: 'Leaderboard',    icon: Trophy },
   { path: '/admin/milestones',  label: 'Milestones',     icon: Crown },
@@ -97,7 +99,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
     ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim()
     : 'System Admin'
 
-  const SidebarContent = ({ isMobileView }) => {
+  const renderSidebarContent = (isMobileView) => {
     const collapsed = isMobileView ? false : isCollapsed
 
     return (
@@ -228,7 +230,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
 
       {/* ── Desktop Sidebar ── */}
       <div className={`admin-sidebar-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
-        <SidebarContent isMobileView={false} />
+        {renderSidebarContent(false)}
       </div>
 
       {/* ── Mobile Sidebar ── */}
@@ -236,7 +238,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
         className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}
         style={{ zIndex: 200 }}
       >
-        <SidebarContent isMobileView={true} />
+        {renderSidebarContent(true)}
       </div>
 
       {/* ── Main Content ── */}

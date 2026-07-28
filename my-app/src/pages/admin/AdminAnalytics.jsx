@@ -7,8 +7,8 @@ import {
   TrendingDown,
   UserCheck
 } from 'lucide-react'
-import { getLastNMonths, normalizeMonth, getAvailableYears, MONTH_NAMES } from '../../utils/revenueUtils'
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
+import { getLastNMonths, normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
+import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 import {
   calculateTeamRadarScores,
   calculatePerformerStatus
@@ -48,6 +48,8 @@ export default function AdminAnalytics() {
   const [analyticsMonth, setAnalyticsMonth] = useState(new Date().getMonth())
   const [analyticsTeamId, setAnalyticsTeamId] = useState('all')
   const [analyticsIsAllTime, setAnalyticsIsAllTime] = useState(false)
+
+
 
   const currentDateStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
@@ -98,7 +100,17 @@ export default function AdminAnalytics() {
     }
   }
 
-  useEffect(() => { loadAllData() }, [])
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    loadAllData() 
+  }, [])
+
+  useEffect(() => {
+    if (isFutureMonth(analyticsYear, analyticsMonth)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAnalyticsMonth(new Date().getMonth());
+    }
+  }, [analyticsYear, analyticsMonth]);
 
   // ── SEED DEMO DATA ─────────────────────────────────────────────
   const handleSeedDemoData = async () => {
@@ -284,6 +296,7 @@ export default function AdminAnalytics() {
     if (!hasSourceData) return []
     return Object.entries(sources).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
   }, [analyticsFilteredRevenues])
+
 
   // ── LOADING ────────────────────────────────────────────────────
   if (loading) {
@@ -597,7 +610,7 @@ export default function AdminAnalytics() {
                 minHeight: '44px',
               }}
             >
-              {MONTH_NAMES.map((name, idx) => <option key={idx} value={idx}>{name}</option>)}
+              {MONTH_NAMES.map((name, idx) => <option key={idx} value={idx} disabled={isFutureMonth(analyticsYear, idx)}>{name}</option>)}
             </select>
             <select
               value={analyticsYear}
@@ -681,6 +694,9 @@ export default function AdminAnalytics() {
           </div>
         </div>
       </div>
+
+      {/* ── REVENUE RANGE FILTER ── */}
+
 
     </div>
   )

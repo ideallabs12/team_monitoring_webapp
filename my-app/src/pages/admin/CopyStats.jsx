@@ -1,0 +1,724 @@
+import { useState, useEffect, useMemo } from 'react'
+import { supabase } from '../../supabaseClient'
+import { Copy, Check, X } from 'lucide-react'
+import { normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
+
+export default function CopyStats() {
+  const [loading, setLoading] = useState(true)
+  const [teams, setTeams] = useState([])
+  const [profiles, setProfiles] = useState([])
+  const [revenues, setRevenues] = useState([])
+  const [memberships, setMemberships] = useState([])
+  const [disReports, setDisReports] = useState([])
+
+  const [revFilterYear, setRevFilterYear] = useState(new Date().getFullYear())
+  const [revFilterMonth, setRevFilterMonth] = useState(new Date().getMonth())
+  const [revFilterTeamId, setRevFilterTeamId] = useState('all')
+  const [revFilterRange, setRevFilterRange] = useState('100-300')
+  const [copied, setCopied] = useState(false)
+  const [excludedTeams, setExcludedTeams] = useState([])
+  const [excludedUsers, setExcludedUsers] = useState([])
+  const [analysisMode, setAnalysisMode] = useState('brackets')
+  const [streakDuration, setStreakDuration] = useState(3)
+
+  const [disFilterMode, setDisFilterMode] = useState('individual')
+  const [disSelectedUserId, setDisSelectedUserId] = useState('')
+  const [disSelectedTeamId, setDisSelectedTeamId] = useState('')
+  const [disStartDate, setDisStartDate] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+  })
+  const [disEndDate, setDisEndDate] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
+  const [disCopied, setDisCopied] = useState(false)
+
+  const loadAllData = async () => {
+    try {
+      const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
+        supabase.from('teams').select('*').order('name', { ascending: true }),
+        supabase.from('profiles').select('*'),
+        supabase.from('monthly_revenues').select('*'),
+        supabase.from('dis_reports').select('*'),
+      ])
+
+      if (teamsRes.data) setTeams(teamsRes.data)
+      if (profilesRes.data) {
+        setProfiles(profilesRes.data)
+        const mems = profilesRes.data
+          .filter(p => p.team_id)
+          .map(p => ({
+            user_id: p.id,
+            team_id: p.team_id,
+            team_role: p.platform_role === 'teamlead' ? 'lead' : 'member'
+          }))
+        setMemberships(mems)
+      }
+      if (revRes.data) setRevenues(revRes.data)
+      if (disRes.data) setDisReports(disRes.data)
+    } catch (err) {
+      console.error('Error loading data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    loadAllData() 
+  }, [])
+
+  useEffect(() => {
+    if (isFutureMonth(revFilterYear, revFilterMonth)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRevFilterMonth(new Date().getMonth());
+    }
+  }, [revFilterYear, revFilterMonth]);
+
+  const nonAdminProfiles = useMemo(
+    () => profiles.filter(p => p.platform_role !== 'admin' && !p.is_deactivated),
+    [profiles]
+  )
+  const nonAdminIds = useMemo(
+    () => new Set(nonAdminProfiles.map(p => p.id)),
+    [nonAdminProfiles]
+  )
+  const nonAdminRevenues = useMemo(
+    () => revenues.filter(r => nonAdminIds.has(r.user_id)),
+    [revenues, nonAdminIds]
+  )
+
+  const revFilterMonthStr = useMemo(() => {
+    const m = String(revFilterMonth + 1).padStart(2, '0')
+    return `${revFilterYear}-${m}-01`
+  }, [revFilterYear, revFilterMonth])
+
+  const usersInRevenueRange = useMemo(() => {
+    let users = nonAdminProfiles;
+    
+    if (revFilterTeamId !== 'all') {
+      const teamUserIds = new Set(memberships.filter(m => String(m.team_id) === String(revFilterTeamId)).map(m => m.user_id));
+      users = users.filter(u => teamUserIds.has(u.id));
+    }
+    
+    const usersWithRev = users.map(u => {
+      const userRevs = nonAdminRevenues.filter(r => r.user_id === u.id && normalizeMonth(r.revenue_month) === revFilterMonthStr);
+      const totalRev = userRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      
+      const userTeamId = memberships.find(m => m.user_id === u.id)?.team_id;
+      const teamName = teams.find(t => t.id === userTeamId)?.name || 'No Team';
+      
+      return { ...u, totalRev, teamName };
+    });
+    
+    let filteredUsers = usersWithRev.filter(u => {
+      const r = u.totalRev;
+      switch (revFilterRange) {
+        case '0': return r === 0;
+        case '100-300': return r >= 100 && r < 300;
+        case '300-600': return r >= 300 && r < 600;
+        case '600-1000': return r >= 600 && r < 1000;
+        case '1000-1500': return r >= 1000 && r < 1500;
+        case '1500-2000': return r >= 1500 && r < 2000;
+        case '2000-2500': return r >= 2000 && r < 2500;
+        case '2500-3000': return r >= 2500 && r < 3000;
+        case '3000+': return r >= 3000;
+        default: return false;
+      }
+    });
+    
+    if (excludedTeams.length > 0) {
+      const exTeamSet = new Set(excludedTeams.map(id => String(id)));
+      filteredUsers = filteredUsers.filter(u => {
+        const tId = memberships.find(m => m.user_id === u.id)?.team_id;
+        return !exTeamSet.has(String(tId));
+      });
+    }
+
+    if (excludedUsers.length > 0) {
+      const exUserSet = new Set(excludedUsers.map(id => String(id)));
+      filteredUsers = filteredUsers.filter(u => !exUserSet.has(String(u.id)));
+    }
+
+    return filteredUsers.sort((a, b) => b.totalRev - a.totalRev);
+    
+  }, [nonAdminProfiles, nonAdminRevenues, memberships, teams, revFilterTeamId, revFilterMonthStr, revFilterRange, excludedTeams, excludedUsers]);
+
+  const streakUsers = useMemo(() => {
+    if (analysisMode !== 'streak') return [];
+    
+    const currentDate = new Date();
+    const months = [];
+    for (let i = 0; i < streakDuration; i++) {
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const mStr = String(d.getMonth() + 1).padStart(2, '0');
+      months.push(`${d.getFullYear()}-${mStr}-01`);
+    }
+    
+    let users = nonAdminProfiles;
+    
+    if (revFilterTeamId !== 'all') {
+      const teamUserIds = new Set(memberships.filter(m => String(m.team_id) === String(revFilterTeamId)).map(m => m.user_id));
+      users = users.filter(u => teamUserIds.has(u.id));
+    }
+
+    const usersWithStreak = users.map(u => {
+      const userRevs = nonAdminRevenues.filter(r => r.user_id === u.id && months.includes(normalizeMonth(r.revenue_month)));
+      const totalRev = userRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      
+      const userTeamId = memberships.find(m => m.user_id === u.id)?.team_id;
+      const teamName = teams.find(t => t.id === userTeamId)?.name || 'No Team';
+      
+      return { ...u, totalRev, teamName };
+    });
+
+    let zeroUsers = usersWithStreak.filter(u => u.totalRev === 0);
+
+    if (excludedTeams.length > 0) {
+      const exTeamSet = new Set(excludedTeams.map(id => String(id)));
+      zeroUsers = zeroUsers.filter(u => {
+        const tId = memberships.find(m => m.user_id === u.id)?.team_id;
+        return !exTeamSet.has(String(tId));
+      });
+    }
+
+    if (excludedUsers.length > 0) {
+      const exUserSet = new Set(excludedUsers.map(id => String(id)));
+      zeroUsers = zeroUsers.filter(u => !exUserSet.has(String(u.id)));
+    }
+
+    return zeroUsers.sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''));
+  }, [analysisMode, streakDuration, nonAdminProfiles, nonAdminRevenues, memberships, teams, revFilterTeamId, excludedTeams, excludedUsers]);
+
+  const handleCopyResults = () => {
+    const listToCopy = analysisMode === 'brackets' ? usersInRevenueRange : streakUsers;
+    if (listToCopy.length === 0) return
+    
+    let titleBase;
+    if (analysisMode === 'streak') {
+      titleBase = `Zero Revenue in Last ${streakDuration} Month${streakDuration > 1 ? 's' : ''}`;
+    } else {
+      const teamLabel = revFilterTeamId === 'all' ? 'All Teams' : (teams.find(t => String(t.id) === String(revFilterTeamId))?.name || 'Selected Team');
+      const monthLabel = MONTH_NAMES[revFilterMonth];
+      let rangeLabel = revFilterRange;
+      if (rangeLabel === '0') rangeLabel = '$0';
+      else if (rangeLabel.includes('-')) rangeLabel = `$${rangeLabel.replace('-', ' - $')}`;
+      else rangeLabel = `$${rangeLabel}`;
+      
+      titleBase = `Revenue: ${rangeLabel} for ${teamLabel} in ${monthLabel} ${revFilterYear}`;
+    }
+
+    let exclusions = '';
+    const exTeamsNames = excludedTeams.map(id => teams.find(t => String(t.id) === String(id))?.name).filter(Boolean);
+    const exUsersNames = excludedUsers.map(id => {
+      const u = nonAdminProfiles.find(p => String(p.id) === String(id));
+      return u ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : null;
+    }).filter(Boolean);
+
+    if (exTeamsNames.length > 0 || exUsersNames.length > 0) {
+      exclusions = ' (Excluding: ';
+      const parts = [];
+      if (exTeamsNames.length > 0) parts.push(`${exTeamsNames.join(', ')} team${exTeamsNames.length > 1 ? 's' : ''}`);
+      if (exUsersNames.length > 0) parts.push(`${exUsersNames.join(', ')} user${exUsersNames.length > 1 ? 's' : ''}`);
+      exclusions += parts.join(' and ') + ')';
+    }
+
+    const reportTitle = `${titleBase}${exclusions}\n${'='.repeat((titleBase + exclusions).length)}\n\n`;
+    
+    const cleanStr = (s) => (s || '').replace(/[\r\n]+/g, ' ').trim();
+    const maxNameLen = Math.max("Name".length, ...listToCopy.map(u => cleanStr(`${u.first_name || ''} ${u.last_name || ''}`).length));
+    const maxTeamLen = Math.max("Team".length, ...listToCopy.map(u => cleanStr(u.teamName).length));
+    
+    const padName = (str) => str.padEnd(maxNameLen + 4, ' ');
+    const padTeam = (str) => str.padEnd(maxTeamLen + 4, ' ');
+
+    let header = `${padName("Name")}\t${padTeam("Team")}\tRevenue\n`
+    if (analysisMode === 'streak') {
+      header = `${padName("Name")}\tTeam\n`
+    }
+    
+    const rows = listToCopy.map(u => {
+      const nameStr = cleanStr(`${u.first_name || ''} ${u.last_name || ''}`);
+      const teamStr = cleanStr(u.teamName);
+      if (analysisMode === 'streak') {
+        return `${padName(nameStr)}\t${teamStr}`
+      } else {
+        return `${padName(nameStr)}\t${padTeam(teamStr)}\t$${u.totalRev.toFixed(2)}`
+      }
+    }).join('\n')
+    
+    navigator.clipboard.writeText(reportTitle + header + rows)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const disStats = useMemo(() => {
+    if (disFilterMode === 'individual' && !disSelectedUserId) return null;
+    if (disFilterMode === 'team' && !disSelectedTeamId) return null;
+    if (!disStartDate || !disEndDate) return null;
+    
+    const start = new Date(disStartDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(disEndDate);
+    end.setHours(0, 0, 0, 0);
+
+    let totalDays = 0;
+    const validDates = [];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() === 0) continue; // Skip Sunday
+      totalDays++;
+      
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      validDates.push(`${yyyy}-${mm}-${dd}`);
+    }
+
+    let usersToProcess;
+    if (disFilterMode === 'individual') {
+      usersToProcess = nonAdminProfiles.filter(u => u.id === disSelectedUserId);
+    } else if (disFilterMode === 'team') {
+      const teamUserIds = new Set(memberships.filter(m => String(m.team_id) === String(disSelectedTeamId)).map(m => m.user_id));
+      usersToProcess = nonAdminProfiles.filter(u => teamUserIds.has(u.id));
+    } else {
+      usersToProcess = [...nonAdminProfiles];
+    }
+
+    usersToProcess.sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''));
+
+    const results = usersToProcess.map(u => {
+      let submitted = 0;
+      let missed = 0;
+      
+      validDates.forEach(dateStr => {
+        const hasReport = disReports.some(r => r.user_id === u.id && r.report_date === dateStr);
+        if (hasReport) submitted++;
+        else missed++;
+      });
+
+      const userTeamId = memberships.find(m => m.user_id === u.id)?.team_id;
+      const team = teams.find(t => t.id === userTeamId);
+
+      const cleanStr = (s) => (s || '').replace(/[\r\n]+/g, ' ').trim();
+      const pct = validDates.length > 0 ? Math.round((submitted / validDates.length) * 100) : 0;
+      return {
+        name: cleanStr(`${u.first_name || ''} ${u.last_name || ''}`),
+        team: cleanStr(team ? team.name : 'No Team'),
+        submitted,
+        missed,
+        percentage: `${pct}%`
+      };
+    });
+
+    return {
+      startDate: disStartDate,
+      currentDate: disEndDate,
+      totalDays,
+      results,
+      filterMode: disFilterMode,
+      selectedTeamName: disFilterMode === 'team' && disSelectedTeamId ? teams.find(t => String(t.id) === String(disSelectedTeamId))?.name : null
+    }
+  }, [disFilterMode, disSelectedUserId, disSelectedTeamId, disStartDate, disEndDate, disReports, nonAdminProfiles, memberships, teams]);
+
+  const disFormattedText = useMemo(() => {
+    if (!disStats || disStats.results.length === 0) return '';
+    
+    let text = '';
+    if (disStats.filterMode === 'team' && disStats.selectedTeamName) {
+      const cleanTeamName = (disStats.selectedTeamName || '').replace(/[\r\n]+/g, ' ').trim();
+      text += `DIS report of ${cleanTeamName}\n\n`;
+    }
+    
+    text += `starting date : ${disStats.startDate}\ncurrent date: ${disStats.currentDate}\ntotal days : ${disStats.totalDays}\n\n`;
+    
+    const parts = disStats.results.map(r => {
+      if (disStats.filterMode === 'team') {
+        return `name: ${r.name}\nsubmitted : ${r.submitted}\nmissed : ${r.missed}\npercentage : ${r.percentage}`;
+      } else {
+        return `name: ${r.name}\nteam: ${r.team}\nsubmitted : ${r.submitted}\nmissed : ${r.missed}\npercentage : ${r.percentage}`;
+      }
+    });
+    
+    text += parts.join('\n\n');
+    return text;
+  }, [disStats]);
+
+  const handleCopyDis = () => {
+    if (!disFormattedText) return;
+    navigator.clipboard.writeText(disFormattedText);
+    setDisCopied(true);
+    setTimeout(() => setDisCopied(false), 2000);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-secondary)' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.05)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
+        <span>Loading stats...</span>
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { to { transform: rotate(360deg); } }` }} />
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div className="admin-page-header" style={{ marginBottom: 0 }}>
+        <div className="admin-page-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
+          <Copy size={28} />
+        </div>
+        <div>
+          <h1 className="admin-page-title">Copy Stats</h1>
+          <p className="admin-page-subtitle">Exportable metrics and user streaks.</p>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>Revenue & Streak Analysis</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Identify users by revenue ranges or inactivity streaks. <span style={{ color: 'var(--apple-accent-blue)', fontWeight: '600' }}>({analysisMode === 'brackets' ? usersInRevenueRange.length : streakUsers.length} found)</span>
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="apple-pill-tabs" style={{ marginRight: '8px' }}>
+                <button 
+                  className={`apple-pill-tab ${analysisMode === 'brackets' ? 'active' : ''}`} 
+                  onClick={() => setAnalysisMode('brackets')}
+                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                >
+                  Revenue Ranges
+                </button>
+                <button 
+                  className={`apple-pill-tab ${analysisMode === 'streak' ? 'active' : ''}`} 
+                  onClick={() => setAnalysisMode('streak')}
+                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                >
+                  Zero-Revenue Streaks
+                </button>
+              </div>
+              <button
+                onClick={handleCopyResults}
+                disabled={analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: (analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0) ? 'not-allowed' : 'pointer', minHeight: '44px',
+                  opacity: (analysisMode === 'brackets' ? usersInRevenueRange.length === 0 : streakUsers.length === 0) ? 0.5 : 1
+                }}
+              >
+                {copied ? <Check size={16} color="var(--apple-accent-green)" /> : <Copy size={16} />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', padding: '12px 16px', background: 'var(--apple-bg-secondary)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginRight: '8px' }}>Filters:</span>
+            <select
+              value={revFilterTeamId}
+              onChange={e => setRevFilterTeamId(e.target.value)}
+              style={{
+                padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+              }}
+            >
+              <option value="all">All Teams</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            {analysisMode === 'brackets' ? (
+              <>
+                <select
+                  value={revFilterMonth}
+                  onChange={e => setRevFilterMonth(Number(e.target.value))}
+                  style={{
+                    padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                    background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                    border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+                  }}
+                >
+                  {MONTH_NAMES.map((name, idx) => <option key={idx} value={idx} disabled={isFutureMonth(revFilterYear, idx)}>{name}</option>)}
+                </select>
+                <select
+                  value={revFilterYear}
+                  onChange={e => setRevFilterYear(Number(e.target.value))}
+                  style={{
+                    padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                    background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                    border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+                  }}
+                >
+                  {getAvailableYears().map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <select
+                  value={revFilterRange}
+                  onChange={e => setRevFilterRange(e.target.value)}
+                  style={{
+                    padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                    background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                    border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+                  }}
+                >
+                  <option value="0">0 revenue</option>
+                  <option value="100-300">100 - 300</option>
+                  <option value="300-600">300 - 600</option>
+                  <option value="600-1000">600 - 1000</option>
+                  <option value="1000-1500">1000 - 1500</option>
+                  <option value="1500-2000">1500 - 2000</option>
+                  <option value="2000-2500">2000 - 2500</option>
+                  <option value="2500-3000">2500 - 3000</option>
+                  <option value="3000+">3000 and above</option>
+                </select>
+              </>
+            ) : (
+              <select
+                value={streakDuration}
+                onChange={e => setStreakDuration(Number(e.target.value))}
+                style={{
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+                }}
+              >
+                <option value={3}>Last 3 Months (Zero)</option>
+                <option value={6}>Last 6 Months (Zero)</option>
+              </select>
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding: '16px', background: 'var(--apple-bg-secondary)', borderRadius: '12px', border: '1px solid var(--apple-border)', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>Exclusion Filters</div>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value && !excludedTeams.includes(e.target.value)) {
+                    setExcludedTeams([...excludedTeams, e.target.value]);
+                  }
+                }}
+                style={{ padding: '6px 10px', fontSize: '0.85rem', borderRadius: '8px', background: 'var(--apple-card)', color: 'var(--apple-text-primary)', border: '1px solid var(--apple-border)' }}
+              >
+                <option value="">Exclude a Team...</option>
+                {teams.filter(t => !excludedTeams.includes(String(t.id))).map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value && !excludedUsers.includes(e.target.value)) {
+                    setExcludedUsers([...excludedUsers, e.target.value]);
+                  }
+                }}
+                style={{ padding: '6px 10px', fontSize: '0.85rem', borderRadius: '8px', background: 'var(--apple-card)', color: 'var(--apple-text-primary)', border: '1px solid var(--apple-border)' }}
+              >
+                <option value="">Exclude a User...</option>
+                {nonAdminProfiles.filter(u => !excludedUsers.includes(String(u.id))).map(u => (
+                  <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {(excludedTeams.length > 0 || excludedUsers.length > 0) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+              {excludedTeams.map(tId => {
+                const tName = teams.find(t => String(t.id) === String(tId))?.name || 'Unknown Team';
+                return (
+                  <div key={`team-${tId}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(248, 113, 113, 0.1)', border: '1px solid rgba(248, 113, 113, 0.3)', color: '#f87171', padding: '4px 10px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '600' }}>
+                    Team: {tName}
+                    <X size={14} style={{ cursor: 'pointer' }} onClick={() => setExcludedTeams(excludedTeams.filter(id => String(id) !== String(tId)))} />
+                  </div>
+                );
+              })}
+              {excludedUsers.map(uId => {
+                const u = nonAdminProfiles.find(p => String(p.id) === String(uId));
+                const uName = u ? `${u.first_name} ${u.last_name}` : 'Unknown User';
+                return (
+                  <div key={`user-${uId}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(248, 113, 113, 0.1)', border: '1px solid rgba(248, 113, 113, 0.3)', color: '#f87171', padding: '4px 10px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '600' }}>
+                    User: {uName}
+                    <X size={14} style={{ cursor: 'pointer' }} onClick={() => setExcludedUsers(excludedUsers.filter(id => String(id) !== String(uId)))} />
+                  </div>
+                );
+              })}
+              {(excludedTeams.length > 0 || excludedUsers.length > 0) && (
+                <button
+                  onClick={() => { setExcludedTeams([]); setExcludedUsers([]); }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--apple-accent-blue)', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '8px' }}
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--text-secondary)' }}>
+                <th style={{ padding: '12px 8px' }}>Name</th>
+                <th style={{ padding: '12px 8px' }}>Team</th>
+                {analysisMode === 'brackets' && (
+                  <th style={{ padding: '12px 8px', textAlign: 'right' }}>Revenue</th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {(analysisMode === 'brackets' ? usersInRevenueRange : streakUsers).map((u) => (
+                <tr key={u.id} style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}>
+                  <td style={{ padding: '12px 8px', fontWeight: '500' }}>{u.first_name} {u.last_name}</td>
+                  <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>{u.teamName}</td>
+                  {analysisMode === 'brackets' && (
+                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', color: '#34d399' }}>
+                      ${u.totalRev.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {(analysisMode === 'brackets' ? usersInRevenueRange.length : streakUsers.length) === 0 && (
+                <tr>
+                  <td colSpan={analysisMode === 'brackets' ? "3" : "2"} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+                    No users found for this analysis.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── DIS SUBMISSION STATS ── */}
+      <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'var(--apple-text-primary)' }}>DIS Submission Stats</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Copy DIS compliance stats for users over a date range (excluding Sundays). <span style={{ color: 'var(--apple-accent-blue)', fontWeight: '600' }}>({disStats ? disStats.results.length : 0} found)</span>
+              </p>
+            </div>
+            <button
+              onClick={handleCopyDis}
+              disabled={!disStats || disStats.results.length === 0}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                border: '1px solid var(--apple-border)', cursor: (!disStats || disStats.results.length === 0) ? 'not-allowed' : 'pointer', minHeight: '44px',
+                opacity: (!disStats || disStats.results.length === 0) ? 0.5 : 1
+              }}
+            >
+              {disCopied ? <Check size={16} color="var(--apple-accent-green)" /> : <Copy size={16} />}
+              {disCopied ? 'Copied!' : 'Copy Format'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 16px', background: 'var(--apple-bg-secondary)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Filter By:</span>
+              <div className="apple-pill-tabs">
+                <button 
+                  className={`apple-pill-tab ${disFilterMode === 'individual' ? 'active' : ''}`} 
+                  onClick={() => setDisFilterMode('individual')}
+                  style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                >
+                  Individual
+                </button>
+                <button 
+                  className={`apple-pill-tab ${disFilterMode === 'team' ? 'active' : ''}`} 
+                  onClick={() => setDisFilterMode('team')}
+                  style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                >
+                  Team
+                </button>
+                <button 
+                  className={`apple-pill-tab ${disFilterMode === 'all' ? 'active' : ''}`} 
+                  onClick={() => setDisFilterMode('all')}
+                  style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                >
+                  All Members
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {disFilterMode === 'individual' && (
+                <select
+                  value={disSelectedUserId}
+                  onChange={e => setDisSelectedUserId(e.target.value)}
+                  style={{
+                    padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                    background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                    border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+                    flex: 1, minWidth: '200px'
+                  }}
+                >
+                  <option value="">-- Choose a user --</option>
+                  {[...nonAdminProfiles].sort((a, b) => (a.first_name || '').localeCompare(b.first_name || '')).map(u => (
+                    <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
+                  ))}
+                </select>
+              )}
+
+              {disFilterMode === 'team' && (
+                <select
+                  value={disSelectedTeamId}
+                  onChange={e => setDisSelectedTeamId(e.target.value)}
+                  style={{
+                    padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                    background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                    border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px',
+                    flex: 1, minWidth: '200px'
+                  }}
+                >
+                  <option value="">-- Choose a team --</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
+
+              <input
+                type="date"
+                value={disStartDate}
+                onChange={e => setDisStartDate(e.target.value)}
+                style={{
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px'
+                }}
+              />
+              <span style={{ color: 'var(--text-secondary)' }}>to</span>
+              <input
+                type="date"
+                value={disEndDate}
+                onChange={e => setDisEndDate(e.target.value)}
+                style={{
+                  padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                  background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                  border: '1px solid var(--apple-border)', cursor: 'pointer', minHeight: '44px'
+                }}
+              />
+            </div>
+          </div>
+
+          {disFormattedText && (
+            <div style={{ marginTop: '16px', padding: '16px', background: 'var(--apple-bg-secondary)', borderRadius: '12px', border: '1px solid var(--apple-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', color: 'var(--apple-text-primary)', fontSize: '0.9rem', maxHeight: '400px', overflowY: 'auto' }}>
+              {disFormattedText}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -131,7 +131,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     { path: '/team-dis-report', label: 'Team DIS', icon: FileText },
   ] : []
 
-  const SidebarContent = ({ isMobileView }) => {
+  const renderSidebarContent = (isMobileView) => {
     const collapsed = isMobileView ? false : isCollapsed
 
     return (
@@ -273,14 +273,14 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
       )}
 
       <div className={`admin-sidebar-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
-        <SidebarContent isMobileView={false} />
+        {renderSidebarContent(false)}
       </div>
 
       <div
         className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}
         style={{ zIndex: 200 }}
       >
-        <SidebarContent isMobileView={true} />
+        {renderSidebarContent(true)}
       </div>
 
       <div className="admin-main">
