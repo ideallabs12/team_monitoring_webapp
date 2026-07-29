@@ -4,6 +4,28 @@ import { Copy, Check, X, Image as ImageIcon } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import { normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
 
+const shareOrDownloadImage = async (dataUrl, filename) => {
+  try {
+    if (navigator.share) {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    }
+  } catch (error) {
+    console.log('Web Share API failed:', error);
+  }
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 export default function CopyStats() {
   const [loading, setLoading] = useState(true)
   const [teams, setTeams] = useState([])
@@ -368,11 +390,9 @@ export default function CopyStats() {
         backgroundColor: '#ffffff'
       });
       const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      const link = document.createElement('a');
       const safeTeamName = (disStats?.selectedTeamName || 'All_Teams').replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `DIS_Report_${safeTeamName}_${disStartDate}.jpg`;
-      link.href = dataUrl;
-      link.click();
+      const filename = `DIS_Report_${safeTeamName}_${disStartDate}.jpg`;
+      await shareOrDownloadImage(dataUrl, filename);
     } catch (err) {
       console.error('Error generating JPEG', err);
       alert('Failed to generate JPEG image.');
@@ -391,11 +411,9 @@ export default function CopyStats() {
         backgroundColor: '#ffffff'
       });
       const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      const link = document.createElement('a');
       const safeTitle = (analysisMode === 'brackets' ? 'Revenue_Report' : 'Zero_Revenue_Streak').replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `${safeTitle}.jpg`;
-      link.href = dataUrl;
-      link.click();
+      const filename = `${safeTitle}.jpg`;
+      await shareOrDownloadImage(dataUrl, filename);
     } catch (err) {
       console.error('Error generating JPEG', err);
       alert('Failed to generate JPEG image.');
