@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
+import html2canvas from 'html2canvas'
 import {
   normalizeMonth,
   filterRevenuesByPeriod,
@@ -72,6 +73,10 @@ export default function AdminTeams() {
   // Team Member Average state
   const [averagePeriod, setAveragePeriod] = useState(6)
   const [includeCurrentMonth, setIncludeCurrentMonth] = useState(true)
+  
+  // JPEG Generation state
+  const [jpegGenerating, setJpegGenerating] = useState(false)
+  const summaryCaptureRef = useRef(null)
 
   useEffect(() => {
     async function loadData() {
@@ -1319,6 +1324,35 @@ export default function AdminTeams() {
     }
   };
 
+  const handleDownloadJpeg = async () => {
+    if (!summaryCaptureRef.current) return;
+    setJpegGenerating(true);
+    try {
+      const canvas = await html2canvas(summaryCaptureRef.current, {
+        scale: 3, // High resolution
+        useCORS: true,
+        backgroundColor: '#0f172a' // slate-900 background
+      });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      const filename = `Team_Totals_Summary_${dateStr.replace(/, /g, '_').replace(/ /g, '_')}.jpg`;
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error generating JPEG:', err);
+      alert('Failed to generate image.');
+    } finally {
+      setJpegGenerating(false);
+    }
+  };
+
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
       {/* Header */}
@@ -1346,6 +1380,20 @@ export default function AdminTeams() {
             >
               <Copy size={14} />
               Copy Totals
+            </button>
+            <button
+              onClick={handleDownloadJpeg}
+              disabled={jpegGenerating}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 14px', borderRadius: '8px',
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff',
+                border: 'none', cursor: jpegGenerating ? 'not-allowed' : 'pointer', fontSize: '0.8rem', fontWeight: '600',
+                transition: 'all 0.2s', opacity: jpegGenerating ? 0.7 : 1
+              }}
+            >
+              <Copy size={14} />
+              {jpegGenerating ? 'Generating...' : 'JPEG'}
             </button>
             <button
               onClick={() => handleCopyData('detailed')}
@@ -1527,6 +1575,89 @@ export default function AdminTeams() {
             <p style={{ color: 'var(--apple-text-secondary)', margin: 0 }}>No teams found in the database. Add teams in Settings.</p>
           </div>
         )}
+      </div>
+      
+      {/* Hidden DOM element for beautiful JPEG capture */}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+        <div 
+          ref={summaryCaptureRef} 
+          style={{ 
+            width: '800px', 
+            padding: '40px', 
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)', // deep slate to deep indigo
+            color: '#fff', 
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}
+        >
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '800', color: '#7dd3fc', textShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+              Team Revenue Summary
+            </h1>
+            <p style={{ margin: '8px 0 0 0', color: '#94a3b8', fontSize: '1.2rem', fontWeight: '500' }}>
+              Revenue Report till {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '30px' }}>
+            {(() => {
+              const teamData = teams.map(team => {
+                const teamTotal = revenues
+                  .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr)
+                  .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+                return { ...team, teamTotal };
+              });
+              
+              teamData.sort((a, b) => {
+                if (a.teamTotal === 0 && b.teamTotal !== 0) return 1;
+                if (b.teamTotal === 0 && a.teamTotal !== 0) return -1;
+                return b.teamTotal - a.teamTotal;
+              });
+
+              return teamData.map(team => (
+                <div key={team.id} style={{ 
+                  background: 'rgba(255, 255, 255, 0.03)', 
+                  border: '1px solid rgba(255, 255, 255, 0.1)', 
+                  borderRadius: '16px', 
+                  padding: '20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#e2e8f0', textTransform: 'capitalize' }}>
+                    {team.name}
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '800', color: team.teamTotal > 0 ? '#34d399' : '#94a3b8' }}>
+                    ${team.teamTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+          
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.1))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '20px',
+            padding: '24px',
+            textAlign: 'center',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+          }}>
+            <div style={{ color: '#bae6fd', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700', marginBottom: '8px' }}>
+              Total Revenue Generated
+            </div>
+            <div style={{ fontSize: '3rem', fontWeight: '900', color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+              ${(() => {
+                let totalAll = 0;
+                teams.forEach(team => {
+                  totalAll += revenues
+                    .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr)
+                    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+                });
+                return totalAll.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+              })()}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

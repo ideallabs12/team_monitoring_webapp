@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Copy, Check, X, Image as ImageIcon } from 'lucide-react'
+import { Copy, Check, X, Image as ImageIcon, FileText } from 'lucide-react'
 import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import { normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
 
 const shareOrDownloadImage = async (dataUrl, filename) => {
-  try {
-    if (navigator.share) {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile && navigator.share) {
+    try {
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const file = new File([blob], filename, { type: 'image/jpeg' });
@@ -14,10 +17,12 @@ const shareOrDownloadImage = async (dataUrl, filename) => {
         await navigator.share({ files: [file] });
         return;
       }
+    } catch (error) {
+      console.log('Web Share API failed:', error);
     }
-  } catch (error) {
-    console.log('Web Share API failed:', error);
   }
+
+  // Fallback to standard download for desktop or if sharing fails
   const link = document.createElement('a');
   link.download = filename;
   link.href = dataUrl;
@@ -58,6 +63,9 @@ export default function CopyStats() {
   const [disCopied, setDisCopied] = useState(false)
   const [disJpegGenerating, setDisJpegGenerating] = useState(false)
   const disCaptureRef = useRef(null)
+
+  const [disPdfGenerating, setDisPdfGenerating] = useState(false)
+  const disPdfCaptureRef = useRef(null)
 
   const [revJpegGenerating, setRevJpegGenerating] = useState(false)
   const revCaptureRef = useRef(null)
@@ -296,6 +304,21 @@ export default function CopyStats() {
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       if (d.getDay() === 0) continue; // Skip Sunday
+      
+      // Handle Saturday Holidays
+      if (d.getDay() === 6) {
+        const dateOfMonth = d.getDate();
+        const isFirstSaturday = dateOfMonth <= 7;
+        const isSecondSaturday = dateOfMonth > 7 && dateOfMonth <= 14;
+        
+        // For July 2026, 1st Saturday is a holiday. Otherwise, default to 2nd Saturday.
+        if (d.getFullYear() === 2026 && d.getMonth() === 6) {
+          if (isFirstSaturday) continue;
+        } else {
+          if (isSecondSaturday) continue;
+        }
+      }
+
       totalDays++;
       
       const yyyy = d.getFullYear();
@@ -399,6 +422,214 @@ export default function CopyStats() {
     } finally {
       setDisJpegGenerating(false);
     }
+  }
+
+  const handleDownloadPdf = () => {
+    if (!disStats || !disStats.results) return;
+    setDisPdfGenerating(true);
+    
+    // We use setTimeout to allow UI to show 'Generating...' state
+    setTimeout(async () => {
+      try {
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        // Helper to draw vertical gradient
+        const drawGradient = (x, y, w, h, color1, color2) => {
+          const steps = 100;
+          const stepH = h / steps;
+          for (let i = 0; i < steps; i++) {
+            const ratio = i / steps;
+            const r = Math.round(color1[0] + (color2[0] - color1[0]) * ratio);
+            const g = Math.round(color1[1] + (color2[1] - color1[1]) * ratio);
+            const b = Math.round(color1[2] + (color2[2] - color1[2]) * ratio);
+            doc.setFillColor(r, g, b);
+            doc.rect(x, y + (i * stepH), w, stepH + 1.5, 'F'); // slightly overlap
+          }
+        };
+        
+        const teamGroups = {};
+        disStats.results.forEach(r => {
+          const t = r.team || 'Unassigned';
+          if (!teamGroups[t]) teamGroups[t] = [];
+          teamGroups[t].push(r);
+        });
+        
+        const teams = Object.keys(teamGroups).sort();
+        
+        // --- Dedicated Cover Page (Page 1) ---
+        drawGradient(0, 0, pageWidth, pageHeight, [15, 23, 42], [49, 46, 129]);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(36);
+        doc.setTextColor(255, 255, 255); // White for dark bg
+        doc.text("Daily Individual Status (DIS) Report", pageWidth / 2, 180, { align: 'center' });
+        
+        doc.setFontSize(16);
+        doc.setTextColor(191, 219, 254); // Blue 200
+        const coverSubtext = `Period: ${disStats.startDate} to ${disStats.currentDate}   |   Total Reportable Days: ${disStats.totalDays}`;
+        doc.text(coverSubtext, pageWidth / 2, 215, { align: 'center' });
+        
+        // Warning Description Box on Cover Page (Navy & Gold Theme)
+        doc.setFillColor(30, 41, 59); // dark slate
+        doc.setDrawColor(234, 179, 8); // gold border
+        doc.setLineWidth(2);
+        doc.roundedRect(pageWidth / 2 - 320, 270, 640, 75, 12, 12, 'FD');
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(253, 224, 71); // bright gold
+        doc.text("Calculation Rules for this Month", pageWidth / 2, 305, { align: 'center' });
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255); // white
+        doc.text("Total Days in Month: 31   |   Sundays: 4   |   Saturday Holidays: 1", pageWidth / 2, 328, { align: 'center' });
+        
+        // --- Draw Team Pages ---
+        teams.forEach((teamName) => {
+          const teamMembers = teamGroups[teamName];
+          
+          // Chunk into 9 cards per page (3x3 grid)
+          const chunked = [];
+          for (let i = 0; i < teamMembers.length; i += 9) {
+            chunked.push(teamMembers.slice(i, i + 9));
+          }
+          
+          chunked.forEach((chunk, chunkIdx) => {
+            doc.addPage();
+            
+            // Draw full page rich gradient background
+            drawGradient(0, 0, pageWidth, pageHeight, [15, 23, 42], [49, 46, 129]);
+            
+            // Header box (Vibrant Blue/Indigo)
+            drawGradient(40, 40, pageWidth - 80, 75, [59, 130, 246], [79, 70, 229]);
+            doc.setDrawColor(255, 255, 255);
+            doc.setLineWidth(1);
+            doc.roundedRect(40, 40, pageWidth - 80, 75, 8, 8, 'S'); 
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(26);
+            doc.setTextColor(255, 255, 255);
+            let titleStr = `Team Report: ${teamName}`;
+            if (chunked.length > 1) titleStr += ` (Part ${chunkIdx + 1})`;
+            doc.text(titleStr, pageWidth / 2, 75, { align: 'center' });
+            
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(224, 231, 255); // Indigo 100
+            const subtext = `Start: ${disStats.startDate}   |   End: ${disStats.currentDate}   |   Total Days: ${disStats.totalDays}   |   Team Members: ${teamMembers.length}`;
+            doc.text(subtext, pageWidth / 2, 98, { align: 'center' });
+            
+            let startX = 40;
+            let startY = 145; // Start exactly below the header
+            const cols = 3;
+            const gapX = 24;
+            const gapY = 24;
+            const cardWidth = (pageWidth - 80 - (gapX * (cols - 1))) / cols;
+            const cardHeight = 130;
+            
+            let currentX = startX;
+            let currentY = startY;
+            
+            chunk.forEach((r, i) => {
+              // Draw shadow for dark background
+              doc.setFillColor(5, 10, 20); // very dark, almost black
+              doc.roundedRect(currentX + 8, currentY + 8, cardWidth, cardHeight, 16, 16, 'F');
+              
+              // Card BG
+              doc.setFillColor(255, 255, 255);
+              doc.setDrawColor(255, 255, 255);
+              doc.roundedRect(currentX, currentY, cardWidth, cardHeight, 16, 16, 'FD');
+              
+              // Name
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(16);
+              doc.setTextColor(30, 41, 59);
+              let nameStr = r.name;
+              if (nameStr.length > 18) nameStr = nameStr.substring(0, 15) + '...';
+              doc.text(nameStr, currentX + 20, currentY + 32);
+              
+              // Pill
+              const pct = parseInt(r.percentage);
+              let pctColor = [225, 29, 72];
+              let pctBg = [255, 228, 230];
+              if (pct >= 80) { pctColor = [5, 150, 105]; pctBg = [209, 250, 229]; }
+              else if (pct >= 50) { pctColor = [217, 119, 6]; pctBg = [254, 243, 199]; }
+              
+              doc.setFillColor(pctBg[0], pctBg[1], pctBg[2]);
+              doc.roundedRect(currentX + cardWidth - 55, currentY + 14, 40, 22, 11, 11, 'F');
+              
+              doc.setFontSize(11);
+              doc.setTextColor(pctColor[0], pctColor[1], pctColor[2]);
+              doc.text(`${r.percentage}`, currentX + cardWidth - 35, currentY + 29, { align: 'center' });
+              
+              // Blocks
+              const blockWidth = (cardWidth - 52) / 2;
+              const blockY = currentY + 54;
+              const blockHeight = 56;
+              
+              // Submitted
+              doc.setFillColor(240, 253, 244);
+              doc.setDrawColor(187, 247, 208);
+              doc.setLineWidth(1);
+              doc.roundedRect(currentX + 20, blockY, blockWidth, blockHeight, 8, 8, 'FD');
+              
+              doc.setFontSize(26);
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(5, 150, 105);
+              doc.text(`${r.submitted}`, currentX + 20 + (blockWidth/2), blockY + 34, { align: 'center' });
+              
+              doc.setFontSize(8);
+              doc.setTextColor(15, 118, 110);
+              doc.text('SUBMITTED', currentX + 20 + (blockWidth/2), blockY + 48, { align: 'center' });
+              
+              // Missed
+              doc.setFillColor(255, 241, 242);
+              doc.setDrawColor(254, 205, 211);
+              doc.roundedRect(currentX + 20 + blockWidth + 12, blockY, blockWidth, blockHeight, 8, 8, 'FD');
+              
+              doc.setFontSize(26);
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(225, 29, 72);
+              doc.text(`${r.missed}`, currentX + 20 + blockWidth + 12 + (blockWidth/2), blockY + 34, { align: 'center' });
+              
+              doc.setFontSize(8);
+              doc.setTextColor(190, 18, 60);
+              doc.text('MISSED', currentX + 20 + blockWidth + 12 + (blockWidth/2), blockY + 48, { align: 'center' });
+              
+              currentX += cardWidth + gapX;
+              if (currentX + cardWidth > pageWidth - 20) {
+                currentX = startX;
+                currentY += cardHeight + gapY;
+              }
+            });
+          });
+        });
+        
+        const safeTeamName = (disStats?.selectedTeamName || 'All_Teams').replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `DIS_Report_All_Members_${disStartDate}.pdf`;
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile && navigator.share) {
+          const pdfBlob = doc.output('blob');
+          const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] });
+            setDisPdfGenerating(false);
+            return;
+          }
+        }
+        
+        doc.save(filename);
+      } catch (err) {
+        console.error('Error generating Native PDF', err);
+        alert('Failed to generate PDF.');
+      } finally {
+        setDisPdfGenerating(false);
+      }
+    }, 100);
   }
 
   const handleDownloadRevJpeg = async () => {
@@ -773,6 +1004,22 @@ export default function CopyStats() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {disFilterMode === 'all' && (
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={!disStats || disStats.results.length === 0 || disPdfGenerating}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 12px', fontSize: '0.85rem', borderRadius: '8px',
+                    background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+                    border: '1px solid var(--apple-border)', cursor: (!disStats || disStats.results.length === 0 || disPdfGenerating) ? 'not-allowed' : 'pointer', minHeight: '44px',
+                    opacity: (!disStats || disStats.results.length === 0 || disPdfGenerating) ? 0.5 : 1
+                  }}
+                >
+                  <FileText size={16} />
+                  {disPdfGenerating ? 'Generating...' : 'Save as PDF'}
+                </button>
+              )}
               <button
                 onClick={handleDownloadJpeg}
                 disabled={!disStats || disStats.results.length === 0 || disJpegGenerating}
@@ -908,7 +1155,7 @@ export default function CopyStats() {
                 background: 'linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)',
                 color: '#102a43',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
-                width: '850px',
+                width: '1200px', // Wider to fit 4 columns nicely
                 borderRadius: '24px',
                 boxSizing: 'border-box',
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
@@ -916,23 +1163,24 @@ export default function CopyStats() {
             >
               {disStats && disStats.results.length > 0 ? (
                 <>
-                  <div style={{ textAlign: 'center', marginBottom: '32px', background: '#ffffff', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                    <h2 style={{ margin: '0 0 12px 0', color: '#102a43', fontSize: '32px', fontWeight: '800', letterSpacing: '-0.02em' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '32px', background: '#ffffff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                    <h2 style={{ margin: '0 0 12px 0', color: '#102a43', fontSize: '28px', fontWeight: '800', letterSpacing: '-0.02em' }}>
                       {disStats.filterMode === 'team' && disStats.selectedTeamName 
                         ? `Team Report: ${disStats.selectedTeamName}`
                         : 'DIS Compliance Report'}
                     </h2>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '15px', color: '#486581', fontWeight: '600' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '14px', color: '#486581', fontWeight: '600' }}>
                       <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Start: {disStats.startDate}</span>
                       <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>End: {disStats.currentDate}</span>
                       <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Days: {disStats.totalDays}</span>
+                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Users: {disStats.results.length}</span>
                     </div>
                   </div>
                   
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '24px'
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '16px'
                   }}>
                     {disStats.results.map((r, i) => {
                       const pct = parseInt(r.percentage);
@@ -949,19 +1197,21 @@ export default function CopyStats() {
                       return (
                         <div key={i} style={{
                           background: '#ffffff',
-                          padding: '24px',
-                          borderRadius: '16px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                          padding: '12px 16px',
+                          borderRadius: '12px',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
                           border: '1px solid #e2e8f0',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '16px'
+                          gap: '8px'
                         }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <h4 style={{ margin: 0, fontSize: '20px', color: '#334155', fontWeight: '700' }}>{r.name}</h4>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h4 style={{ margin: 0, fontSize: '15px', color: '#334155', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {r.name}
+                              </h4>
                               {disStats.filterMode !== 'team' && (
-                                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {r.team}
                                 </div>
                               )}
@@ -969,24 +1219,25 @@ export default function CopyStats() {
                             <div style={{ 
                               background: pctBg,
                               color: pctColor,
-                              padding: '6px 14px', 
-                              borderRadius: '24px', 
-                              fontSize: '16px', 
+                              padding: '2px 8px', 
+                              borderRadius: '20px', 
+                              fontSize: '13px', 
                               fontWeight: '800',
-                              border: `1px solid ${pctColor}40`
+                              border: `1px solid ${pctColor}40`,
+                              marginLeft: '8px'
                             }}>
                               {r.percentage}
                             </div>
                           </div>
                           
-                          <div style={{ display: 'flex', gap: '16px' }}>
-                            <div style={{ flex: 1, background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                              <div style={{ fontSize: '28px', fontWeight: '800', color: '#10b981', lineHeight: '1' }}>{r.submitted}</div>
-                              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', marginTop: '6px', letterSpacing: '0.05em' }}>Submitted</div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', flex: 1, justifyContent: 'center' }}>
+                              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>S:</span>
+                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#10b981' }}>{r.submitted}</span>
                             </div>
-                            <div style={{ flex: 1, background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                              <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444', lineHeight: '1' }}>{r.missed}</div>
-                              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', marginTop: '6px', letterSpacing: '0.05em' }}>Missed</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', flex: 1, justifyContent: 'center' }}>
+                              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>M:</span>
+                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#ef4444' }}>{r.missed}</span>
                             </div>
                           </div>
                         </div>
