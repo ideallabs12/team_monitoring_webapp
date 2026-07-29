@@ -8,6 +8,8 @@ import {
   formatRevenueMonthShort,
   getEffectiveTargetAmount
 } from '../../utils/revenueUtils'
+import AttendanceWidget from '../../components/AttendanceWidget'
+
 
 let globalHomeCache = {
   userId: null,
@@ -162,6 +164,13 @@ export default function UserHome({ user, isAdminView }) {
       {/* Main Grid Wrapper */}
       <div className="apple-responsive-grid">
         
+        {/* TOP FULL-WIDTH: Attendance Widget */}
+        {!isAdminView && (
+          <div style={{ gridColumn: '1 / -1' }}>
+            <AttendanceWidget user={user} compact={true} />
+          </div>
+        )}
+
         {/* LEFT COLUMN: Profile & Teams Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
@@ -213,43 +222,45 @@ export default function UserHome({ user, isAdminView }) {
           </div>
 
           {/* Card 2: Quick Actions */}
-          {!isAdminView && (
+          {(!isAdminView && (profile?.has_dis_reporting !== false || profile?.has_revenue_logging !== false)) && (
             <div className="apple-card">
               <h3 className="apple-title-small" style={{ marginBottom: '16px' }}>Quick Actions</h3>
               <div className="apple-two-col-grid">
-                <Link 
-                  to="/dis" 
-                  className="apple-btn apple-btn-secondary" 
-                  style={{ 
-                    textAlign: 'center', 
-                    padding: '16px 8px !important', 
-                    flexDirection: 'column', 
-                    gap: '8px',
-                    borderRadius: '16px !important'
-                  }}
-                >
-                  <span style={{ fontSize: '1.4rem' }}>📝</span>
-                  <span style={{ fontSize: '0.85rem' }}>Submit Daily DIS</span>
-                </Link>
-                <Link 
-                  to="/revenue" 
-                  className="apple-btn apple-btn-secondary" 
-                  style={{ 
-                    textAlign: 'center', 
-                    padding: '16px 8px !important', 
-                    flexDirection: 'column', 
-                    gap: '8px',
-                    borderRadius: '16px !important'
-                  }}
-                >
-                  <span style={{ fontSize: '1.4rem' }}>💰</span>
-                  <span style={{ fontSize: '0.85rem' }}>Submit Revenue</span>
-                </Link>
+                {profile?.has_dis_reporting !== false && (
+                  <Link 
+                    to="/dis" 
+                    className="apple-btn apple-btn-secondary" 
+                    style={{ 
+                      textAlign: 'center', 
+                      padding: '16px 8px !important', 
+                      flexDirection: 'column', 
+                      gap: '8px',
+                      borderRadius: '16px !important'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.4rem' }}>📝</span>
+                    <span style={{ fontSize: '0.85rem' }}>Submit Daily DIS</span>
+                  </Link>
+                )}
+                {profile?.has_revenue_logging !== false && (
+                  <Link 
+                    to="/revenue" 
+                    className="apple-btn apple-btn-secondary" 
+                    style={{ 
+                      textAlign: 'center', 
+                      padding: '16px 8px !important', 
+                      flexDirection: 'column', 
+                      gap: '8px',
+                      borderRadius: '16px !important'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.4rem' }}>💰</span>
+                    <span style={{ fontSize: '0.85rem' }}>Submit Revenue</span>
+                  </Link>
+                )}
               </div>
             </div>
           )}
-
-
 
         </div>
 
@@ -257,8 +268,9 @@ export default function UserHome({ user, isAdminView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Card 3: Revenue Metrics */}
-          <div className="apple-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 className="apple-title-small" style={{ margin: 0 }}>Revenue Summary</h3>
+          {profile?.has_revenue_logging !== false && (
+            <div className="apple-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <h3 className="apple-title-small" style={{ margin: 0 }}>Revenue Summary</h3>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ 
@@ -346,7 +358,8 @@ export default function UserHome({ user, isAdminView }) {
                 ))}
               </div>
             </div>
-          </div>
+            </div>
+          )}
 
         </div>
 
@@ -384,65 +397,67 @@ export default function UserHome({ user, isAdminView }) {
         )}
 
         {/* BOTTOM FULL-WIDTH: Latest Daily DIS Report */}
-        <div className="apple-card" style={{ gridColumn: '1 / -1' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Latest Daily DIS Report</h3>
-          
-          {latestReport ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                borderBottom: '1px solid var(--apple-border)', 
-                paddingBottom: '12px' 
-              }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Report Date</span>
-                <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.9rem' }}>
-                  {new Date(latestReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
-                </span>
-              </div>
-              
-              <div className="apple-two-col-grid">
+        {profile?.has_dis_reporting !== false && (
+          <div className="apple-card" style={{ gridColumn: '1 / -1' }}>
+            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Latest Daily DIS Report</h3>
+            
+            {latestReport ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ 
-                  textAlign: 'center', 
-                  background: 'rgba(0, 113, 227, 0.03)', 
-                  border: '1px solid rgba(0, 113, 227, 0.15)', 
-                  borderRadius: '10px', 
-                  padding: '12px' 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  borderBottom: '1px solid var(--apple-border)', 
+                  paddingBottom: '12px' 
                 }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Expected Revenue</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
-                    ${Number(latestReport.expected_revenue).toFixed(2)}
-                  </div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Report Date</span>
+                  <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.9rem' }}>
+                    {new Date(latestReport.report_date).toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })}
+                  </span>
                 </div>
                 
-                <div style={{ 
-                  textAlign: 'center', 
-                  background: 'rgba(255, 159, 10, 0.03)', 
-                  border: '1px solid rgba(255, 159, 10, 0.15)', 
-                  borderRadius: '10px', 
-                  padding: '12px' 
-                }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Positive Leads</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>
-                    {latestReport.positive_leads}
+                <div className="apple-two-col-grid">
+                  <div style={{ 
+                    textAlign: 'center', 
+                    background: 'rgba(0, 113, 227, 0.03)', 
+                    border: '1px solid rgba(0, 113, 227, 0.15)', 
+                    borderRadius: '10px', 
+                    padding: '12px' 
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Expected Revenue</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>
+                      ${Number(latestReport.expected_revenue).toFixed(2)}
+                    </div>
+                  </div>
+                  
+                  <div style={{ 
+                    textAlign: 'center', 
+                    background: 'rgba(255, 159, 10, 0.03)', 
+                    border: '1px solid rgba(255, 159, 10, 0.15)', 
+                    borderRadius: '10px', 
+                    padding: '12px' 
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Positive Leads</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>
+                      {latestReport.positive_leads}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>
-                {isAdminView ? "This user hasn't submitted any daily reports yet." : "You haven't submitted any daily reports yet."}
-              </p>
-              {!isAdminView && (
-                <Link to="/dis" className="apple-btn apple-btn-secondary" style={{ padding: '8px 20px !important', fontSize: '0.85rem' }}>
-                  Create First Report
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', margin: '0 0 16px 0', fontSize: '0.9rem' }}>
+                  {isAdminView ? "This user hasn't submitted any daily reports yet." : "You haven't submitted any daily reports yet."}
+                </p>
+                {!isAdminView && (
+                  <Link to="/dis" className="apple-btn apple-btn-secondary" style={{ display: 'inline-flex' }}>
+                    Submit Your First Report
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

@@ -492,14 +492,33 @@ export default function AdminTeams() {
           <ArrowLeft size={16} /> Back to Teams
         </button>
 
-        <div style={{ marginBottom: '32px' }}>
-          <span className="apple-kicker">Team Profile</span>
-          <h2 className="apple-title-medium" style={{ textTransform: 'capitalize' }}>
-            {activeTeam.name}
-          </h2>
-          <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', margin: '4px 0 0 0' }}>
-            Review role hierarchy, performance breakdowns, and member revenue contributions.
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+          <div>
+            <span className="apple-kicker">Team Profile</span>
+            <h2 className="apple-title-medium" style={{ textTransform: 'capitalize' }}>
+              {activeTeam.name}
+            </h2>
+            <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', margin: '4px 0 0 0' }}>
+              Review role hierarchy, performance breakdowns, and member revenue contributions.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+            <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Exclude from Analytics</span>
+            <button
+              onClick={async () => {
+                const nextStatus = !activeTeam.exclude_from_analytics
+                const { error } = await supabase.from('teams').update({ exclude_from_analytics: nextStatus }).eq('id', activeTeam.id)
+                if (!error) {
+                  const updatedTeam = { ...activeTeam, exclude_from_analytics: nextStatus }
+                  setActiveTeam(updatedTeam)
+                  setTeams(teams.map(t => t.id === activeTeam.id ? updatedTeam : t))
+                }
+              }}
+              style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: activeTeam.exclude_from_analytics ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+            >
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: activeTeam.exclude_from_analytics ? '16px' : '0px', transition: 'left 150ms ease' }} />
+            </button>
+          </div>
         </div>
 
         {/* --- MEMBERS SECTION WRAPPER --- */}

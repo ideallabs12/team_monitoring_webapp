@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { MapPin, CheckCircle, AlertTriangle, Clock, Map } from 'lucide-react'
+import { MapPin, CheckCircle, AlertTriangle, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 
 // Haversine formula to calculate distance between two coordinates
@@ -37,19 +37,22 @@ export default function Attendance({ user }) {
   const [exceptionReason, setExceptionReason] = useState('')
   const [pendingAction, setPendingAction] = useState('in')
 
-  // Check if user is whitelisted
-  const isWhitelisted = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.attendance
+  // My Logs Feature State
+  const [activeTab, setActiveTab] = useState('daily') // 'daily' or 'logs'
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [monthlyLogs, setMonthlyLogs] = useState([])
+  const [loadingLogs, setLoadingLogs] = useState(false)
+  
+  // Swipe State
+  const [touchStart, setTouchStart] = useState(null)
+  const [touchEnd, setTouchEnd] = useState(null)
+  const minSwipeDistance = 50
 
   useEffect(() => {
-    if (!isWhitelisted) {
-      setLoading(false)
-      return
-    }
-
     async function loadInitialData() {
       try {
         const [profileRes, logRes, locRes] = await Promise.all([
-          supabase.from('profiles').select('require_gps_attendance, wfh_enabled').eq('id', user.id).single(),
+          supabase.from('profiles').select('require_gps_attendance, wfh_enabled, teams!profiles_team_id_fkey(attendance_enabled)').eq('id', user.id).single(),
           supabase.from('attendance_logs').select('*').eq('user_id', user.id).eq('attendance_date', new Date().toISOString().split('T')[0]).maybeSingle(),
           supabase.from('office_locations').select('*').eq('is_active', true)
         ])
@@ -73,7 +76,103 @@ export default function Attendance({ user }) {
       }
     }
     loadInitialData()
-  }, [user.id, isWhitelisted])
+
+    const todayDate = new Date().toISOString().split('T')[0]
+    const channel = supabase.channel(`attendance_logs_page_${user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'attendance_logs',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        if (payload.new && payload.new.attendance_date === todayDate) {
+          setTodayLog(payload.new)
+        }
+      })
+      .subscribe()
+
+    const teamsChannel = supabase.channel(`attendance_page_teams_${user.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, () => {
+        supabase.from('profiles').select('require_gps_attendance, wfh_enabled, teams!profiles_team_id_fkey(attendance_enabled)').eq('id', user.id).single()
+          .then(({ data }) => { if (data) setProfile(data) })
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      supabase.removeChannel(teamsChannel)
+    }
+  }, [user.id])
+
+  // Fetch Monthly Logs
+  useEffect(() => {
+    if (activeTab === 'logs') {
+      fetchMonthlyLogs()
+    }
+  }, [activeTab, currentDate, user.id])
+
+  const fetchMonthlyLogs = async () => {
+    if (!user) return
+    setLoadingLogs(true)
+    try {
+      const year = currentDate.getFullYear()
+      const month = currentDate.getMonth()
+      
+      const startDate = new Date(year, month, 1)
+      const endDate = new Date(year, month + 1, 0, 23, 59, 59)
+      
+      const { data, error } = await supabase
+        .from('attendance_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('attendance_date', startDate.toISOString())
+        .lte('attendance_date', endDate.toISOString())
+        .order('attendance_date', { ascending: false })
+        
+      if (error) throw error
+      setMonthlyLogs(data || [])
+    } catch (err) {
+      console.error('Error fetching monthly logs:', err)
+    } finally {
+      setLoadingLogs(false)
+    }
+  }
+
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+  }
+  const handleNextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+  }
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX)
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    if (distance > minSwipeDistance) handleNextMonth() // swipe left = next month
+    if (distance < -minSwipeDistance) handlePrevMonth() // swipe right = prev month
+  }
+
+  const getTimingStatus = (log) => {
+    const statuses = []
+    const inTime = new Date(log.check_in_time)
+    const inMinutes = inTime.getHours() * 60 + inTime.getMinutes()
+    if (inMinutes > 580) { // 9:40 AM
+      statuses.push({ label: 'Late', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' })
+    }
+    if (log.check_out_time) {
+      const outTime = new Date(log.check_out_time)
+      const outMinutes = outTime.getHours() * 60 + outTime.getMinutes()
+      if (outMinutes < 1080) { // 6:00 PM
+        statuses.push({ label: 'Early Leave', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' })
+      }
+    }
+    return statuses
+  }
 
   const runChecks = async (action = 'in') => {
     setPendingAction(action)
@@ -87,7 +186,6 @@ export default function Attendance({ user }) {
     let fetchedLocation = null
     let validLocations = []
 
-    // 1. GPS Check
     if (profile?.require_gps_attendance) {
       try {
         const position = await new Promise((resolve, reject) => {
@@ -144,8 +242,8 @@ export default function Attendance({ user }) {
     setChecking(true)
     setErrorMsg('')
     
-    if (isException && !exceptionReason.trim()) {
-      setErrorMsg('Please provide a reason for the exception.')
+    if (isException && exceptionReason.trim().length < 10) {
+      setErrorMsg('Please provide a valid reason (minimum 10 characters).')
       setChecking(false)
       return
     }
@@ -156,7 +254,7 @@ export default function Attendance({ user }) {
         check_in_time: new Date().toISOString(),
         latitude: overrideLocation?.lat || null,
         longitude: overrideLocation?.lng || null,
-        status: isException ? 'pending_approval' : 'present',
+        status: 'present',
         exception_reason: isException ? exceptionReason : null
       }
 
@@ -165,7 +263,7 @@ export default function Attendance({ user }) {
       if (error) throw error
       
       setTodayLog(data)
-      setSuccessMsg(isException ? 'Exception request submitted. Waiting for manager approval.' : 'Punched in successfully!')
+      setSuccessMsg(isException ? 'Exception recorded successfully!' : 'Punched in successfully!')
       setShowExceptionForm(false)
     } catch (err) {
       console.error('Punch-in error:', err)
@@ -180,8 +278,8 @@ export default function Attendance({ user }) {
     setChecking(true)
     setErrorMsg('')
     
-    if (isException && !exceptionReason.trim()) {
-      setErrorMsg('Please provide a reason for the exception.')
+    if (isException && exceptionReason.trim().length < 10) {
+      setErrorMsg('Please provide a valid reason (minimum 10 characters).')
       setChecking(false)
       return
     }
@@ -190,7 +288,7 @@ export default function Attendance({ user }) {
       const updates = { check_out_time: new Date().toISOString() }
       
       if (isException) {
-        updates.status = 'pending_approval'
+        updates.status = 'present'
         updates.exception_reason = todayLog.exception_reason 
           ? `${todayLog.exception_reason} | Punch-out exception: ${exceptionReason}`
           : `Punch-out exception: ${exceptionReason}`
@@ -205,7 +303,7 @@ export default function Attendance({ user }) {
         
       if (error) throw error
       setTodayLog(data)
-      setSuccessMsg(isException ? 'Punch-out exception requested!' : 'Punched out successfully!')
+      setSuccessMsg(isException ? 'Punch-out exception recorded!' : 'Punched out successfully!')
       setShowExceptionForm(false)
     } catch (err) {
       console.error('Punch-out error:', err)
@@ -215,12 +313,12 @@ export default function Attendance({ user }) {
     }
   }
 
-  if (!isWhitelisted) {
+  if (profile && profile.teams && !profile.teams.attendance_enabled) {
     return (
       <div className="apple-card" style={{ padding: '40px', textAlign: 'center', marginTop: '40px' }}>
         <AlertTriangle size={48} style={{ color: '#f59e0b', margin: '0 auto 16px' }} />
-        <h2 className="apple-title-large">Coming Soon</h2>
-        <p style={{ color: 'var(--apple-text-secondary)' }}>Attendance tracking is currently in beta and not enabled for your account yet.</p>
+        <h2 className="apple-title-large">Restricted Access</h2>
+        <p style={{ color: 'var(--apple-text-secondary)' }}>Attendance tracking is not enabled for your team.</p>
       </div>
     )
   }
@@ -232,121 +330,235 @@ export default function Attendance({ user }) {
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
-      <h1 className="apple-title-large" style={{ marginBottom: '8px' }}>Daily Attendance</h1>
-      <p style={{ color: 'var(--apple-text-secondary)', marginBottom: '32px' }}>Track your daily punch-ins and working hours.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+        <div>
+          <h1 className="apple-title-large" style={{ marginBottom: '8px' }}>Attendance</h1>
+          <p style={{ color: 'var(--apple-text-secondary)' }}>Track your daily punch-ins and view your logs.</p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setActiveTab('daily')}
+            className="apple-btn"
+            style={{ background: activeTab === 'daily' ? 'var(--apple-card)' : 'transparent', color: activeTab === 'daily' ? '#fff' : 'var(--apple-text-secondary)', border: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <MapPin size={16} /> Daily Check-In
+          </button>
+          <button
+            onClick={() => setActiveTab('logs')}
+            className="apple-btn"
+            style={{ background: activeTab === 'logs' ? 'var(--apple-card)' : 'transparent', color: activeTab === 'logs' ? '#fff' : 'var(--apple-text-secondary)', border: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Calendar size={16} /> My Logs
+          </button>
+        </div>
+      </div>
 
-      {errorMsg && (
+      {errorMsg && activeTab === 'daily' && (
         <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '12px', fontSize: '0.9rem', marginBottom: '24px' }}>
           {errorMsg}
         </div>
       )}
-      {successMsg && (
+      {successMsg && activeTab === 'daily' && (
         <div style={{ padding: '12px 16px', background: 'rgba(74, 222, 128, 0.1)', border: '1px solid rgba(74, 222, 128, 0.2)', color: '#4ade80', borderRadius: '12px', fontSize: '0.9rem', marginBottom: '24px' }}>
           {successMsg}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '24px' }}>
-        
-        {/* Status Card */}
-        <div className="apple-card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <Clock size={48} style={{ color: isCheckedOut ? '#94a3b8' : isCheckedIn ? '#4ade80' : '#38bdf8', marginBottom: '16px' }} />
-          <h2 className="apple-title-large" style={{ marginBottom: '8px' }}>
-            {isCheckedOut ? 'Shift Completed' : isCheckedIn ? 'Currently Punched In' : 'Not Punched In'}
-          </h2>
+      {activeTab === 'daily' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '24px' }}>
           
-          {todayLog && (
-            <div style={{ display: 'flex', gap: '20px', marginTop: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)', width: '100%' }}>
-              <div style={{ flex: 1 }}>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>In</span>
-                <strong style={{ fontSize: '1.2rem', color: '#fff' }}>{new Date(todayLog.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>
-              </div>
-              <div style={{ width: '1px', background: 'var(--apple-border)' }} />
-              <div style={{ flex: 1 }}>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Out</span>
-                <strong style={{ fontSize: '1.2rem', color: '#fff' }}>{todayLog.check_out_time ? new Date(todayLog.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</strong>
-              </div>
-            </div>
-          )}
-
-          {todayLog?.status === 'pending_approval' && (
-            <div style={{ marginTop: '16px', padding: '8px 12px', background: 'rgba(245, 158, 11, 0.1)', color: '#fbbf24', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AlertTriangle size={14} /> Pending Manager Approval (Exception)
-            </div>
-          )}
-
-          {!isCheckedIn && !checking && !showExceptionForm && (
-            <button onClick={() => runChecks('in')} className="apple-btn apple-btn-primary" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem' }}>
-              Verify & Punch In
-            </button>
-          )}
-
-          {isCheckedIn && !isCheckedOut && !showExceptionForm && (
-            <button onClick={() => runChecks('out')} disabled={checking} className="apple-btn" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-              {checking ? 'Processing...' : 'Verify & Punch Out'}
-            </button>
-          )}
-        </div>
-
-        {/* Verification Checks Panel (Only show when checking in or failed) */}
-        {(!isCheckedIn || showExceptionForm) && (gpsStatus !== 'pending' || checking) && (
-          <div className="apple-card" style={{ padding: '24px' }}>
-            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Verification Checks</h3>
+          {/* Status Card */}
+          <div className="apple-card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <Clock size={48} style={{ color: isCheckedOut ? '#94a3b8' : isCheckedIn ? '#4ade80' : '#38bdf8', marginBottom: '16px' }} />
+            <h2 className="apple-title-large" style={{ marginBottom: '8px' }}>
+              {isCheckedOut ? 'Shift Completed' : isCheckedIn ? 'Currently Punched In' : 'Not Punched In'}
+            </h2>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              
-              {/* GPS Check */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <MapPin size={20} />
-                </div>
+            {todayLog && (
+              <div style={{ display: 'flex', gap: '20px', marginTop: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)', width: '100%' }}>
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>Office Location</h4>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                    {profile?.wfh_enabled ? 'Not required (WFH bypass enabled)' : profile?.require_gps_attendance ? 'Must be physically at an office location' : 'Not required for your profile'}
-                  </p>
-                  {currentLocation && <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: gpsStatus === 'fail' ? '#ef4444' : '#94a3b8' }}>Detected: {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}</p>}
+                  <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>In</span>
+                  <strong style={{ fontSize: '1.2rem', color: '#fff' }}>{new Date(todayLog.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>
                 </div>
-                <div>
-                  {gpsStatus === 'pending' && checking && <span style={{ color: 'var(--apple-text-secondary)' }}>Checking...</span>}
-                  {gpsStatus === 'skipped' && <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500' }}>SKIPPED</span>}
-                  {gpsStatus === 'success' && <CheckCircle style={{ color: '#4ade80' }} size={24} />}
-                  {gpsStatus === 'fail' && <AlertTriangle style={{ color: '#ef4444' }} size={24} />}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Exception Form */}
-            {showExceptionForm && (
-              <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <AlertTriangle size={16} /> Verification Failed
-                </h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '16px' }}>
-                  It looks like you didn't pass the required network or location checks. You can still request to punch {pendingAction} by providing a valid reason.
-                </p>
-                <textarea
-                  className="apple-input"
-                  placeholder="E.g., I am at a client site today..."
-                  value={exceptionReason}
-                  onChange={(e) => setExceptionReason(e.target.value)}
-                  rows={3}
-                  style={{ width: '100%', marginBottom: '16px', resize: 'vertical' }}
-                />
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => runChecks(pendingAction)} disabled={checking} className="apple-btn" style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-                    Verify Again
-                  </button>
-                  <button onClick={() => pendingAction === 'in' ? handleCheckIn(true) : handleCheckOut(true)} disabled={checking} className="apple-btn" style={{ flex: 2, background: '#ef4444', color: '#fff', border: 'none' }}>
-                    {checking ? 'Submitting...' : `Request Exception & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
-                  </button>
+                <div style={{ width: '1px', background: 'var(--apple-border)' }} />
+                <div style={{ flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Out</span>
+                  <strong style={{ fontSize: '1.2rem', color: '#fff' }}>{todayLog.check_out_time ? new Date(todayLog.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</strong>
                 </div>
               </div>
             )}
+
+            {!isCheckedIn && !checking && !showExceptionForm && (
+              <button onClick={() => runChecks('in')} className="apple-btn apple-btn-primary" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem' }}>
+                Verify & Punch In
+              </button>
+            )}
+
+            {isCheckedIn && !isCheckedOut && !showExceptionForm && (
+              <button onClick={() => runChecks('out')} disabled={checking} className="apple-btn" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                {checking ? 'Processing...' : 'Verify & Punch Out'}
+              </button>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Verification Checks Panel */}
+          {(!isCheckedIn || showExceptionForm) && (gpsStatus !== 'pending' || checking) && (
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Verification Checks</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MapPin size={20} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>Office Location</h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                      {profile?.wfh_enabled ? 'Not required (WFH bypass enabled)' : profile?.require_gps_attendance ? 'Must be physically at an office location' : 'Not required for your profile'}
+                    </p>
+                    {currentLocation && <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: gpsStatus === 'fail' ? '#ef4444' : '#94a3b8' }}>Detected: {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}</p>}
+                  </div>
+                  <div>
+                    {gpsStatus === 'pending' && checking && <span style={{ color: 'var(--apple-text-secondary)' }}>Checking...</span>}
+                    {gpsStatus === 'skipped' && <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500' }}>SKIPPED</span>}
+                    {gpsStatus === 'success' && <CheckCircle style={{ color: '#4ade80' }} size={24} />}
+                    {gpsStatus === 'fail' && <AlertTriangle style={{ color: '#ef4444' }} size={24} />}
+                  </div>
+                </div>
+              </div>
+
+              {showExceptionForm && (
+                <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <AlertTriangle size={16} /> Verification Failed
+                  </h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '16px' }}>
+                    It looks like you didn't pass the required network or location checks. You can still request to punch {pendingAction} by providing a valid reason.
+                  </p>
+                  <textarea
+                    className="apple-input"
+                    placeholder="E.g., I am at a client site today..."
+                    value={exceptionReason}
+                    onChange={(e) => setExceptionReason(e.target.value)}
+                    rows={3}
+                    style={{ width: '100%', marginBottom: '16px', resize: 'vertical' }}
+                  />
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={() => runChecks(pendingAction)} disabled={checking} className="apple-btn" style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                      Verify Again
+                    </button>
+                    <button onClick={() => pendingAction === 'in' ? handleCheckIn(true) : handleCheckOut(true)} disabled={checking} className="apple-btn" style={{ flex: 2, background: '#ef4444', color: '#fff', border: 'none' }}>
+                      {checking ? 'Submitting...' : `Request Exception & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div 
+          className="apple-card" 
+          style={{ padding: '0 !important', overflow: 'hidden' }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {/* Month Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid var(--apple-border)' }}>
+            <button onClick={handlePrevMonth} className="apple-btn" style={{ padding: '8px', border: 'none', background: 'transparent' }}>
+              <ChevronLeft size={20} />
+            </button>
+            <h2 className="apple-title-medium" style={{ margin: 0 }}>
+              {currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+            </h2>
+            <button onClick={handleNextMonth} className="apple-btn" style={{ padding: '8px', border: 'none', background: 'transparent' }}>
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {loadingLogs ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>Loading logs...</div>
+            ) : monthlyLogs.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>
+                No attendance logs found for this month.
+                <p style={{ fontSize: '0.85rem', marginTop: '8px' }}>Swipe left or right to change month.</p>
+              </div>
+            ) : (
+              monthlyLogs.map(log => {
+                const timingStatuses = getTimingStatus(log)
+                return (
+                  <div key={log.id} style={{ 
+                    padding: '16px', 
+                    background: 'rgba(255,255,255,0.02)', 
+                    borderRadius: '12px', 
+                    border: '1px solid var(--apple-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ fontWeight: '500', color: '#fff', fontSize: '1rem' }}>
+                        {new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px' }}>Time In</div>
+                        <div style={{ fontSize: '1rem', color: '#4ade80', fontWeight: '500' }}>
+                          {new Date(log.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        {timingStatuses.find(t => t.label === 'Late') && (
+                          <div style={{ fontSize: '0.7rem', color: '#ef4444', marginTop: '4px', fontWeight: '600', padding: '2px 6px', background: 'rgba(239, 68, 68, 0.1)', display: 'inline-block', borderRadius: '4px' }}>LATE</div>
+                        )}
+                      </div>
+                      {log.check_out_time ? (
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px' }}>Time Out</div>
+                          <div style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: '500' }}>
+                            {new Date(log.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          {timingStatuses.find(t => t.label === 'Early Leave') && (
+                            <div style={{ fontSize: '0.7rem', color: '#f97316', marginTop: '4px', fontWeight: '600', padding: '2px 6px', background: 'rgba(249, 115, 22, 0.1)', display: 'inline-block', borderRadius: '4px' }}>EARLY</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px' }}>Time Out</div>
+                          <div style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: '500' }}>--:--</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {log.exception_reason && (
+                      <div style={{ fontSize: '0.8rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.05)', padding: '8px 12px', borderRadius: '6px', borderLeft: '2px solid #fbbf24', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                          <AlertTriangle size={12} />
+                          <strong style={{ color: '#f59e0b' }}>Exception Note</strong>
+                        </div>
+                        <div style={{ color: 'rgba(251, 191, 36, 0.9)' }}>
+                          {log.exception_reason.split('|').map((part, index) => {
+                            let text = part.trim()
+                            if (index === 0 && !text.toLowerCase().includes('punch-in') && !text.toLowerCase().includes('punch-out')) {
+                              text = `Punch-in exception: ${text}`
+                            }
+                            return (
+                              <div key={index} style={{ marginBottom: '2px' }}>• {text}</div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

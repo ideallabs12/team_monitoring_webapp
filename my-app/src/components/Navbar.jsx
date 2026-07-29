@@ -65,18 +65,21 @@ export default function Navbar({ user }) {
     { to: '/team', label: 'Team' }
   ]
   if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
-  navLinks.push({ to: '/dis', label: 'My DIS' })
+  if (profile?.has_dis_reporting !== false) navLinks.push({ to: '/dis', label: 'My DIS' })
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
     { to: '/profile', label: 'Profile', desc: 'Manage your personal details' },
     { to: '/settings', label: 'Settings', desc: 'App preferences and alerts' },
-    { to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' },
     { to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' },
   ]
-  if (profile?.platform_role?.toLowerCase() === 'teamlead') {
-    othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
+  
+  if (profile?.has_revenue_logging !== false) {
+    othersLinks.unshift({ to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' })
   }
+  
+  othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
+  
   if (profile?.is_sales_executive) {
     othersLinks.push({ to: '/sales-analytics', label: 'Sales Executive', desc: 'Call activity & analytics' })
   }

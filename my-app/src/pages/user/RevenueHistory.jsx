@@ -25,9 +25,18 @@ export default function RevenueHistory({ user }) {
   const [editClient, setEditClient] = useState('')
   const [editWeek, setEditWeek] = useState(1)
 
+  const [accessDenied, setAccessDenied] = useState(false)
+
   useEffect(() => {
     async function fetchAll() {
       try {
+        const { data: prof } = await supabase.from('profiles').select('has_revenue_logging').eq('id', user.id).single()
+        if (prof?.has_revenue_logging === false) {
+          setAccessDenied(true)
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase
           .from('monthly_revenues')
           .select('*, teams(name)')
@@ -178,6 +187,19 @@ export default function RevenueHistory({ user }) {
       </div>
     )
   }
+
+  if (accessDenied) {
+    return (
+      <div className="apple-page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
+          <h2 className="apple-title-medium">Access Restricted</h2>
+          <p style={{ color: 'var(--apple-text-secondary)' }}>Revenue logging is not enabled for your account.</p>
+        </div>
+      </div>
+    )
+  }
+
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>

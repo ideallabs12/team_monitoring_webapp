@@ -35,7 +35,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     if (!user?.id) return
     supabase
       .from('profiles')
-      .select('first_name, last_name, platform_role, has_revenue_logging, is_sales_executive')
+      .select('first_name, last_name, platform_role, has_revenue_logging, has_dis_reporting, exclude_from_analytics, is_sales_executive, teams!profiles_team_id_fkey(attendance_enabled)')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => { if (data) setProfile(data) })
@@ -66,9 +66,21 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
       })
       .subscribe()
 
+    const teamsChannel = supabase.channel(`sidebar-teams-${user.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, () => {
+        supabase
+          .from('profiles')
+          .select('first_name, last_name, platform_role, has_revenue_logging, has_dis_reporting, exclude_from_analytics, is_sales_executive, teams!profiles_team_id_fkey(attendance_enabled)')
+          .eq('id', user.id)
+          .maybeSingle()
+          .then(({ data }) => { if (data) setProfile(data) })
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(annChannel)
       supabase.removeChannel(viewsChannel)
+      supabase.removeChannel(teamsChannel)
     }
   }, [user])
 
@@ -99,26 +111,30 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   if (profile?.has_revenue_logging !== false) {
     navLinks.push({ path: '/revenue', label: 'Revenue', icon: DollarSign })
   }
-  navLinks.push({ path: '/dis', label: 'My DIS', icon: FileText })
+  if (profile?.has_dis_reporting !== false) {
+    navLinks.push({ path: '/dis', label: 'My DIS', icon: FileText })
+  }
   navLinks.push({ path: '/profile', label: 'Profile', icon: UserIcon })
   navLinks.push({ path: '/settings', label: 'Settings', icon: SettingsIcon })
 
-  const isWhitelisted = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.attendance
-  if (isWhitelisted) {
-    navLinks.push({ path: '/attendance', label: 'Attendance', icon: MapPin })
+  const isAttendanceEnabled = profile?.teams?.attendance_enabled === true;
+  if (isAttendanceEnabled) {
+    navLinks.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
   }
 
   const othersLinks = [
-    { path: '/revenue-history', label: 'Revenue History', icon: History },
     { path: '/milestones', label: 'Milestones', icon: Flag },
-    { path: '/attendance', label: 'Attendance', icon: CheckSquare },
     { path: '/reviews', label: 'Reviews', icon: Star },
     { path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
   ]
   
-  if (profile?.platform_role?.toLowerCase() === 'teamlead') {
-    othersLinks.push({ path: '/leaderboard', label: 'Leaderboard', icon: Trophy })
+  if (profile?.has_revenue_logging !== false) {
+    othersLinks.unshift({ path: '/revenue-history', label: 'Revenue History', icon: History })
   }
+  
+  const isTechProfile = profile?.has_revenue_logging === false && profile?.has_dis_reporting === false;
+  
+  othersLinks.push({ path: '/leaderboard', label: 'Leaderboard', icon: Trophy })
   if (profile?.is_sales_executive) {
     othersLinks.push({ path: '/sales-analytics', label: 'Sales Exec', icon: PhoneCall })
   }

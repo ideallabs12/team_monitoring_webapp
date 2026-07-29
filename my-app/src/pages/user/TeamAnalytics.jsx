@@ -118,11 +118,11 @@ export default function TeamAnalytics({ user }) {
         // 1. Fetch team members (excluding admins)
         const { data: members, error: memError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, email, platform_role')
+          .select('id, first_name, last_name, email, platform_role, exclude_from_analytics')
           .eq('team_id', profile.team_id)
         
         if (memError) throw memError
-        const nonAdminMembers = (members || []).filter(m => m.platform_role !== 'admin')
+        const nonAdminMembers = (members || []).filter(m => m.platform_role !== 'admin' && !m.exclude_from_analytics)
         setTeamMembers(nonAdminMembers)
         
         const memberUserIds = nonAdminMembers.map(m => m.id)

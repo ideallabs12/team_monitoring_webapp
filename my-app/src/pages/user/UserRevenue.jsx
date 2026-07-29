@@ -352,6 +352,18 @@ export default function UserRevenue({ user, isAdminView }) {
 
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading revenue data...</div>
 
+  if (accessDenied) {
+    return (
+      <div className="apple-page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
+          <h2 className="apple-title-medium">Access Restricted</h2>
+          <p style={{ color: 'var(--apple-text-secondary)' }}>Revenue logging is not enabled for your account.</p>
+        </div>
+      </div>
+    )
+  }
+
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>

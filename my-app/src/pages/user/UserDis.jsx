@@ -334,6 +334,8 @@ export default function UserDis() {
     setFilterMonth('All')
   }
 
+  const [accessDenied, setAccessDenied] = useState(false)
+
   // Load User & Profile
   useEffect(() => {
     async function getUserData() {
@@ -343,6 +345,11 @@ export default function UserDis() {
           setCurrentUser(user)
 
           if (globalDisCache.userId === user.id && globalDisCache.profile) {
+            if (globalDisCache.profile.has_dis_reporting === false) {
+              setAccessDenied(true)
+              setLoading(false)
+              return
+            }
             setProfile(globalDisCache.profile)
             setPrimaryTeam(globalDisCache.primaryTeam)
             setSecondaryTeam(globalDisCache.secondaryTeam)
@@ -355,6 +362,11 @@ export default function UserDis() {
             .maybeSingle()
 
           if (prof) {
+            if (prof.has_dis_reporting === false) {
+              setAccessDenied(true)
+              setLoading(false)
+              return
+            }
             setProfile(prof)
             const pt = prof.team || null
             const st = prof.secondary || null
@@ -437,6 +449,18 @@ export default function UserDis() {
   }
 
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading DIS Module...</div>
+
+  if (accessDenied) {
+    return (
+      <div className="apple-page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', animation: 'fadeIn 0.4s var(--apple-ease)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
+          <h2 className="apple-title-medium">Access Restricted</h2>
+          <p style={{ color: 'var(--apple-text-secondary)' }}>DIS reporting is not enabled for your account.</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!primaryTeam) {
     return (

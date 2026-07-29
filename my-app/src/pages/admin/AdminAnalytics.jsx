@@ -190,8 +190,12 @@ export default function AdminAnalytics() {
 
   // ── BASE DERIVED DATA ───────────────────────────────────────────
   const nonAdminProfiles = useMemo(
-    () => profiles.filter(p => p.platform_role !== 'admin'),
+    () => profiles.filter(p => p.platform_role !== 'admin' && !p.exclude_from_analytics),
     [profiles]
+  )
+  const activeTeams = useMemo(
+    () => teams.filter(t => !t.exclude_from_analytics),
+    [teams]
   )
   const nonAdminIds = useMemo(
     () => new Set(nonAdminProfiles.map(p => p.id)),
@@ -207,14 +211,14 @@ export default function AdminAnalytics() {
 
   // ── TEAM RADAR ─────────────────────────────────────────────────
   const radarData = useMemo(() =>
-    calculateTeamRadarScores(teams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths, holidays),
-    [teams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths, holidays]
+    calculateTeamRadarScores(activeTeams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths, holidays),
+    [activeTeams, nonAdminRevenues, disReports, memberships, profiles, defaultActiveMonths, holidays]
   )
 
   // ── PERFORMER RANKINGS ─────────────────────────────────────────
   const performerData = useMemo(() =>
-    calculatePerformerStatus(nonAdminRevenues, profiles, disReports, memberships, teams, defaultActiveMonths, currentDateStr, holidays),
-    [nonAdminRevenues, profiles, disReports, memberships, teams, defaultActiveMonths, currentDateStr, holidays]
+    calculatePerformerStatus(nonAdminRevenues, profiles, disReports, memberships, activeTeams, defaultActiveMonths, currentDateStr, holidays),
+    [nonAdminRevenues, profiles, disReports, memberships, activeTeams, defaultActiveMonths, currentDateStr, holidays]
   )
 
   const topPerformers = useMemo(() =>

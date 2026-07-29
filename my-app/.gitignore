@@ -52,3 +52,10 @@ debug2.js
 debug_teams.js
 export_users.js
 export_users_excel.js
+
+# Temporary SQL and JS scratch files
+add_analytics_exclusion.sql
+check_rpc.js
+enable_tech_attendance.sql
+milestone_rpc.sql
+update_leaderboard_rpc.sql

@@ -1,0 +1,373 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabaseClient'
+import { MapPin, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
+
+// Haversine formula to calculate distance between two coordinates
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Radius of the earth in m
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+  const d = R * c; 
+  return d;
+}
+
+export default function AttendanceWidget({ user, compact = false }) {
+  const { featureAccess } = useOutletContext() || {}
+  const [loading, setLoading] = useState(true)
+  const [checking, setChecking] = useState(false)
+  
+  const [profile, setProfile] = useState(null)
+  const [todayLog, setTodayLog] = useState(null)
+  const [officeLocations, setOfficeLocations] = useState([])
+  
+  const [gpsStatus, setGpsStatus] = useState('pending')
+  const [currentLocation, setCurrentLocation] = useState(null)
+  
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  
+  const [showExceptionForm, setShowExceptionForm] = useState(false)
+  const [exceptionReason, setExceptionReason] = useState('')
+  const [pendingAction, setPendingAction] = useState('in')
+
+  useEffect(() => {
+    async function loadInitialData() {
+      try {
+        const [profileRes, logRes, locRes] = await Promise.all([
+          supabase.from('profiles').select('require_gps_attendance, wfh_enabled, teams!profiles_team_id_fkey(attendance_enabled)').eq('id', user.id).single(),
+          supabase.from('attendance_logs').select('*').eq('user_id', user.id).eq('attendance_date', new Date().toISOString().split('T')[0]).maybeSingle(),
+          supabase.from('office_locations').select('*').eq('is_active', true)
+        ])
+
+        if (profileRes.error) throw profileRes.error
+        
+        // Defaults to true if null in DB
+        const pData = profileRes.data
+        if (pData.require_gps_attendance === null) pData.require_gps_attendance = true
+        setProfile(pData)
+        setOfficeLocations(locRes.data || [])
+
+        if (logRes.data) {
+          setTodayLog(logRes.data)
+        }
+      } catch (err) {
+        console.error('Error loading attendance data:', err)
+        setErrorMsg('Failed to load attendance profile.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadInitialData()
+
+    const todayDate = new Date().toISOString().split('T')[0]
+    const channel = supabase.channel(`attendance_logs_${user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'attendance_logs',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        if (payload.new && payload.new.attendance_date === todayDate) {
+          setTodayLog(payload.new)
+        }
+      })
+      .subscribe()
+
+    const teamsChannel = supabase.channel(`attendance_teams_${user.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, () => {
+        supabase.from('profiles').select('require_gps_attendance, wfh_enabled, teams!profiles_team_id_fkey(attendance_enabled)').eq('id', user.id).single()
+          .then(({ data }) => { if (data) setProfile(data) })
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      supabase.removeChannel(teamsChannel)
+    }
+  }, [user.id])
+
+  const runChecks = async (action = 'in') => {
+    setPendingAction(action)
+    setChecking(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    setGpsStatus('pending')
+    setShowExceptionForm(false)
+
+    let gpsPassed = true
+    let fetchedLocation = null
+    let validLocations = []
+
+    // 1. GPS Check
+    if (profile?.require_gps_attendance) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
+        })
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        fetchedLocation = { lat, lng }
+        setCurrentLocation({ lat, lng })
+        
+        if (profile.wfh_enabled || officeLocations.length === 0) {
+          setGpsStatus('skipped')
+          validLocations = [...officeLocations] 
+        } else {
+          for (const loc of officeLocations) {
+            const distance = getDistanceFromLatLonInMeters(lat, lng, loc.latitude, loc.longitude)
+            if (distance <= (loc.radius_meters || 300)) {
+              validLocations.push(loc)
+            }
+          }
+          if (validLocations.length > 0) {
+            setGpsStatus('success')
+          } else {
+            setGpsStatus('fail')
+            gpsPassed = false
+          }
+        }
+      } catch (err) {
+        console.error('GPS error:', err)
+        if (!profile.wfh_enabled) {
+          setGpsStatus('fail')
+          gpsPassed = false
+        }
+      }
+    } else {
+      setGpsStatus('skipped')
+      validLocations = [...officeLocations] 
+    }
+
+    setChecking(false)
+
+    if (!gpsPassed) {
+      setShowExceptionForm(true)
+    } else {
+      if (action === 'in') {
+        handleCheckIn(false, fetchedLocation)
+      } else {
+        handleCheckOut(false, fetchedLocation)
+      }
+    }
+  }
+
+  const handleCheckIn = async (isException = false, overrideLocation = currentLocation) => {
+    setChecking(true)
+    setErrorMsg('')
+    
+    if (isException && exceptionReason.trim().length < 10) {
+      setErrorMsg('Please provide a valid reason (minimum 10 characters).')
+      setChecking(false)
+      return
+    }
+
+    try {
+      const logData = {
+        user_id: user.id,
+        check_in_time: new Date().toISOString(),
+        latitude: overrideLocation?.lat || null,
+        longitude: overrideLocation?.lng || null,
+        status: 'present',
+        exception_reason: isException ? `Punch-in exception: ${exceptionReason}` : null
+      }
+
+      const { data, error } = await supabase.from('attendance_logs').insert([logData]).select().single()
+      
+      if (error) throw error
+      
+      setTodayLog(data)
+      setSuccessMsg(isException ? 'Exception recorded successfully!' : 'Punched in successfully!')
+      setShowExceptionForm(false)
+    } catch (err) {
+      console.error('Punch-in error:', err)
+      setErrorMsg(err.message || 'Failed to punch in.')
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const handleCheckOut = async (isException = false, overrideLocation = currentLocation) => {
+    if (!todayLog) return
+    setChecking(true)
+    setErrorMsg('')
+    
+    if (isException && exceptionReason.trim().length < 10) {
+      setErrorMsg('Please provide a valid reason (minimum 10 characters).')
+      setChecking(false)
+      return
+    }
+
+    try {
+      const updates = { check_out_time: new Date().toISOString() }
+      
+      if (isException) {
+        updates.status = 'present'
+        updates.exception_reason = todayLog.exception_reason 
+          ? `${todayLog.exception_reason} | Punch-out exception: ${exceptionReason}`
+          : `Punch-out exception: ${exceptionReason}`
+      }
+
+      const { data, error } = await supabase
+        .from('attendance_logs')
+        .update(updates)
+        .eq('id', todayLog.id)
+        .select()
+        .single()
+        
+      if (error) throw error
+      setTodayLog(data)
+      setSuccessMsg(isException ? 'Punch-out exception recorded!' : 'Punched out successfully!')
+      setShowExceptionForm(false)
+    } catch (err) {
+      console.error('Punch-out error:', err)
+      setErrorMsg('Failed to punch out.')
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="apple-card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        Loading Attendance...
+      </div>
+    )
+  }
+
+  if (profile && profile.teams && !profile.teams.attendance_enabled) {
+    if (compact) return null;
+    return (
+      <div className="apple-card" style={{ padding: '40px', textAlign: 'center', marginTop: '40px' }}>
+        <AlertTriangle size={48} style={{ color: '#fbbf24', marginBottom: '16px', display: 'inline-block' }} />
+        <h2 className="apple-title-large">Restricted Access</h2>
+        <p style={{ color: 'var(--apple-text-secondary)', marginTop: '8px' }}>
+          Attendance tracking is not enabled for your team.
+        </p>
+      </div>
+    )
+  }
+
+  const isCheckedIn = !!todayLog?.check_in_time
+  const isCheckedOut = !!todayLog?.check_out_time
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {errorMsg && (
+        <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '12px', fontSize: '0.9rem' }}>
+          {errorMsg}
+        </div>
+      )}
+      {successMsg && (
+        <div style={{ padding: '12px 16px', background: 'rgba(74, 222, 128, 0.1)', border: '1px solid rgba(74, 222, 128, 0.2)', color: '#4ade80', borderRadius: '12px', fontSize: '0.9rem' }}>
+          {successMsg}
+        </div>
+      )}
+
+      {/* Status Card */}
+      <div className="apple-card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        <Clock size={48} style={{ color: isCheckedOut ? '#94a3b8' : isCheckedIn ? '#4ade80' : '#38bdf8', marginBottom: '16px' }} />
+        <h2 className="apple-title-large" style={{ marginBottom: '8px' }}>
+          {isCheckedOut ? 'Shift Completed' : isCheckedIn ? 'Currently Punched In' : 'Not Punched In'}
+        </h2>
+        
+        {todayLog && (
+          <div style={{ display: 'flex', gap: '20px', marginTop: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)', width: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>In</span>
+              <strong style={{ fontSize: '1.2rem', color: '#fff' }}>{new Date(todayLog.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>
+            </div>
+            <div style={{ width: '1px', background: 'var(--apple-border)' }} />
+            <div style={{ flex: 1 }}>
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Out</span>
+              <strong style={{ fontSize: '1.2rem', color: '#fff' }}>{todayLog.check_out_time ? new Date(todayLog.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</strong>
+            </div>
+          </div>
+        )}
+
+        {todayLog?.status === 'pending_approval' && (
+          <div style={{ marginTop: '16px', padding: '8px 12px', background: 'rgba(245, 158, 11, 0.1)', color: '#fbbf24', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <AlertTriangle size={14} /> Pending Manager Approval (Exception)
+          </div>
+        )}
+
+        {!isCheckedIn && !checking && !showExceptionForm && (
+          <button onClick={() => runChecks('in')} className="apple-btn apple-btn-primary" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem' }}>
+            Verify & Punch In
+          </button>
+        )}
+
+        {isCheckedIn && !isCheckedOut && !showExceptionForm && (
+          <button onClick={() => runChecks('out')} disabled={checking} className="apple-btn" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+            {checking ? 'Processing...' : 'Verify & Punch Out'}
+          </button>
+        )}
+      </div>
+
+      {/* Verification Checks Panel (Only show when checking in or failed) */}
+      {(!isCheckedIn || showExceptionForm) && (gpsStatus !== 'pending' || checking) && (
+        <div className="apple-card" style={{ padding: '24px' }}>
+          <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Verification Checks</h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* GPS Check */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MapPin size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>Office Location</h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                  {profile?.wfh_enabled ? 'Not required (WFH bypass enabled)' : profile?.require_gps_attendance ? 'Must be physically at an office location' : 'Not required for your profile'}
+                </p>
+                {currentLocation && <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: gpsStatus === 'fail' ? '#ef4444' : '#94a3b8' }}>Detected: {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}</p>}
+              </div>
+              <div>
+                {gpsStatus === 'pending' && checking && <span style={{ color: 'var(--apple-text-secondary)' }}>Checking...</span>}
+                {gpsStatus === 'skipped' && <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500' }}>SKIPPED</span>}
+                {gpsStatus === 'success' && <CheckCircle style={{ color: '#4ade80' }} size={24} />}
+                {gpsStatus === 'fail' && <AlertTriangle style={{ color: '#ef4444' }} size={24} />}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Exception Form */}
+          {showExceptionForm && (
+            <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <h4 style={{ margin: '0 0 8px 0', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertTriangle size={16} /> Verification Failed
+              </h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '16px' }}>
+                It looks like you didn't pass the required network or location checks. You can still request to punch {pendingAction} by providing a valid reason.
+              </p>
+              <textarea
+                className="apple-input"
+                placeholder="E.g., I am at a client site today..."
+                value={exceptionReason}
+                onChange={(e) => setExceptionReason(e.target.value)}
+                rows={3}
+                style={{ width: '100%', marginBottom: '16px', resize: 'vertical' }}
+              />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => runChecks(pendingAction)} disabled={checking} className="apple-btn" style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                  Verify Again
+                </button>
+                <button onClick={() => pendingAction === 'in' ? handleCheckIn(true) : handleCheckOut(true)} disabled={checking} className="apple-btn" style={{ flex: 2, background: '#ef4444', color: '#fff', border: 'none' }}>
+                  {checking ? 'Submitting...' : `Request Exception`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

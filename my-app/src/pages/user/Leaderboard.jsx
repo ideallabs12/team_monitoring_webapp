@@ -85,7 +85,7 @@ export default function Leaderboard({ user }) {
     })
 
     const ranked = profiles
-      .filter(p => !p.is_deactivated && p.platform_role !== 'admin')
+      .filter(p => !p.is_deactivated && p.platform_role !== 'admin' && !p.exclude_from_analytics)
       .map(p => ({
         id: p.id,
         name: `${p.first_name} ${p.last_name}`,
@@ -109,6 +109,7 @@ export default function Leaderboard({ user }) {
     })
 
     const ranked = teams
+      .filter(t => !t.exclude_from_analytics)
       .map(t => ({
         id: t.id,
         name: t.name,

@@ -64,22 +64,14 @@ export default function Milestones({ user }) {
     async function fetchMilestoneData() {
       setLoading(true)
       try {
-        const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
-          supabase.from('teams').select('*'),
-          supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*'),
-          supabase.from('dis_reports').select('*')
-        ])
+        const { data, error: rpcError } = await supabase.rpc('get_milestones_data')
+        
+        if (rpcError) throw rpcError
 
-        if (teamsRes.error) throw teamsRes.error
-        if (profilesRes.error) throw profilesRes.error
-        if (revRes.error) throw revRes.error
-        if (disRes.error) throw disRes.error
-
-        setTeams(teamsRes.data || [])
-        setProfiles(profilesRes.data || [])
-        setRevenues(revRes.data || [])
-        setDisReports(disRes.data || [])
+        setTeams(data?.teams || [])
+        setProfiles(data?.profiles || [])
+        setRevenues(data?.revenues || [])
+        setDisReports(data?.dis_reports || [])
       } catch (err) {
         setError(err.message)
       } finally {

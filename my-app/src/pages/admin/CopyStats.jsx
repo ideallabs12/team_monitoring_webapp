@@ -113,7 +113,7 @@ export default function CopyStats() {
   }, [revFilterYear, revFilterMonth]);
 
   const nonAdminProfiles = useMemo(
-    () => profiles.filter(p => p.platform_role !== 'admin' && !p.is_deactivated),
+    () => profiles.filter(p => p.platform_role !== 'admin' && !p.is_deactivated && !p.exclude_from_analytics),
     [profiles]
   )
   const nonAdminIds = useMemo(
