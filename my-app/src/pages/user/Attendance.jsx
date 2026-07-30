@@ -187,6 +187,7 @@ export default function Attendance({ user }) {
     let validLocations = []
 
     if (profile?.require_gps_attendance) {
+      try {
         let position;
         // If WFH is enabled or no office locations exist, bypass GPS completely to save time
         if (profile.wfh_enabled || officeLocations.length === 0) {
