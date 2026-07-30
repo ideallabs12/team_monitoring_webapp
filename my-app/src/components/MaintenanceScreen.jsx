@@ -291,7 +291,7 @@ export default function MaintenanceScreen() {
           }}>
             We are currently upgrading the platform infrastructure to enhance performance, security, and reliability. 
             <br/><br/>
-            Please interact with the particles while you wait. We'll be back online momentarily.
+            System Update in Progress. Thank you for your patience.
           </p>
 
           {/* Diagnostic Stats */}

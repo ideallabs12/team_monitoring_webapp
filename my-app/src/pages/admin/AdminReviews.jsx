@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon, Users, Clock, Calendar, Trash2 } from 'lucide-react'
@@ -478,11 +479,11 @@ export default function AdminReviews() {
       )}
 
       {/* ===== FULL REVIEW MODAL ===== */}
-      {selectedReview && (
+      {selectedReview && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px'
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px'
         }} onClick={() => setSelectedReview(null)}>
           <div className="apple-card" style={{ width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }} onClick={e => e.stopPropagation()}>
             
@@ -587,15 +588,16 @@ export default function AdminReviews() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ===== FEEDBACK MODAL ===== */}
-      {feedbackModal.isOpen && (
+      {feedbackModal.isOpen && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px'
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px'
         }}>
           <div className="apple-card" style={{ width: '100%', maxWidth: '500px', padding: '24px', borderTop: '4px solid var(--apple-accent-orange)' }}>
             <h3 style={{ margin: '0 0 16px 0', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -624,7 +626,8 @@ export default function AdminReviews() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 

@@ -192,6 +192,50 @@ export default function AdminUsers() {
     }
   }
 
+  // Toggle JSONB Feature Access
+  const handleToggleFeatureAccess = async (featureName) => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    
+    const currentFeatureAccess = viewingProfileUser.feature_access || {}
+    const nextStatus = !currentFeatureAccess[featureName]
+    
+    const nextFeatureAccess = {
+      ...currentFeatureAccess,
+      [featureName]: nextStatus
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ feature_access: nextFeatureAccess })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg(`Successfully updated feature access '${featureName}' to ${nextStatus ? 'ON' : 'OFF'}`)
+      updateProfileUser({ feature_access: nextFeatureAccess })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update feature access.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleMaintenanceModeForced = () => {
+    const nextStatus = !(viewingProfileUser.feature_access?.maintenanceModeForced)
+    
+    if (nextStatus) {
+      const confirmAction = window.confirm("Are you sure you want to enable Development Mode for this user? They will be immediately locked out of the platform.")
+      if (!confirmAction) return
+    } else {
+      const confirmAction = window.confirm("Are you sure you want to disable Development Mode for this user? They will regain access to the platform.")
+      if (!confirmAction) return
+    }
+
+    handleToggleFeatureAccess('maintenanceModeForced')
+  }
+
   // Toggle Account Activation/Deactivation
   const handleToggleDeactivation = async (currentStatus) => {
     setSaving(true)
@@ -668,7 +712,7 @@ export default function AdminUsers() {
                   </button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>DIS Reporting</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>DIS Reporting</span>
                   <button
                     onClick={() => handleToggleAccess('has_dis_reporting', viewingProfileUser.has_dis_reporting)}
                     disabled={saving}
@@ -678,7 +722,7 @@ export default function AdminUsers() {
                   </button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: '500' }}>Exclude from Analytics</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>Exclude from Analytics</span>
                   <button
                     onClick={() => handleToggleAccess('exclude_from_analytics', viewingProfileUser.exclude_from_analytics)}
                     disabled={saving}
@@ -694,7 +738,14 @@ export default function AdminUsers() {
                     disabled={saving}
                     style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: viewingProfileUser.is_sales_executive  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
                   >
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: viewingProfileUser.is_sales_executive  ? '16px' : '0px', transition: 'left 150ms ease' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>Development Mode (Lockout)</span>
+                  <button
+                    onClick={handleToggleMaintenanceModeForced}
+                    disabled={saving}
+                    style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: viewingProfileUser.feature_access?.maintenanceModeForced ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+                  >
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: viewingProfileUser.feature_access?.maintenanceModeForced ? '16px' : '0px', transition: 'left 150ms ease' }} />
                   </button>
                 </div>
               </div>

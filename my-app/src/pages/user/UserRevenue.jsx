@@ -241,7 +241,8 @@ export default function UserRevenue({ user, isAdminView }) {
       setMessage({ type: 'error', text: 'Please select a team.' })
       return
     }
-    const numAmount = parseFloat(amount)
+    const cleanAmount = String(amount).replace(/,/g, '')
+    const numAmount = Number(cleanAmount)
     if (isNaN(numAmount) || numAmount < 0) {
       setMessage({ type: 'error', text: 'Please enter a valid amount (0 or greater).' })
       return

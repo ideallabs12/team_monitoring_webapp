@@ -46,7 +46,8 @@ export default function UserHistoricalRevenue({ user }) {
       return
     }
 
-    const numAmount = parseFloat(amount)
+    const cleanAmount = String(amount).replace(/,/g, '')
+    const numAmount = Number(cleanAmount)
     if (isNaN(numAmount) || numAmount <= 0) {
       setMessage({ type: 'error', text: 'Please enter a valid amount greater than 0.' })
       return

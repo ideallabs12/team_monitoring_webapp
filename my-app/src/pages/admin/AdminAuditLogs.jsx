@@ -13,7 +13,7 @@ const TABS = [
   { id: 'admin_page_view', label: 'Admin Page Activity', icon: Activity },
 ]
 
-const EXCLUDED_EMAILS = ['signatureglobalconferences@gmail.com', 'user1@gmail.com']
+const EXCLUDED_EMAILS = ['signatureglobalconferences@gmail.com', 'user1@gmail.com', 'testadmin@example.com']
 
 export default function AdminAuditLogs() {
   const { user, featureAccess } = useOutletContext() || {}

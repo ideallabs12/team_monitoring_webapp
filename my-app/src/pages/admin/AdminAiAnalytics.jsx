@@ -12,10 +12,6 @@ const parseMonthYear = (dateString) => {
 
 const calculateTrends = (revenues, disReports, profiles) => {
   const now = new Date()
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  
-  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
 
   // Group by month
   const revByMonth = revenues.reduce((acc, r) => {
@@ -30,13 +26,16 @@ const calculateTrends = (revenues, disReports, profiles) => {
     return acc
   }, {})
 
-  const currentRev = revByMonth[currentMonthStr] || 0
-  const prevRev = revByMonth[prevMonthStr] || 0
-  const revGrowth = prevRev === 0 ? (currentRev > 0 ? 100 : 0) : ((currentRev - prevRev) / prevRev) * 100
-
-  const currentLeads = leadsByMonth[currentMonthStr] || 0
-  const prevLeads = leadsByMonth[prevMonthStr] || 0
-  const leadsGrowth = prevLeads === 0 ? (currentLeads > 0 ? 100 : 0) : ((currentLeads - prevLeads) / prevLeads) * 100
+  const last6Months = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    last6Months.push({
+      month: mStr,
+      revenue: revByMonth[mStr] || 0,
+      leads: leadsByMonth[mStr] || 0
+    })
+  }
 
   // Top Performers (All Time)
   const userPerformance = profiles.map(u => {
@@ -54,12 +53,7 @@ const calculateTrends = (revenues, disReports, profiles) => {
   const top20Concentration = totalAllRev === 0 ? 0 : (top20Rev / totalAllRev) * 100
 
   return {
-    currentRev,
-    prevRev,
-    revGrowth: revGrowth.toFixed(1),
-    currentLeads,
-    prevLeads,
-    leadsGrowth: leadsGrowth.toFixed(1),
+    last6Months,
     topPerformers: topPerformers.map(u => `${u.name} ($${u.revenue.toFixed(2)})`).join(', '),
     top20Concentration: top20Concentration.toFixed(1),
     totalUsers: profiles.length
@@ -71,9 +65,12 @@ export default function AdminAiAnalytics() {
   const [dataLoaded, setDataLoaded] = useState(false)
   const [analyticsStory, setAnalyticsStory] = useState(null)
   
+  const [activeTab, setActiveTab] = useState('health')
+  const [healthReport, setHealthReport] = useState('')
+  const [chatResponse, setChatResponse] = useState('')
+  const [generatingType, setGeneratingType] = useState(null)
+  
   const [customQuestion, setCustomQuestion] = useState('')
-  const [aiResponse, setAiResponse] = useState('')
-  const [generating, setGenerating] = useState(false)
   const { user, featureAccess } = useOutletContext() || {}
   const canAccess = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.aiAnalytics
 
@@ -110,23 +107,27 @@ export default function AdminAiAnalytics() {
   }, [])
 
   const handleGenerate = async (type) => {
-    setGenerating(true)
+    setGeneratingType(type)
     setErrorMsg('')
-    setAiResponse('')
+    if (type === 'health') {
+      setHealthReport('')
+    } else {
+      setChatResponse('')
+    }
     
     try {
       const systemInstruction = `
         You are an elite Business Analyst and Strategic Advisor for "Ideallabs", a SaaS operations platform. 
-        Do NOT simply restate the numbers provided. Your job is to analyze the trends, highlight critical anomalies, 
-        and provide 3 highly actionable, strategic recommendations to the executive team based on the patterns in this data. 
-        Format your response in Markdown with clear headings and bullet points. Be concise and professional.
+        Analyze the provided data thoroughly. Look for specific patterns in the last 6 months trend (e.g., seasonality, consistent growth/decline, erratic changes).
+        Do NOT just restate the numbers. Instead, explain WHAT is happening based on the patterns, WHY it might be happening, 
+        and provide 3 highly actionable, strategic recommendations to the executive team.
+        Format your response in Markdown with clear headings and bullet points. Be concise, insightful, and professional.
       `
 
       const dataStoryContext = `
         DATA STORY & PRE-PROCESSED INSIGHTS:
         - Total Employees: ${analyticsStory.totalUsers} across ${analyticsStory.teamsCount} teams.
-        - Month-over-Month Revenue Growth: ${analyticsStory.revGrowth}% (Current Month: $${analyticsStory.currentRev.toFixed(2)} vs Prev Month: $${analyticsStory.prevRev.toFixed(2)})
-        - Month-over-Month Lead Growth: ${analyticsStory.leadsGrowth}% (Current: ${analyticsStory.currentLeads} vs Prev: ${analyticsStory.prevLeads})
+        - Last 6 Months Trend (Revenue & Leads): ${(analyticsStory.last6Months || []).map(m => `[${m.month}] Rev: $${m.revenue.toFixed(0)}, Leads: ${m.leads}`).join(' | ')}
         - Performance Concentration: The top 20% of performers generated ${analyticsStory.top20Concentration}% of total all-time revenue.
         - Top Performers List: ${analyticsStory.topPerformers}
         - Total DIS Reports Logged: ${analyticsStory.disCount}
@@ -144,7 +145,7 @@ export default function AdminAiAnalytics() {
         `
       } else {
         if (!customQuestion.trim()) {
-          setGenerating(false)
+          setGeneratingType(null)
           return
         }
         finalPrompt = `
@@ -172,7 +173,8 @@ export default function AdminAiAnalytics() {
       
       const content = data?.choices?.[0]?.message?.content
       if (content) {
-        setAiResponse(content)
+        if (type === 'health') setHealthReport(content)
+        else setChatResponse(content)
       } else {
         throw new Error('Invalid response from AI model.')
       }
@@ -181,7 +183,7 @@ export default function AdminAiAnalytics() {
       console.error(err)
       setErrorMsg(err.message || 'Failed to generate insights. Ensure the edge function is deployed.')
     } finally {
-      setGenerating(false)
+      setGeneratingType(null)
     }
   }
 
@@ -201,118 +203,158 @@ export default function AdminAiAnalytics() {
         </div>
       )}
 
+      {/* Filter Bar (Tabs) */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '16px' }}>
+        <button
+          onClick={() => setActiveTab('health')}
+          style={{
+            background: activeTab === 'health' ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+            color: activeTab === 'health' ? '#8b5cf6' : 'var(--apple-text-secondary)',
+            border: 'none', padding: '10px 20px', borderRadius: '8px',
+            fontSize: '0.95rem', fontWeight: activeTab === 'health' ? '600' : '500',
+            cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px'
+          }}
+        >
+          <Activity size={18} /> Platform Health
+        </button>
+        <button
+          onClick={() => setActiveTab('chat')}
+          style={{
+            background: activeTab === 'chat' ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+            color: activeTab === 'chat' ? '#8b5cf6' : 'var(--apple-text-secondary)',
+            border: 'none', padding: '10px 20px', borderRadius: '8px',
+            fontSize: '0.95rem', fontWeight: activeTab === 'chat' ? '600' : '500',
+            cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px'
+          }}
+        >
+          <MessageSquare size={18} /> AI Chat
+        </button>
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
         
-        {/* Actions Card */}
-        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div>
-            <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Activity size={18} style={{ color: '#10b981' }} /> Generate Strategic Reports
-            </h3>
-            <p style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
-              Run a complete analysis of your platform's growth trends, top performers, and overall health.
-            </p>
-            <button
-              onClick={() => handleGenerate('health')}
-              disabled={!dataLoaded || generating || !!errorMsg}
-              className="apple-btn"
-              style={{ width: '100%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', border: 'none', color: '#fff', fontSize: '1rem' }}
-            >
-              {generating && !customQuestion ? <Loader2 size={18} className="spin" style={{ marginRight: '8px' }} /> : <Sparkles size={18} style={{ marginRight: '8px' }} />}
-              Generate Platform Health Report
-            </button>
-          </div>
-        </div>
-
-        {/* AI Chat Interface */}
-        <div className="apple-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '540px', border: '1px solid var(--apple-border-strong)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-          {/* Header */}
-          <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={16} color="#fff" />
-            </div>
+        {activeTab === 'health' && (
+          <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', minHeight: '400px' }}>
             <div>
-              <h3 className="apple-title-small" style={{ margin: 0, fontSize: '1rem' }}>AI Analyst</h3>
-              <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 600 }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> Online
-              </span>
-            </div>
-          </div>
-
-          {/* Chat Area */}
-          <div style={{ flex: 1, padding: '24px', overflowY: 'auto', background: 'rgba(0,0,0,0.15)' }}>
-            {generating ? (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', color: 'var(--apple-text-secondary)' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Loader2 size={16} className="spin" style={{ color: '#8b5cf6' }} />
-                </div>
-                <div style={{ background: 'var(--apple-card)', padding: '12px 16px', borderRadius: '16px', borderTopLeftRadius: '4px', border: '1px solid var(--apple-border)' }}>
-                  <span className="typing-dot">.</span><span className="typing-dot" style={{ animationDelay: '0.2s' }}>.</span><span className="typing-dot" style={{ animationDelay: '0.4s' }}>.</span>
-                </div>
-              </div>
-            ) : aiResponse ? (
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Sparkles size={16} color="#fff" />
-                </div>
-                <div className="markdown-content" style={{ background: 'var(--apple-card)', padding: '16px 20px', borderRadius: '16px', borderTopLeftRadius: '4px', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.6', maxWidth: '85%' }}>
-                  <ReactMarkdown>{aiResponse}</ReactMarkdown>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '16px', color: 'var(--apple-text-secondary)', opacity: 0.6 }}>
-                <MessageSquare size={48} strokeWidth={1} />
-                <p style={{ margin: 0 }}>Ask a question about your growth, trends, or performance.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Input Area */}
-          <div style={{ padding: '20px 24px', background: 'var(--apple-card)', borderTop: '1px solid var(--apple-border)' }}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <textarea
-                value={customQuestion}
-                onChange={(e) => setCustomQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    if (dataLoaded && !generating && customQuestion.trim()) handleGenerate('custom')
-                  }
-                }}
-                placeholder="Ask about revenue trends, top performers, or growth..."
-                style={{ 
-                  width: '100%', minHeight: '52px', maxHeight: '150px', padding: '14px 56px 14px 20px', 
-                  borderRadius: '26px', border: '1px solid var(--apple-border-strong)', 
-                  background: 'rgba(255,255,255,0.03)', color: 'var(--apple-text-primary)', 
-                  fontSize: '0.95rem', resize: 'none', overflowY: 'auto',
-                  lineHeight: '1.4', fontFamily: 'inherit',
-                  transition: 'border-color 0.2s, box-shadow 0.2s'
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#8b5cf6'; e.target.style.boxShadow = '0 0 0 3px rgba(139, 92, 246, 0.15)' }}
-                onBlur={(e) => { e.target.style.borderColor = 'var(--apple-border-strong)'; e.target.style.boxShadow = 'none' }}
-              />
+              <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} style={{ color: '#10b981' }} /> Strategic Platform Health
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
+                Run a complete analysis of your platform's growth trends, top performers, and overall health.
+              </p>
               <button
-                onClick={() => handleGenerate('custom')}
-                disabled={!dataLoaded || generating || !customQuestion.trim() || !!errorMsg}
-                style={{
-                  position: 'absolute', right: '8px', bottom: '8px',
-                  width: '36px', height: '36px', borderRadius: '50%',
-                  background: (!dataLoaded || generating || !customQuestion.trim()) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
-                  border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: (!dataLoaded || generating || !customQuestion.trim()) ? 'rgba(255,255,255,0.3)' : '#fff',
-                  cursor: (!dataLoaded || generating || !customQuestion.trim()) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s'
-                }}
+                onClick={() => handleGenerate('health')}
+                disabled={!dataLoaded || generatingType === 'health' || !!errorMsg}
+                className="apple-btn"
+                style={{ width: '100%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', border: 'none', color: '#fff', fontSize: '1rem', maxWidth: '300px' }}
               >
-                {generating && customQuestion ? <Loader2 size={16} className="spin" /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>}
+                {generatingType === 'health' ? <Loader2 size={18} className="spin" style={{ marginRight: '8px' }} /> : <Sparkles size={18} style={{ marginRight: '8px' }} />}
+                {healthReport ? 'Regenerate Report' : 'Generate Health Report'}
               </button>
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textAlign: 'center', marginTop: '12px' }}>
-              AI Analyst uses advanced models to interpret your platform data. Press Enter to send, Shift+Enter for a new line.
+            
+            {generatingType === 'health' ? (
+               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--apple-text-secondary)' }}>
+                 <Loader2 size={32} className="spin" style={{ color: '#8b5cf6', marginRight: '16px' }} />
+                 Generating comprehensive health report...
+               </div>
+            ) : healthReport ? (
+               <div className="markdown-content" style={{ background: 'rgba(255,255,255,0.02)', padding: '32px', borderRadius: '16px', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '1.05rem', lineHeight: '1.7' }}>
+                 <ReactMarkdown>{healthReport}</ReactMarkdown>
+               </div>
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="apple-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '600px', border: '1px solid var(--apple-border-strong)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+            {/* Header */}
+            <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--apple-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Sparkles size={16} color="#fff" />
+              </div>
+              <div>
+                <h3 className="apple-title-small" style={{ margin: 0, fontSize: '1rem' }}>AI Analyst</h3>
+                <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 600 }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> Online
+                </span>
+              </div>
+            </div>
+
+            {/* Chat Area */}
+            <div style={{ flex: 1, padding: '24px', overflowY: 'auto', background: 'rgba(0,0,0,0.15)' }}>
+              {generatingType === 'custom' ? (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', color: 'var(--apple-text-secondary)' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Loader2 size={16} className="spin" style={{ color: '#8b5cf6' }} />
+                  </div>
+                  <div style={{ background: 'var(--apple-card)', padding: '12px 16px', borderRadius: '16px', borderTopLeftRadius: '4px', border: '1px solid var(--apple-border)' }}>
+                    <span className="typing-dot">.</span><span className="typing-dot" style={{ animationDelay: '0.2s' }}>.</span><span className="typing-dot" style={{ animationDelay: '0.4s' }}>.</span>
+                  </div>
+                </div>
+              ) : chatResponse ? (
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Sparkles size={16} color="#fff" />
+                  </div>
+                  <div className="markdown-content" style={{ background: 'var(--apple-card)', padding: '16px 20px', borderRadius: '16px', borderTopLeftRadius: '4px', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.95rem', lineHeight: '1.6', maxWidth: '85%' }}>
+                    <ReactMarkdown>{chatResponse}</ReactMarkdown>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '16px', color: 'var(--apple-text-secondary)', opacity: 0.6 }}>
+                  <MessageSquare size={48} strokeWidth={1} />
+                  <p style={{ margin: 0 }}>Ask a question about your growth, trends, or performance.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div style={{ padding: '20px 24px', background: 'var(--apple-card)', borderTop: '1px solid var(--apple-border)' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <textarea
+                  value={customQuestion}
+                  onChange={(e) => setCustomQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      if (dataLoaded && generatingType !== 'custom' && customQuestion.trim()) handleGenerate('custom')
+                    }
+                  }}
+                  placeholder="Ask about revenue trends, top performers, or growth..."
+                  style={{ 
+                    width: '100%', minHeight: '52px', maxHeight: '150px', padding: '14px 56px 14px 20px', 
+                    borderRadius: '26px', border: '1px solid var(--apple-border-strong)', 
+                    background: 'rgba(255,255,255,0.03)', color: 'var(--apple-text-primary)', 
+                    fontSize: '0.95rem', resize: 'none', overflowY: 'auto',
+                    lineHeight: '1.4', fontFamily: 'inherit',
+                    transition: 'border-color 0.2s, box-shadow 0.2s'
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = '#8b5cf6'; e.target.style.boxShadow = '0 0 0 3px rgba(139, 92, 246, 0.15)' }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--apple-border-strong)'; e.target.style.boxShadow = 'none' }}
+                />
+                <button
+                  onClick={() => handleGenerate('custom')}
+                  disabled={!dataLoaded || generatingType === 'custom' || !customQuestion.trim() || !!errorMsg}
+                  style={{
+                    position: 'absolute', right: '8px', bottom: '8px',
+                    width: '36px', height: '36px', borderRadius: '50%',
+                    background: (!dataLoaded || generatingType === 'custom' || !customQuestion.trim()) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
+                    border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: (!dataLoaded || generatingType === 'custom' || !customQuestion.trim()) ? 'rgba(255,255,255,0.3)' : '#fff',
+                    cursor: (!dataLoaded || generatingType === 'custom' || !customQuestion.trim()) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {generatingType === 'custom' && customQuestion ? <Loader2 size={16} className="spin" /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>}
+                </button>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textAlign: 'center', marginTop: '12px' }}>
+                AI Analyst uses advanced models to interpret your platform data. Press Enter to send, Shift+Enter for a new line.
+              </div>
             </div>
           </div>
-        </div>
-
+        )}
       </div>
 
       <style>{`

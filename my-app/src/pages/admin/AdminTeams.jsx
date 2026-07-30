@@ -1619,7 +1619,9 @@ export default function AdminTeams() {
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '30px' }}>
             {(() => {
-              const teamData = teams.map(team => {
+              const teamData = teams
+                .filter(team => !team.name.toLowerCase().includes('tech'))
+                .map(team => {
                 const teamTotal = revenues
                   .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr)
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0);
@@ -1667,7 +1669,9 @@ export default function AdminTeams() {
             <div style={{ fontSize: '3rem', fontWeight: '900', color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
               ${(() => {
                 let totalAll = 0;
-                teams.forEach(team => {
+                teams
+                  .filter(team => !team.name.toLowerCase().includes('tech'))
+                  .forEach(team => {
                   totalAll += revenues
                     .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr)
                     .reduce((sum, r) => sum + Number(r.amount || 0), 0);

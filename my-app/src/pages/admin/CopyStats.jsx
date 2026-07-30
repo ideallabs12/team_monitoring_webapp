@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Copy, Check, X, Image as ImageIcon, FileText } from 'lucide-react'
+import { Copy, Check, X, Image as ImageIcon, FileText, RefreshCw } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
@@ -70,13 +70,33 @@ export default function CopyStats() {
   const [revJpegGenerating, setRevJpegGenerating] = useState(false)
   const revCaptureRef = useRef(null)
 
+  const fetchAllRecords = async (table) => {
+    let allData = [];
+    let from = 0;
+    const step = 999;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await supabase.from(table).select('*').range(from, from + step);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allData = [...allData, ...data];
+        if (data.length < step + 1) hasMore = false;
+        from += step + 1;
+      }
+    }
+    return { data: allData };
+  };
+
   const loadAllData = async () => {
+    setLoading(true)
     try {
       const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
-        supabase.from('profiles').select('*'),
-        supabase.from('monthly_revenues').select('*'),
-        supabase.from('dis_reports').select('*'),
+        fetchAllRecords('profiles'),
+        fetchAllRecords('monthly_revenues'),
+        fetchAllRecords('dis_reports'),
       ])
 
       if (teamsRes.data) setTeams(teamsRes.data)
@@ -665,14 +685,30 @@ export default function CopyStats() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      <div className="admin-page-header" style={{ marginBottom: 0 }}>
-        <div className="admin-page-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
-          <Copy size={28} />
+      <div className="admin-page-header" style={{ marginBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="admin-page-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', margin: 0 }}>
+            <Copy size={28} />
+          </div>
+          <div>
+            <h1 className="admin-page-title">Copy Stats</h1>
+            <p className="admin-page-subtitle">Exportable metrics and user streaks.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="admin-page-title">Copy Stats</h1>
-          <p className="admin-page-subtitle">Exportable metrics and user streaks.</p>
-        </div>
+        <button
+          onClick={loadAllData}
+          disabled={loading}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '8px 16px', fontSize: '0.85rem', borderRadius: '8px',
+            background: 'var(--apple-card)', color: 'var(--apple-text-primary)',
+            border: '1px solid var(--apple-border)', cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.5 : 1
+          }}
+        >
+          <RefreshCw size={14} className={loading ? 'spin-anim' : ''} />
+          {loading ? 'Refreshing...' : 'Refresh Data'}
+        </button>
       </div>
 
       <div className="card" style={{ padding: '24px', background: 'var(--card-bg)' }}>
@@ -1151,100 +1187,172 @@ export default function CopyStats() {
             <div 
               ref={disCaptureRef}
               style={{
-                padding: '40px',
-                background: 'linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)',
-                color: '#102a43',
+                padding: disStats?.filterMode === 'individual' ? '60px' : '40px',
+                background: disStats?.filterMode === 'individual' ? 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' : 'linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)',
+                color: disStats?.filterMode === 'individual' ? '#f8fafc' : '#102a43',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
-                width: '1200px', // Wider to fit 4 columns nicely
+                width: disStats?.filterMode === 'individual' ? '860px' : '1200px',
                 borderRadius: '24px',
                 boxSizing: 'border-box',
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
               }}
             >
               {disStats && disStats.results.length > 0 ? (
-                <>
-                  <div style={{ textAlign: 'center', marginBottom: '32px', background: '#ffffff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                    <h2 style={{ margin: '0 0 12px 0', color: '#102a43', fontSize: '28px', fontWeight: '800', letterSpacing: '-0.02em' }}>
-                      {disStats.filterMode === 'team' && disStats.selectedTeamName 
-                        ? `Team Report: ${disStats.selectedTeamName}`
-                        : 'DIS Compliance Report'}
-                    </h2>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '14px', color: '#486581', fontWeight: '600' }}>
-                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Start: {disStats.startDate}</span>
-                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>End: {disStats.currentDate}</span>
-                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Days: {disStats.totalDays}</span>
-                      <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Users: {disStats.results.length}</span>
-                    </div>
-                  </div>
-                  
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: '16px'
-                  }}>
-                    {disStats.results.map((r, i) => {
-                      const pct = parseInt(r.percentage);
-                      let pctColor = '#ef4444';
-                      let pctBg = '#fee2e2';
-                      if (pct >= 80) {
-                        pctColor = '#10b981';
-                        pctBg = '#d1fae5';
-                      } else if (pct >= 50) {
-                        pctColor = '#f59e0b';
-                        pctBg = '#fef3c7';
-                      }
-
-                      return (
-                        <div key={i} style={{
-                          background: '#ffffff',
-                          padding: '12px 16px',
-                          borderRadius: '12px',
-                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                          border: '1px solid #e2e8f0',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px'
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <h4 style={{ margin: 0, fontSize: '15px', color: '#334155', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {r.name}
-                              </h4>
-                              {disStats.filterMode !== 'team' && (
-                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {r.team}
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ 
-                              background: pctBg,
-                              color: pctColor,
-                              padding: '2px 8px', 
-                              borderRadius: '20px', 
-                              fontSize: '13px', 
-                              fontWeight: '800',
-                              border: `1px solid ${pctColor}40`,
-                              marginLeft: '8px'
-                            }}>
-                              {r.percentage}
-                            </div>
+                disStats.filterMode === 'individual' ? (
+                  (() => {
+                    const user = disStats.results[0];
+                    const parts = user.name.split(' ').filter(Boolean);
+                    const shortName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : (parts[0] || 'User');
+                    const initials = parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : (parts[0]?.[0] || 'U');
+                    const pct = parseInt(user.percentage);
+                    
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '32px' }}>
+                        {/* Header */}
+                        <div style={{ textAlign: 'center' }}>
+                          <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '800' }}>DIS Compliance Report</h2>
+                          <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8', fontWeight: '600' }}>
+                            {disStats.startDate} — {disStats.currentDate}
+                          </p>
+                        </div>
+                        
+                        {/* Profile */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                          <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', fontWeight: '800', color: '#ffffff', boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4)' }}>
+                            {initials}
                           </div>
-                          
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', flex: 1, justifyContent: 'center' }}>
-                              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>S:</span>
-                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#10b981' }}>{r.submitted}</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', flex: 1, justifyContent: 'center' }}>
-                              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>M:</span>
-                              <span style={{ fontSize: '13px', fontWeight: '800', color: '#ef4444' }}>{r.missed}</span>
+                          <div style={{ textAlign: 'center' }}>
+                            <h1 style={{ margin: '0 0 4px 0', fontSize: '42px', fontWeight: '900', letterSpacing: '-0.02em', color: '#ffffff' }}>
+                              {shortName}
+                            </h1>
+                            <div style={{ fontSize: '18px', color: '#cbd5e1', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                              {user.team}
                             </div>
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                </>
+                        
+                        {/* Stats Grid */}
+                        <div style={{ display: 'flex', gap: '24px', width: '100%', justifyContent: 'center', marginTop: '16px' }}>
+                          {/* Compliance Percentage */}
+                          <div style={{ background: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '32px', width: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+                            <div style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Compliance</div>
+                            <div style={{ fontSize: '56px', fontWeight: '900', color: pct >= 80 ? '#34d399' : pct >= 50 ? '#fbbf24' : '#f87171', lineHeight: '1' }}>
+                              {user.percentage}
+                            </div>
+                          </div>
+                          
+                          {/* Submitted */}
+                          <div style={{ background: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '32px', width: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+                            <div style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Submitted</div>
+                            <div style={{ fontSize: '56px', fontWeight: '900', color: '#f8fafc', lineHeight: '1' }}>
+                              {user.submitted}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '8px' }}>of {disStats.totalDays} Days</div>
+                          </div>
+                          
+                          {/* Missed */}
+                          <div style={{ background: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '32px', width: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+                            <div style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Missed</div>
+                            <div style={{ fontSize: '56px', fontWeight: '900', color: user.missed > 0 ? '#f87171' : '#f8fafc', lineHeight: '1' }}>
+                              {user.missed}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '8px' }}>{user.missed > 0 ? 'Action Required' : 'Perfect Streak'}</div>
+                          </div>
+                        </div>
+                        
+                        {/* Brand / Logo footer */}
+                        <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', fontWeight: 'bold' }}>AH</div>
+                          <span style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: '700', letterSpacing: '0.05em' }}>ALL-HANDS</span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <>
+                    <div style={{ textAlign: 'center', marginBottom: '32px', background: '#ffffff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                      <h2 style={{ margin: '0 0 12px 0', color: '#102a43', fontSize: '28px', fontWeight: '800', letterSpacing: '-0.02em' }}>
+                        {disStats.filterMode === 'team' && disStats.selectedTeamName 
+                          ? `Team Report: ${disStats.selectedTeamName}`
+                          : 'DIS Compliance Report'}
+                      </h2>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '14px', color: '#486581', fontWeight: '600' }}>
+                        <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Start: {disStats.startDate}</span>
+                        <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>End: {disStats.currentDate}</span>
+                        <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Days: {disStats.totalDays}</span>
+                        <span style={{ background: '#f0f4f8', padding: '6px 16px', borderRadius: '20px' }}>Total Users: {disStats.results.length}</span>
+                      </div>
+                    </div>
+                    
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: '16px'
+                    }}>
+                      {disStats.results.map((r, i) => {
+                        const pct = parseInt(r.percentage);
+                        let pctColor = '#ef4444';
+                        let pctBg = '#fee2e2';
+                        if (pct >= 80) {
+                          pctColor = '#10b981';
+                          pctBg = '#d1fae5';
+                        } else if (pct >= 50) {
+                          pctColor = '#f59e0b';
+                          pctBg = '#fef3c7';
+                        }
+  
+                        return (
+                          <div key={i} style={{
+                            background: '#ffffff',
+                            padding: '12px 16px',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <h4 style={{ margin: 0, fontSize: '15px', color: '#334155', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {r.name}
+                                </h4>
+                                {disStats.filterMode !== 'team' && (
+                                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {r.team}
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ 
+                                background: pctBg,
+                                color: pctColor,
+                                padding: '2px 8px', 
+                                borderRadius: '20px', 
+                                fontSize: '13px', 
+                                fontWeight: '800',
+                                border: `1px solid ${pctColor}40`,
+                                marginLeft: '8px'
+                              }}>
+                                {r.percentage}
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', flex: 1, justifyContent: 'center' }}>
+                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>S:</span>
+                                <span style={{ fontSize: '13px', fontWeight: '800', color: '#10b981' }}>{r.submitted}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', flex: 1, justifyContent: 'center' }}>
+                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>M:</span>
+                                <span style={{ fontSize: '13px', fontWeight: '800', color: '#ef4444' }}>{r.missed}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )
               ) : (
                 <div style={{ fontSize: '18px', whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>{disFormattedText}</div>
               )}

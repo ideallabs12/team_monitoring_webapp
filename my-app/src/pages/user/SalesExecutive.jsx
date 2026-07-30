@@ -145,7 +145,7 @@ export default function SalesExecutive({ user }) {
             team_id: selectedTeam,
             member_id: selectedMember,
             speaker_name: speakerName,
-            sales_revenue: Number(salesRevenue),
+            sales_revenue: Number(String(salesRevenue).replace(/,/g, '')),
             call_date: callDate
           })
           .eq('id', editingLogId)
@@ -165,7 +165,7 @@ export default function SalesExecutive({ user }) {
             team_id: selectedTeam,
             member_id: selectedMember,
             speaker_name: speakerName,
-            sales_revenue: Number(salesRevenue),
+            sales_revenue: Number(String(salesRevenue).replace(/,/g, '')),
             call_date: callDate,
             entered_by: user.id
           })
