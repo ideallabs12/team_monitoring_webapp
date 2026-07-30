@@ -6,14 +6,13 @@ export default function PullToRefresh({ children }) {
   const [isPulling, setIsPulling] = useState(false);
   
   const pullDistance = Math.max(0, currentY - startY);
-  const maxPull = 80; // maximum visual pull down distance
-  const threshold = 60; // distance required to trigger refresh
+  // Shorter pull threshold based on user feedback
+  const threshold = 50; 
   
-  // Calculate visual translateY (add some resistance)
-  const translateY = isPulling ? Math.min(pullDistance * 0.4, maxPull) : 0;
+  // Subtle creative rubber-band effect instead of an indicator
+  const translateY = isPulling ? Math.min(pullDistance * 0.25, 40) : 0;
   
   const handleTouchStart = (e) => {
-    // Only allow pull-to-refresh if we are at the very top of the page
     if (window.scrollY <= 0) {
       setStartY(e.touches[0].clientY);
       setCurrentY(e.touches[0].clientY);
@@ -23,17 +22,15 @@ export default function PullToRefresh({ children }) {
   
   const handleTouchMove = (e) => {
     if (!isPulling) return;
-    
-    const y = e.touches[0].clientY;
-    setCurrentY(y);
+    setCurrentY(e.touches[0].clientY);
   };
   
   const handleTouchEnd = () => {
     if (!isPulling) return;
     setIsPulling(false);
     
-    if (translateY >= threshold) {
-      // Trigger refresh
+    // If they pulled past the short threshold, trigger refresh
+    if (pullDistance >= threshold) {
       window.location.reload(true);
     }
     
@@ -41,21 +38,15 @@ export default function PullToRefresh({ children }) {
     setCurrentY(0);
   };
   
-  // Also attach passive: false native event listener for touchmove to prevent default scrolling
   useEffect(() => {
     const handleNativeTouchMove = (e) => {
       if (isPulling && currentY > startY && window.scrollY <= 0) {
-        // Only prevent default if pulling down
-        if (e.cancelable) {
-          e.preventDefault();
-        }
+        if (e.cancelable) e.preventDefault();
       }
     };
     
     document.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
-    return () => {
-      document.removeEventListener('touchmove', handleNativeTouchMove);
-    };
+    return () => document.removeEventListener('touchmove', handleNativeTouchMove);
   }, [isPulling, currentY, startY]);
 
   return (
@@ -63,48 +54,14 @@ export default function PullToRefresh({ children }) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ minHeight: '100vh', width: '100%' }}
+      style={{ 
+        minHeight: '100vh', 
+        width: '100%',
+        transform: `translateY(${translateY}px)`,
+        transition: isPulling ? 'none' : 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)', // Smooth snap back
+      }}
     >
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '60px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--text-secondary, #94a3b8)',
-          fontSize: '0.9rem',
-          fontWeight: 500,
-          transform: `translateY(${translateY - 60}px)`,
-          transition: isPulling ? 'none' : 'transform 0.3s ease',
-          zIndex: 9999,
-          pointerEvents: 'none'
-        }}
-      >
-        <div style={{
-          background: 'var(--card-bg, rgba(30, 41, 59, 0.9))',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          border: '1px solid var(--border-color, rgba(255,255,255,0.1))'
-        }}>
-          {translateY >= threshold ? 'Release to refresh' : 'Pull to refresh...'}
-        </div>
-      </div>
-      
-      <div style={{ 
-        transform: `translateY(${translateY}px)`, 
-        transition: isPulling ? 'none' : 'transform 0.3s ease',
-        minHeight: '100vh'
-      }}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
