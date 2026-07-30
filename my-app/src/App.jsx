@@ -8,6 +8,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 import Layout from './components/Layout'
 import MaintenanceScreen from './components/MaintenanceScreen'
 import PageTracker from './components/PageTracker'
+import PullToRefresh from './components/PullToRefresh'
 import Login from './pages/homeprofile/Login'
 import UserHome from './pages/user/UserHome'
 import UserTeam from './pages/user/UserTeam'
@@ -333,11 +334,12 @@ function App() {
 
   return (
     <PresenceProvider user={user}>
-      <Router>
-        <PageTracker user={user} />
-        <SpeedInsights />
-        <Routes>
-        {/* Login/Auth Routes */}
+      <PullToRefresh>
+        <Router>
+          <PageTracker user={user} />
+          <SpeedInsights />
+          <Routes>
+          {/* Login/Auth Routes */}
         <Route
           path="/"
           element={
@@ -423,6 +425,7 @@ function App() {
         } />
       </Routes>
     </Router>
+      </PullToRefresh>
     </PresenceProvider>
   )
 }
