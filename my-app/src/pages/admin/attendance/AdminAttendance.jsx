@@ -27,10 +27,8 @@ export default function AdminAttendance() {
 
     const channel = supabase.channel('admin-attendance-logs')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, (payload) => {
-        // Only refetch if the changed log belongs to the selected date (to avoid unnecessary fetches)
-        if (payload.new && payload.new.attendance_date === selectedDate) {
-          fetchData()
-        }
+        console.log('Real-time attendance log update received:', payload)
+        fetchData()
       })
       .subscribe()
 

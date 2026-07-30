@@ -187,10 +187,24 @@ export default function Attendance({ user }) {
     let validLocations = []
 
     if (profile?.require_gps_attendance) {
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
-        })
+        let position;
+        // If WFH is enabled or no office locations exist, bypass GPS completely to save time
+        if (profile.wfh_enabled || officeLocations.length === 0) {
+          position = { coords: { latitude: null, longitude: null } };
+        } else {
+          try {
+            // Try high accuracy (GPS) first, but with a shorter timeout (5s)
+            position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 })
+            })
+          } catch (err) {
+            console.warn('High accuracy GPS failed/timed out, falling back to low accuracy...')
+            // Fallback to low accuracy (Wi-Fi/IP based) which is usually instant and works indoors
+            position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 })
+            })
+          }
+        }
         const lat = position.coords.latitude
         const lng = position.coords.longitude
         fetchedLocation = { lat, lng }
