@@ -46,6 +46,7 @@ export default function Attendance({ user }) {
   // Selfie Verification State
   const [selfieEnabled, setSelfieEnabled] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
+  const [useNativeCamera, setUseNativeCamera] = useState(false)
   const [selfieFile, setSelfieFile] = useState(null)
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState(null)
   const [uploadingSelfie, setUploadingSelfie] = useState(false)
@@ -128,14 +129,19 @@ export default function Attendance({ user }) {
 
   const startCamera = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn("getUserMedia not supported, falling back to native camera")
+        setUseNativeCamera(true)
+        return
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
     } catch (err) {
-      console.error("Error accessing camera:", err)
-      setErrorMsg("Unable to access camera. Please check permissions.")
+      console.warn("Error accessing live camera, falling back to native camera:", err)
+      setUseNativeCamera(true)
     }
   }
 
@@ -193,6 +199,14 @@ export default function Attendance({ user }) {
     setShowCamera(false)
     setChecking(false)
   }
+
+  const captureSelfie = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelfieFile(file);
+      setSelfiePreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   // Fetch Monthly Logs
   useEffect(() => {
@@ -591,33 +605,63 @@ export default function Attendance({ user }) {
               </p>
               
               {!selfiePreviewUrl ? (
-                <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
-                  <div style={{ position: 'relative', width: '100%', height: '300px', background: '#000', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
-                    <video 
-                      ref={videoRef}
-                      autoPlay 
-                      playsInline 
-                      muted 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                useNativeCamera ? (
+                  <div style={{ position: 'relative', width: '100%', height: '220px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '2px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="user" 
+                      onChange={captureSelfie}
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                     />
-                    <canvas ref={canvasRef} style={{ display: 'none' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--apple-text-secondary)' }}>
+                      <Camera size={32} />
+                      <span>Tap to open camera</span>
+                      <span style={{ fontSize: '0.75rem', marginTop: '4px' }}>(Native Camera)</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={cancelSelfie} className="apple-btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
-                      Cancel
-                    </button>
-                    <button onClick={takeLiveSelfie} className="apple-btn apple-btn-primary" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                      <Camera size={18} /> Take Photo
-                    </button>
+                ) : (
+                  <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
+                    <div style={{ position: 'relative', width: '100%', height: '300px', background: '#000', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
+                      <video 
+                        ref={videoRef}
+                        autoPlay 
+                        playsInline 
+                        muted 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                      />
+                      <canvas ref={canvasRef} style={{ display: 'none' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button onClick={cancelSelfie} className="apple-btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
+                        Cancel
+                      </button>
+                      <button onClick={takeLiveSelfie} className="apple-btn apple-btn-primary" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <Camera size={18} /> Take Photo
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )
               ) : (
                 <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
-                  <img src={selfiePreviewUrl} alt="Selfie preview" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px', border: '1px solid rgba(255,255,255,0.1)', transform: 'scaleX(-1)' }} />
+                  <img src={selfiePreviewUrl} alt="Selfie preview" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px', border: '1px solid rgba(255,255,255,0.1)', transform: useNativeCamera ? 'none' : 'scaleX(-1)' }} />
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={retakeLiveSelfie} className="apple-btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
-                      Retake
-                    </button>
+                    {useNativeCamera ? (
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          capture="user" 
+                          onChange={captureSelfie}
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 2 }}
+                        />
+                        <button className="apple-btn" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', position: 'relative', zIndex: 1 }}>Retake</button>
+                      </div>
+                    ) : (
+                      <button onClick={retakeLiveSelfie} className="apple-btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
+                        Retake
+                      </button>
+                    )}
                     <button 
                       onClick={() => pendingAction === 'in' ? handleCheckIn(false) : handleCheckOut(false)} 
                       disabled={uploadingSelfie || checking}
