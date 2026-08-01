@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../supabaseClient'
-import { MapPin, Plus, Trash2, Check, X, Pencil, Users } from 'lucide-react'
+import { MapPin, Plus, Trash2, Check, X, Pencil, Users, Camera, Calendar } from 'lucide-react'
 
 const AppleToggle = ({ checked, onChange }) => {
   return (
@@ -37,7 +37,13 @@ const AppleToggle = ({ checked, onChange }) => {
 export default function AttendanceSettings() {
   const [locations, setLocations] = useState([])
   const [teams, setTeams] = useState([])
+  const [systemSettings, setSystemSettings] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Photo Cleanup state
+  const [cleanupMonth, setCleanupMonth] = useState(new Date().getMonth())
+  const [cleanupYear, setCleanupYear] = useState(new Date().getFullYear())
+  const [cleaningUp, setCleaningUp] = useState(false)
 
   // Location form
   const [locName, setLocName] = useState('')
@@ -58,12 +64,14 @@ export default function AttendanceSettings() {
 
   const fetchSettings = async () => {
     setLoading(true)
-    const [locRes, teamsRes] = await Promise.all([
+    const [locRes, teamsRes, settingsRes] = await Promise.all([
       supabase.from('office_locations').select('*').order('created_at', { ascending: true }),
-      supabase.from('teams').select('id, name, attendance_enabled').order('name', { ascending: true })
+      supabase.from('teams').select('id, name, attendance_enabled').order('name', { ascending: true }),
+      supabase.from('system_settings').select('*').eq('id', 1).single()
     ])
     if (locRes.data) setLocations(locRes.data)
     if (teamsRes.data) setTeams(teamsRes.data)
+    if (settingsRes.data) setSystemSettings(settingsRes.data)
     setLoading(false)
   }
 
@@ -73,6 +81,54 @@ export default function AttendanceSettings() {
       setTeams(teams.map(t => t.id === id ? { ...t, attendance_enabled: !currentStatus } : t))
     } else {
       alert('Failed to update team attendance setting')
+    }
+  }
+
+  const toggleGlobalSelfie = async () => {
+    if (!systemSettings) return
+    const nextStatus = !systemSettings.attendance_require_selfie
+    const { error } = await supabase.from('system_settings').update({ attendance_require_selfie: nextStatus }).eq('id', 1)
+    if (!error) {
+      setSystemSettings({ ...systemSettings, attendance_require_selfie: nextStatus })
+    } else {
+      alert('Failed to update selfie setting')
+    }
+  }
+
+  const handlePhotoCleanup = async () => {
+    const confirmDelete = window.confirm(`Are you sure you want to delete all attendance photos for ${cleanupMonth + 1}/${cleanupYear}? This action cannot be undone.`)
+    if (!confirmDelete) return
+
+    setCleaningUp(true)
+    try {
+      // Month is 0-indexed in JS, but 1-indexed in our folder structure YYYY-MM
+      const formattedMonth = String(cleanupMonth + 1).padStart(2, '0')
+      const folderPrefix = `${cleanupYear}-${formattedMonth}/`
+
+      // Supabase storage list is not recursive by default, so we might need to list folders (days) first, or we can just list with wildcard if they add it.
+      // Easiest is to list all days in the month (01 to 31)
+      let deletedCount = 0;
+      
+      for (let day = 1; day <= 31; day++) {
+        const dayStr = String(day).padStart(2, '0')
+        const dayFolder = `${folderPrefix}${dayStr}/`
+        
+        const { data: files, error: listError } = await supabase.storage.from('attendance').list(dayFolder, { limit: 1000 })
+        if (listError) continue;
+        
+        if (files && files.length > 0) {
+          const filesToDelete = files.map(f => `${dayFolder}${f.name}`)
+          const { error: delError } = await supabase.storage.from('attendance').remove(filesToDelete)
+          if (!delError) deletedCount += files.length
+        }
+      }
+      
+      alert(`Successfully deleted ${deletedCount} photos for ${formattedMonth}/${cleanupYear}.`)
+    } catch (err) {
+      console.error('Cleanup error:', err)
+      alert('An error occurred during cleanup.')
+    } finally {
+      setCleaningUp(false)
     }
   }
 
@@ -128,6 +184,81 @@ export default function AttendanceSettings() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
       
+      {/* SECTION: Global Settings */}
+      <div>
+        <h2 className="apple-title-medium" style={{ marginBottom: '16px' }}>Global Settings</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '24px' }}>
+          
+          <div className="apple-card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(52, 199, 89, 0.1)', color: '#34c759', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Camera size={24} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '600' }}>Selfie Verification</h3>
+                  {systemSettings && (
+                    <AppleToggle 
+                      checked={!!systemSettings.attendance_require_selfie} 
+                      onChange={toggleGlobalSelfie} 
+                    />
+                  )}
+                </div>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--apple-text-secondary)', lineHeight: '1.5' }}>
+                  When enabled, all users will be prompted to capture and upload a selfie after their GPS location is verified. This adds an extra layer of presence verification.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Storage Cleanup */}
+          <div className="apple-card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={24} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', color: '#fff', fontWeight: '600' }}>Photo Cleanup</h3>
+                <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', lineHeight: '1.5' }}>
+                  Delete old selfie photos to save storage space. This removes the image files from the bucket but keeps the attendance timestamp logs intact.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    value={cleanupMonth}
+                    onChange={e => setCleanupMonth(Number(e.target.value))}
+                    className="apple-form-control"
+                    style={{ padding: '8px 12px', fontSize: '0.9rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                  >
+                    {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                      <option key={m} value={i}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={cleanupYear}
+                    onChange={e => setCleanupYear(Number(e.target.value))}
+                    className="apple-form-control"
+                    style={{ padding: '8px 12px', fontSize: '0.9rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <button 
+                    onClick={handlePhotoCleanup}
+                    disabled={cleaningUp}
+                    className="apple-btn"
+                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    {cleaningUp ? 'Processing...' : 'Delete Photos'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
       {/* SECTION: Office Locations */}
       <div>
         <h2 className="apple-title-medium" style={{ marginBottom: '16px' }}>Office Locations</h2>

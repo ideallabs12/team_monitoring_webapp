@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
-import { MapPin, CheckCircle, AlertTriangle, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { MapPin, CheckCircle, AlertTriangle, Clock, Calendar, ChevronLeft, ChevronRight, Camera } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 
 // Haversine formula to calculate distance between two coordinates
@@ -42,6 +42,18 @@ export default function Attendance({ user }) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [monthlyLogs, setMonthlyLogs] = useState([])
   const [loadingLogs, setLoadingLogs] = useState(false)
+  
+  // Selfie Verification State
+  const [selfieEnabled, setSelfieEnabled] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
+  const [selfieFile, setSelfieFile] = useState(null)
+  const [selfiePreviewUrl, setSelfiePreviewUrl] = useState(null)
+  const [uploadingSelfie, setUploadingSelfie] = useState(false)
+  
+  // Live Camera Refs
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const streamRef = useRef(null)
   
   // Swipe State
   const [touchStart, setTouchStart] = useState(null)
@@ -103,6 +115,84 @@ export default function Attendance({ user }) {
       supabase.removeChannel(teamsChannel)
     }
   }, [user.id])
+
+  // Camera Management
+  useEffect(() => {
+    if (showCamera && !selfiePreviewUrl) {
+      startCamera()
+    }
+    return () => {
+      stopCamera()
+    }
+  }, [showCamera, selfiePreviewUrl])
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err)
+      setErrorMsg("Unable to access camera. Please check permissions.")
+    }
+  }
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+  }
+
+  const takeLiveSelfie = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      // Ensure dimensions are valid before capturing
+      if (video.videoWidth === 0 || video.videoHeight === 0) return;
+      
+      // Carefully compress image to save storage
+      const MAX_WIDTH = 640; // Max width for a selfie is plenty for verification
+      let targetWidth = video.videoWidth;
+      let targetHeight = video.videoHeight;
+      
+      if (targetWidth > MAX_WIDTH) {
+        const ratio = MAX_WIDTH / targetWidth;
+        targetWidth = MAX_WIDTH;
+        targetHeight = targetHeight * ratio;
+      }
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(video, 0, 0, targetWidth, targetHeight)
+      
+      // Apply 0.7 JPEG quality compression
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' })
+          setSelfieFile(file)
+          setSelfiePreviewUrl(URL.createObjectURL(file))
+          stopCamera()
+        }
+      }, 'image/jpeg', 0.7)
+    }
+  }
+
+  const retakeLiveSelfie = () => {
+    setSelfieFile(null)
+    setSelfiePreviewUrl(null)
+    // startCamera will be triggered automatically by the useEffect
+  }
+
+  const cancelSelfie = () => {
+    stopCamera()
+    setShowCamera(false)
+    setChecking(false)
+  }
 
   // Fetch Monthly Logs
   useEffect(() => {
@@ -181,6 +271,10 @@ export default function Attendance({ user }) {
     setSuccessMsg('')
     setGpsStatus('pending')
     setShowExceptionForm(false)
+    setShowCamera(false)
+    setSelfieFile(null)
+    setSelfiePreviewUrl(null)
+    stopCamera()
 
     let gpsPassed = true
     let fetchedLocation = null
@@ -240,18 +334,48 @@ export default function Attendance({ user }) {
       validLocations = [...officeLocations] 
     }
 
+    // Fetch global setting for selfie in realtime
+    let requireSelfie = false;
+    try {
+      const { data } = await supabase.from('system_settings').select('attendance_require_selfie').eq('id', 1).single();
+      requireSelfie = !!data?.attendance_require_selfie;
+      setSelfieEnabled(requireSelfie);
+    } catch (e) {
+      console.error("Failed to fetch selfie settings", e);
+    }
+
     setChecking(false)
 
     if (!gpsPassed) {
       setShowExceptionForm(true)
     } else {
-      if (action === 'in') {
-        handleCheckIn(false, fetchedLocation)
+      if (requireSelfie) {
+        setShowCamera(true); // Wait for user to capture selfie
       } else {
-        handleCheckOut(false, fetchedLocation)
+        if (action === 'in') {
+          handleCheckIn(false, fetchedLocation)
+        } else {
+          handleCheckOut(false, fetchedLocation)
+        }
       }
     }
   }
+
+  const uploadSelfie = async () => {
+    if (!selfieFile) return null;
+    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const monthStr = dateStr.substring(0, 7); // YYYY-MM
+    const fileName = `${monthStr}/${dateStr.substring(8, 10)}/${user.id}_${Date.now()}.jpg`;
+    
+    const { data, error } = await supabase.storage
+      .from('attendance')
+      .upload(fileName, selfieFile, { contentType: selfieFile.type });
+      
+    if (error) throw error;
+    
+    const { data: publicData } = supabase.storage.from('attendance').getPublicUrl(fileName);
+    return publicData.publicUrl;
+  };
 
   const handleCheckIn = async (isException = false, overrideLocation = currentLocation) => {
     setChecking(true)
@@ -262,15 +386,29 @@ export default function Attendance({ user }) {
       setChecking(false)
       return
     }
+    
+    if (showCamera && !selfieFile && !isException) {
+      setErrorMsg('Please capture a selfie before punching in.')
+      setChecking(false)
+      return
+    }
 
     try {
+      let selfieUrl = null;
+      if (selfieFile) {
+        setUploadingSelfie(true);
+        selfieUrl = await uploadSelfie();
+        setUploadingSelfie(false);
+      }
+
       const logData = {
         user_id: user.id,
         check_in_time: new Date().toISOString(),
         latitude: overrideLocation?.lat || null,
         longitude: overrideLocation?.lng || null,
         status: 'present',
-        exception_reason: isException ? exceptionReason : null
+        exception_reason: isException ? exceptionReason : null,
+        selfie_url: selfieUrl
       }
 
       const { data, error } = await supabase.from('attendance_logs').insert([logData]).select().single()
@@ -280,6 +418,10 @@ export default function Attendance({ user }) {
       setTodayLog(data)
       setSuccessMsg(isException ? 'Exception recorded successfully!' : 'Punched in successfully!')
       setShowExceptionForm(false)
+      setShowCamera(false)
+      setSelfieFile(null)
+      setSelfiePreviewUrl(null)
+      stopCamera()
     } catch (err) {
       console.error('Punch-in error:', err)
       setErrorMsg(err.message || 'Failed to punch in.')
@@ -298,9 +440,27 @@ export default function Attendance({ user }) {
       setChecking(false)
       return
     }
+    
+    if (showCamera && !selfieFile && !isException) {
+      setErrorMsg('Please capture a selfie before punching out.')
+      setChecking(false)
+      return
+    }
 
     try {
+      let selfieUrl = null;
+      if (selfieFile) {
+        setUploadingSelfie(true);
+        selfieUrl = await uploadSelfie();
+        setUploadingSelfie(false);
+      }
+
       const updates = { check_out_time: new Date().toISOString() }
+      
+      // Keep existing check-in selfie if any, or update if provided
+      if (selfieUrl) {
+        updates.selfie_url = selfieUrl;
+      }
       
       if (isException) {
         updates.status = 'present'
@@ -320,6 +480,10 @@ export default function Attendance({ user }) {
       setTodayLog(data)
       setSuccessMsg(isException ? 'Punch-out exception recorded!' : 'Punched out successfully!')
       setShowExceptionForm(false)
+      setShowCamera(false)
+      setSelfieFile(null)
+      setSelfiePreviewUrl(null)
+      stopCamera()
     } catch (err) {
       console.error('Punch-out error:', err)
       setErrorMsg('Failed to punch out.')
@@ -404,18 +568,69 @@ export default function Attendance({ user }) {
               </div>
             )}
 
-            {!isCheckedIn && !checking && !showExceptionForm && (
+            {!isCheckedIn && !checking && !showExceptionForm && !showCamera && (
               <button onClick={() => runChecks('in')} className="apple-btn apple-btn-primary" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem' }}>
                 Verify & Punch In
               </button>
             )}
 
-            {isCheckedIn && !isCheckedOut && !showExceptionForm && (
+            {isCheckedIn && !isCheckedOut && !showExceptionForm && !showCamera && (
               <button onClick={() => runChecks('out')} disabled={checking} className="apple-btn" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
                 {checking ? 'Processing...' : 'Verify & Punch Out'}
               </button>
             )}
           </div>
+
+          {showCamera && (
+            <div className="apple-card" style={{ padding: '24px' }}>
+              <h3 className="apple-title-small" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Camera size={18} /> Selfie Verification Required
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '16px' }}>
+                Please take a clear photo of yourself at your current location to proceed.
+              </p>
+              
+              {!selfiePreviewUrl ? (
+                <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '300px', background: '#000', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                    />
+                    <canvas ref={canvasRef} style={{ display: 'none' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={cancelSelfie} className="apple-btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
+                      Cancel
+                    </button>
+                    <button onClick={takeLiveSelfie} className="apple-btn apple-btn-primary" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <Camera size={18} /> Take Photo
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
+                  <img src={selfiePreviewUrl} alt="Selfie preview" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px', border: '1px solid rgba(255,255,255,0.1)', transform: 'scaleX(-1)' }} />
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={retakeLiveSelfie} className="apple-btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
+                      Retake
+                    </button>
+                    <button 
+                      onClick={() => pendingAction === 'in' ? handleCheckIn(false) : handleCheckOut(false)} 
+                      disabled={uploadingSelfie || checking}
+                      className="apple-btn apple-btn-primary" 
+                      style={{ flex: 2 }}
+                    >
+                      {uploadingSelfie ? 'Uploading...' : `Submit & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Verification Checks Panel */}
           {(!isCheckedIn || showExceptionForm) && (gpsStatus !== 'pending' || checking) && (
@@ -518,6 +733,11 @@ export default function Attendance({ user }) {
                       <div style={{ fontWeight: '500', color: '#fff', fontSize: '1rem' }}>
                         {new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </div>
+                      {log.selfie_url && (
+                        <a href={log.selfie_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '12px', textDecoration: 'none' }}>
+                          <Camera size={12} /> Photo Proof
+                        </a>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '16px' }}>

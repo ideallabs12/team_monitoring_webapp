@@ -89,6 +89,7 @@
 - Submitted vs Missing members list
 - Holiday detection and display
 - Month-to-date report summary
+- PDF export of DIS reports
 
 ---
 
@@ -104,6 +105,8 @@
 - Set team roles (lead/member)
 - Set monthly targets per member per team
 - View team revenue summaries
+- View DIS submission stats (submitted vs missed)
+- Download team revenue as JPEG
 
 ---
 
@@ -176,6 +179,8 @@
 **Files**: `src/pages/user/Attendance.jsx`, `src/pages/admin/attendance/` (modularized: `AdminAttendance.jsx`, `AttendanceFilterBar.jsx`, `AttendanceLogsList.jsx`, `AttendanceSettings.jsx`)  
 **Features**:
 - GPS location validation (Haversine formula, customizable radius per office)
+- Fast-path GPS bypass for WFH users or missing office locations
+- Low-accuracy (Wi-Fi/IP) geolocation fallback if high-accuracy GPS times out
 - IP address validation (compared to office_ips table)
 - WFH bypass flag per user
 - Exception request flow (with reason)
@@ -376,8 +381,9 @@
 - Revenue bracket analysis
 - DIS summary export
 - html2canvas for JPEG export
-- jsPDF for PDF export
+- jsPDF for PDF export (including DIS reports)
 - Mobile share API support
+- Image download support on mobile devices
 
 ---
 

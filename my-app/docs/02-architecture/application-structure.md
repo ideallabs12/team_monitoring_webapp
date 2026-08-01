@@ -19,6 +19,7 @@ src/
 │   ├── PageTracker.jsx        # Invisible: logs page views to audit_logs
 │   ├── MaintenanceScreen.jsx  # Full-screen maintenance mode display (particle animation)
 │   ├── ThemeSwitch.jsx        # Dark/Light mode toggle component
+│   ├── PullToRefresh.jsx      # Mobile pull-to-refresh wrapper
 │   ├── Footer.jsx             # Minimal footer
 │   └── charts/               # Chart sub-components (REQUIRES INSPECTION)
 │

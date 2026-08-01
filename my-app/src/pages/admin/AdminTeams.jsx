@@ -1283,14 +1283,17 @@ export default function AdminTeams() {
   const handleCopyData = async (format = 'summary') => {
     try {
       const today = new Date();
-      const dateStr = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      
-      let reportText = `Revenue Report till ${dateStr}\n\n`;
+      const isCurrentMonth = normalizeMonth(selectedRevenueMonth) === currentMonthStr;
+      const dateStr = isCurrentMonth 
+        ? `till ${today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`
+        : `for ${formatRevenueMonth(selectedRevenueMonth)}`;
+        
+      let reportText = `Revenue Report ${dateStr}\n\n`;
       let totalAllTeams = 0;
 
       teams.forEach(team => {
-        // Calculate ONLY this month revenue for this team
-        const teamRevs = revenues.filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr);
+        // Calculate ONLY selected month revenue for this team
+        const teamRevs = revenues.filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth));
         const teamTotal = teamRevs.reduce((sum, r) => sum + Number(r.amount || 0), 0);
         
         totalAllTeams += teamTotal;
@@ -1354,8 +1357,10 @@ export default function AdminTeams() {
       });
       const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
-      const today = new Date();
-      const dateStr = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      const isCurrentMonth = normalizeMonth(selectedRevenueMonth) === currentMonthStr;
+      const dateStr = isCurrentMonth
+        ? today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+        : formatRevenueMonth(selectedRevenueMonth);
       const filename = `Team_Totals_Summary_${dateStr.replace(/, /g, '_').replace(/ /g, '_')}.jpg`;
 
       const link = document.createElement('a');
@@ -1427,6 +1432,37 @@ export default function AdminTeams() {
               <Copy size={14} />
               Copy Detailed
             </button>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <select
+              value={selectedRevenueMonth.substring(5, 7)}
+              onChange={e => {
+                const year = selectedRevenueMonth.substring(0, 4)
+                setSelectedRevenueMonth(`${year}-${e.target.value}-01`)
+              }}
+              className="apple-form-control"
+              style={{ padding: '6px 10px', fontSize: '0.85rem', width: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+            >
+              {['01','02','03','04','05','06','07','08','09','10','11','12'].map((m, i) => (
+                <option key={m} value={m}>
+                  {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedRevenueMonth.substring(0, 4)}
+              onChange={e => {
+                const month = selectedRevenueMonth.substring(5, 7)
+                setSelectedRevenueMonth(`${e.target.value}-${month}-01`)
+              }}
+              className="apple-form-control"
+              style={{ padding: '6px 10px', fontSize: '0.85rem', width: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+            >
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1525,9 +1561,9 @@ export default function AdminTeams() {
               (p.team_id === team.id || p.secondary_team_id === team.id) && p.platform_role !== 'admin' && !p.is_deactivated
             ).length
 
-            // Sum this month's revenue
+            // Sum selected month's revenue
             const teamThisMonthRevenues = revenues.filter(
-              r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr
+              r => r.team_id === team.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth)
             )
             const teamThisMonthTotal = teamThisMonthRevenues.reduce((sum, r) => sum + Number(r.amount || 0), 0)
 
@@ -1567,7 +1603,7 @@ export default function AdminTeams() {
                 <div style={{ borderTop: '1px solid var(--apple-border)', paddingTop: '14px', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                      <TrendingUp size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> This Month Revenue
+                      <TrendingUp size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> {normalizeMonth(selectedRevenueMonth) === currentMonthStr ? 'This Month' : 'Selected Month'} Revenue
                     </div>
                     <div style={{ fontSize: '1.4rem', fontWeight: '800', color: teamThisMonthTotal > 0 ? 'var(--apple-accent-green)' : '#fff' }}>
                       ${teamThisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1613,7 +1649,9 @@ export default function AdminTeams() {
               Team Revenue Summary
             </h1>
             <p style={{ margin: '8px 0 0 0', color: '#94a3b8', fontSize: '1.2rem', fontWeight: '500' }}>
-              Revenue Report till {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+              Revenue Report {normalizeMonth(selectedRevenueMonth) === currentMonthStr 
+                ? `till ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}` 
+                : `for ${formatRevenueMonth(selectedRevenueMonth)}`}
             </p>
           </div>
           
@@ -1623,7 +1661,7 @@ export default function AdminTeams() {
                 .filter(team => !team.name.toLowerCase().includes('tech'))
                 .map(team => {
                 const teamTotal = revenues
-                  .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr)
+                  .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
                   .reduce((sum, r) => sum + Number(r.amount || 0), 0);
                 return { ...team, teamTotal };
               });
@@ -1656,24 +1694,23 @@ export default function AdminTeams() {
           </div>
           
           <div style={{ 
-            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.1))',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
+            backgroundColor: '#1e293b',
+            border: '1px solid #38bdf8',
             borderRadius: '20px',
             padding: '24px',
-            textAlign: 'center',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+            textAlign: 'center'
           }}>
             <div style={{ color: '#bae6fd', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700', marginBottom: '8px' }}>
               Total Revenue Generated
             </div>
-            <div style={{ fontSize: '3rem', fontWeight: '900', color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+            <div style={{ fontSize: '3rem', fontWeight: '900', color: '#34d399' }}>
               ${(() => {
                 let totalAll = 0;
                 teams
                   .filter(team => !team.name.toLowerCase().includes('tech'))
                   .forEach(team => {
                   totalAll += revenues
-                    .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === currentMonthStr)
+                    .filter(r => r.team_id === team.id && normalizeMonth(r.revenue_month) === normalizeMonth(selectedRevenueMonth))
                     .reduce((sum, r) => sum + Number(r.amount || 0), 0);
                 });
                 return totalAll.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
