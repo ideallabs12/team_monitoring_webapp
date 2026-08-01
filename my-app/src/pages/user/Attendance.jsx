@@ -351,20 +351,27 @@ export default function Attendance({ user }) {
     // Fetch global setting for selfie in realtime
     let requireSelfie = false;
     try {
-      const { data } = await supabase.from('system_settings').select('attendance_require_selfie').eq('id', 1).single();
+      const { data, error } = await supabase.from('system_settings').select('attendance_require_selfie').eq('id', 1).single();
+      if (error) throw error;
       requireSelfie = !!data?.attendance_require_selfie;
       setSelfieEnabled(requireSelfie);
     } catch (e) {
       console.error("Failed to fetch selfie settings", e);
+      setErrorMsg("Unable to verify selfie settings. " + (e.message || ""));
+      setChecking(false);
+      return; // Stop the punch-in process until this is resolved
     }
 
     setChecking(false)
 
     if (!gpsPassed) {
       setShowExceptionForm(true)
+      if (requireSelfie) {
+        setShowCamera(true) // Show camera even for exceptions
+      }
     } else {
       if (requireSelfie) {
-        setShowCamera(true); // Wait for user to capture selfie
+        setShowCamera(true) // Wait for user to capture selfie
       } else {
         if (action === 'in') {
           handleCheckIn(false, fetchedLocation)
@@ -401,7 +408,7 @@ export default function Attendance({ user }) {
       return
     }
     
-    if (showCamera && !selfieFile && !isException) {
+    if (showCamera && !selfieFile) {
       setErrorMsg('Please capture a selfie before punching in.')
       setChecking(false)
       return
@@ -455,7 +462,7 @@ export default function Attendance({ user }) {
       return
     }
     
-    if (showCamera && !selfieFile && !isException) {
+    if (showCamera && !selfieFile) {
       setErrorMsg('Please capture a selfie before punching out.')
       setChecking(false)
       return
