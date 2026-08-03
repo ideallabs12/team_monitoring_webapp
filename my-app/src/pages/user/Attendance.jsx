@@ -134,10 +134,25 @@ export default function Attendance({ user }) {
         setUseNativeCamera(true)
         return
       }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      
+      // If the component unmounted or camera was hidden while waiting for permissions
+      if (!showCamera) {
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
+      
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        // Explicitly play the video for mobile browsers (iOS/Safari) that require it
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(e => {
+            console.error("Video play error:", e)
+            setUseNativeCamera(true) // Fallback if play is blocked
+          })
+        }
       }
     } catch (err) {
       console.warn("Error accessing live camera, falling back to native camera:", err)
