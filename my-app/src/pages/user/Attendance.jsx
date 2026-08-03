@@ -128,31 +128,8 @@ export default function Attendance({ user }) {
   }, [showCamera, selfiePreviewUrl])
 
   const startCamera = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.warn("getUserMedia not supported, falling back to native camera")
-        setUseNativeCamera(true)
-        return
-      }
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      
-      // If the component unmounted or camera was hidden while waiting for permissions
-      if (!showCamera) {
-        stream.getTracks().forEach(track => track.stop())
-        return
-      }
-      
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        // Attempt to play immediately
-        videoRef.current.play().catch(e => console.error("Immediate play error:", e))
-      }
-    } catch (err) {
-      console.warn("Error accessing live camera, falling back to native camera:", err)
-      setUseNativeCamera(true)
-    }
+    // Force native camera for 100% reliability across all mobile devices
+    setUseNativeCamera(true)
   }
 
   const stopCamera = () => {
