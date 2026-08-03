@@ -17,6 +17,7 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 
 export default function AttendanceLogsList({ logs, loading, officeLocations, handleApprove, handleReject, handleDeleteLog }) {
   const [showPhotos, setShowPhotos] = useState(false)
+  const [activeTab, setActiveTab] = useState('punchin')
 
   const getDistanceText = (log) => {
     if (!log.latitude || !log.longitude) return 'No Location Recorded'
@@ -67,6 +68,21 @@ export default function AttendanceLogsList({ logs, loading, officeLocations, han
         </label>
       </div>
 
+      <div style={{ display: 'flex', width: '100%', marginBottom: '24px', borderRadius: '12px', overflow: 'hidden', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', padding: '4px' }}>
+        <button 
+          onClick={() => setActiveTab('punchin')}
+          style={{ flex: 1, padding: '12px', background: activeTab === 'punchin' ? '#38bdf8' : 'transparent', color: activeTab === 'punchin' ? '#fff' : 'var(--apple-text-secondary)', border: 'none', borderRadius: '8px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s', fontSize: '1rem' }}
+        >
+          Punch In
+        </button>
+        <button 
+          onClick={() => setActiveTab('punchout')}
+          style={{ flex: 1, padding: '12px', background: activeTab === 'punchout' ? '#38bdf8' : 'transparent', color: activeTab === 'punchout' ? '#fff' : 'var(--apple-text-secondary)', border: 'none', borderRadius: '8px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s', fontSize: '1rem' }}
+        >
+          Punch Out
+        </button>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
         {loading ? (
           <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>Loading logs...</div>
@@ -79,9 +95,9 @@ export default function AttendanceLogsList({ logs, loading, officeLocations, han
               <div key={log.id} className="apple-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 {/* Selfie Image */}
                 {showPhotos && (
-                  log.selfie_url ? (
+                  (activeTab === 'punchin' ? log.checkin_url : log.checkout_url) ? (
                     <div style={{ width: '100%', height: '220px', background: '#000', position: 'relative' }}>
-                      <img src={log.selfie_url} alt="Selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={activeTab === 'punchin' ? log.checkin_url : log.checkout_url} alt="Selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   ) : (
                     <div style={{ width: '100%', height: '80px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--apple-border)' }}>
@@ -112,29 +128,31 @@ export default function AttendanceLogsList({ logs, loading, officeLocations, han
 
                 {/* Timings */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '6px', marginTop: '2px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', fontWeight: '600', width: '60px' }}>PUNCH IN</span>
-                      <span style={{ fontSize: '0.9rem', color: '#4ade80', fontWeight: '500' }}>
-                        {new Date(log.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                  {activeTab === 'punchin' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', fontWeight: '600', width: '60px' }}>PUNCH IN</span>
+                        <span style={{ fontSize: '0.9rem', color: '#4ade80', fontWeight: '500' }}>
+                          {new Date(log.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      {timingStatuses.find(t => t.label === 'Late') && (
+                        <span style={{ fontSize: '0.6rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 4px', borderRadius: '4px', fontWeight: '700', textTransform: 'uppercase' }}>Late</span>
+                      )}
                     </div>
-                    {timingStatuses.find(t => t.label === 'Late') && (
-                      <span style={{ fontSize: '0.6rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 4px', borderRadius: '4px', fontWeight: '700', textTransform: 'uppercase' }}>Late</span>
-                    )}
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', fontWeight: '600', width: '60px' }}>PUNCH OUT</span>
-                      <span style={{ fontSize: '0.9rem', color: log.check_out_time ? '#94a3b8' : 'rgba(255,255,255,0.2)', fontWeight: '500' }}>
-                        {log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                      </span>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--apple-text-secondary)', fontWeight: '600', width: '60px' }}>PUNCH OUT</span>
+                        <span style={{ fontSize: '0.9rem', color: log.check_out_time ? '#94a3b8' : 'rgba(255,255,255,0.2)', fontWeight: '500' }}>
+                          {log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        </span>
+                      </div>
+                      {timingStatuses.find(t => t.label === 'Early Leave') && (
+                        <span style={{ fontSize: '0.6rem', color: '#f97316', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 4px', borderRadius: '4px', fontWeight: '700', textTransform: 'uppercase' }}>Early</span>
+                      )}
                     </div>
-                    {timingStatuses.find(t => t.label === 'Early Leave') && (
-                      <span style={{ fontSize: '0.6rem', color: '#f97316', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 4px', borderRadius: '4px', fontWeight: '700', textTransform: 'uppercase' }}>Early</span>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 {/* Exception */}

@@ -422,7 +422,7 @@ export default function Attendance({ user }) {
         longitude: overrideLocation?.lng || null,
         status: 'present',
         exception_reason: isException ? exceptionReason : null,
-        selfie_url: selfieUrl
+        checkin_url: selfieUrl
       }
 
       const { data, error } = await supabase.from('attendance_logs').insert([logData]).select().single()
@@ -471,9 +471,9 @@ export default function Attendance({ user }) {
 
       const updates = { check_out_time: new Date().toISOString() }
       
-      // Keep existing check-in selfie if any, or update if provided
+      // Store checkout selfie
       if (selfieUrl) {
-        updates.selfie_url = selfieUrl;
+        updates.checkout_url = selfieUrl;
       }
       
       if (isException) {
@@ -783,11 +783,18 @@ export default function Attendance({ user }) {
                       <div style={{ fontWeight: '500', color: '#fff', fontSize: '1rem' }}>
                         {new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </div>
-                      {log.selfie_url && (
-                        <a href={log.selfie_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '12px', textDecoration: 'none' }}>
-                          <Camera size={12} /> Photo Proof
-                        </a>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {log.checkin_url && (
+                          <a href={log.checkin_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '12px', textDecoration: 'none' }}>
+                            <Camera size={12} /> In Photo
+                          </a>
+                        )}
+                        {log.checkout_url && (
+                          <a href={log.checkout_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#f97316', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 8px', borderRadius: '12px', textDecoration: 'none' }}>
+                            <Camera size={12} /> Out Photo
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '16px' }}>
