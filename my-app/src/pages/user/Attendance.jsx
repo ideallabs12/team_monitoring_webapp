@@ -146,13 +146,8 @@ export default function Attendance({ user }) {
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        // Explicitly play the video for mobile browsers (iOS/Safari) that require it
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch(e => {
-            console.error("Video play error:", e)
-            setUseNativeCamera(true) // Fallback if play is blocked
-          })
-        }
+        // Attempt to play immediately
+        videoRef.current.play().catch(e => console.error("Immediate play error:", e))
       }
     } catch (err) {
       console.warn("Error accessing live camera, falling back to native camera:", err)
@@ -164,6 +159,9 @@ export default function Attendance({ user }) {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
+      if (videoRef.current) {
+        videoRef.current.srcObject = null
+      }
     }
   }
 
@@ -653,6 +651,12 @@ export default function Attendance({ user }) {
                         autoPlay 
                         playsInline 
                         muted 
+                        onLoadedMetadata={(e) => {
+                          e.target.play().catch(err => {
+                            console.error("Play error on loadedmetadata:", err);
+                            setUseNativeCamera(true);
+                          });
+                        }}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
                       />
                       <canvas ref={canvasRef} style={{ display: 'none' }} />
