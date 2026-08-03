@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { MapPin, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
-import { useOutletContext } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 
 // Haversine formula to calculate distance between two coordinates
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
@@ -27,15 +27,8 @@ export default function AttendanceWidget({ user, compact = false }) {
   const [todayLog, setTodayLog] = useState(null)
   const [officeLocations, setOfficeLocations] = useState([])
   
-  const [gpsStatus, setGpsStatus] = useState('pending')
-  const [currentLocation, setCurrentLocation] = useState(null)
-  
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
-  
-  const [showExceptionForm, setShowExceptionForm] = useState(false)
-  const [exceptionReason, setExceptionReason] = useState('')
-  const [pendingAction, setPendingAction] = useState('in')
 
   useEffect(() => {
     async function loadInitialData() {
@@ -93,145 +86,8 @@ export default function AttendanceWidget({ user, compact = false }) {
     }
   }, [user.id])
 
-  const runChecks = async (action = 'in') => {
-    setPendingAction(action)
-    setChecking(true)
-    setErrorMsg('')
-    setSuccessMsg('')
-    setGpsStatus('pending')
-    setShowExceptionForm(false)
-
-    let gpsPassed = true
-    let fetchedLocation = null
-    let validLocations = []
-
-    // 1. GPS Check
-    if (profile?.require_gps_attendance) {
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
-        })
-        const lat = position.coords.latitude
-        const lng = position.coords.longitude
-        fetchedLocation = { lat, lng }
-        setCurrentLocation({ lat, lng })
-        
-        if (profile.wfh_enabled || officeLocations.length === 0) {
-          setGpsStatus('skipped')
-          validLocations = [...officeLocations] 
-        } else {
-          for (const loc of officeLocations) {
-            const distance = getDistanceFromLatLonInMeters(lat, lng, loc.latitude, loc.longitude)
-            if (distance <= (loc.radius_meters || 300)) {
-              validLocations.push(loc)
-            }
-          }
-          if (validLocations.length > 0) {
-            setGpsStatus('success')
-          } else {
-            setGpsStatus('fail')
-            gpsPassed = false
-          }
-        }
-      } catch (err) {
-        console.error('GPS error:', err)
-        if (!profile.wfh_enabled) {
-          setGpsStatus('fail')
-          gpsPassed = false
-        }
-      }
-    } else {
-      setGpsStatus('skipped')
-      validLocations = [...officeLocations] 
-    }
-
-    setChecking(false)
-
-    if (!gpsPassed) {
-      setShowExceptionForm(true)
-    } else {
-      if (action === 'in') {
-        handleCheckIn(false, fetchedLocation)
-      } else {
-        handleCheckOut(false, fetchedLocation)
-      }
-    }
-  }
-
-  const handleCheckIn = async (isException = false, overrideLocation = currentLocation) => {
-    setChecking(true)
-    setErrorMsg('')
-    
-    if (isException && exceptionReason.trim().length < 10) {
-      setErrorMsg('Please provide a valid reason (minimum 10 characters).')
-      setChecking(false)
-      return
-    }
-
-    try {
-      const logData = {
-        user_id: user.id,
-        check_in_time: new Date().toISOString(),
-        latitude: overrideLocation?.lat || null,
-        longitude: overrideLocation?.lng || null,
-        status: 'present',
-        exception_reason: isException ? `Punch-in exception: ${exceptionReason}` : null
-      }
-
-      const { data, error } = await supabase.from('attendance_logs').insert([logData]).select().single()
-      
-      if (error) throw error
-      
-      setTodayLog(data)
-      setSuccessMsg(isException ? 'Exception recorded successfully!' : 'Punched in successfully!')
-      setShowExceptionForm(false)
-    } catch (err) {
-      console.error('Punch-in error:', err)
-      setErrorMsg(err.message || 'Failed to punch in.')
-    } finally {
-      setChecking(false)
-    }
-  }
-
-  const handleCheckOut = async (isException = false, overrideLocation = currentLocation) => {
-    if (!todayLog) return
-    setChecking(true)
-    setErrorMsg('')
-    
-    if (isException && exceptionReason.trim().length < 10) {
-      setErrorMsg('Please provide a valid reason (minimum 10 characters).')
-      setChecking(false)
-      return
-    }
-
-    try {
-      const updates = { check_out_time: new Date().toISOString() }
-      
-      if (isException) {
-        updates.status = 'present'
-        updates.exception_reason = todayLog.exception_reason 
-          ? `${todayLog.exception_reason} | Punch-out exception: ${exceptionReason}`
-          : `Punch-out exception: ${exceptionReason}`
-      }
-
-      const { data, error } = await supabase
-        .from('attendance_logs')
-        .update(updates)
-        .eq('id', todayLog.id)
-        .select()
-        .single()
-        
-      if (error) throw error
-      setTodayLog(data)
-      setSuccessMsg(isException ? 'Punch-out exception recorded!' : 'Punched out successfully!')
-      setShowExceptionForm(false)
-    } catch (err) {
-      console.error('Punch-out error:', err)
-      setErrorMsg('Failed to punch out.')
-    } finally {
-      setChecking(false)
-    }
-  }
+  // Attendance actions are now redirected to the main Attendance page
+  // to ensure all camera, GPS, and exception logic remains perfectly in sync.
 
   if (loading) {
     return (
@@ -297,77 +153,18 @@ export default function AttendanceWidget({ user, compact = false }) {
           </div>
         )}
 
-        {!isCheckedIn && !checking && !showExceptionForm && (
-          <button onClick={() => runChecks('in')} className="apple-btn apple-btn-primary" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem' }}>
-            Verify & Punch In
-          </button>
+        {!isCheckedIn && !checking && (
+          <Link to="/attendance" className="apple-btn apple-btn-primary" style={{ textDecoration: 'none', textAlign: 'center', marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem' }}>
+            Open Attendance to Punch In
+          </Link>
         )}
 
-        {isCheckedIn && !isCheckedOut && !showExceptionForm && (
-          <button onClick={() => runChecks('out')} disabled={checking} className="apple-btn" style={{ marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-            {checking ? 'Processing...' : 'Verify & Punch Out'}
-          </button>
+        {isCheckedIn && !isCheckedOut && (
+          <Link to="/attendance" className="apple-btn" style={{ textDecoration: 'none', textAlign: 'center', marginTop: '24px', width: '100%', padding: '14px', fontSize: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+            Open Attendance to Punch Out
+          </Link>
         )}
       </div>
-
-      {/* Verification Checks Panel (Only show when checking in or failed) */}
-      {(!isCheckedIn || showExceptionForm) && (gpsStatus !== 'pending' || checking) && (
-        <div className="apple-card" style={{ padding: '24px' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Verification Checks</h3>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
-            {/* GPS Check */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <MapPin size={20} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>Office Location</h4>
-                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-                  {profile?.wfh_enabled ? 'Not required (WFH bypass enabled)' : profile?.require_gps_attendance ? 'Must be physically at an office location' : 'Not required for your profile'}
-                </p>
-                {currentLocation && <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: gpsStatus === 'fail' ? '#ef4444' : '#94a3b8' }}>Detected: {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}</p>}
-              </div>
-              <div>
-                {gpsStatus === 'pending' && checking && <span style={{ color: 'var(--apple-text-secondary)' }}>Checking...</span>}
-                {gpsStatus === 'skipped' && <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500' }}>SKIPPED</span>}
-                {gpsStatus === 'success' && <CheckCircle style={{ color: '#4ade80' }} size={24} />}
-                {gpsStatus === 'fail' && <AlertTriangle style={{ color: '#ef4444' }} size={24} />}
-              </div>
-            </div>
-
-          </div>
-
-          {/* Exception Form */}
-          {showExceptionForm && (
-            <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-              <h4 style={{ margin: '0 0 8px 0', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlertTriangle size={16} /> Verification Failed
-              </h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '16px' }}>
-                It looks like you didn't pass the required network or location checks. You can still request to punch {pendingAction} by providing a valid reason.
-              </p>
-              <textarea
-                className="apple-input"
-                placeholder="E.g., I am at a client site today..."
-                value={exceptionReason}
-                onChange={(e) => setExceptionReason(e.target.value)}
-                rows={3}
-                style={{ width: '100%', marginBottom: '16px', resize: 'vertical' }}
-              />
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => runChecks(pendingAction)} disabled={checking} className="apple-btn" style={{ flex: 1, background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-                  Verify Again
-                </button>
-                <button onClick={() => pendingAction === 'in' ? handleCheckIn(true) : handleCheckOut(true)} disabled={checking} className="apple-btn" style={{ flex: 2, background: '#ef4444', color: '#fff', border: 'none' }}>
-                  {checking ? 'Submitting...' : `Request Exception`}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
