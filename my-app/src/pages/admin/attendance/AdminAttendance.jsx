@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../supabaseClient'
-import { Settings, FileText } from 'lucide-react'
+import { Settings, FileText, BarChart2 } from 'lucide-react'
 import AttendanceFilterBar from './AttendanceFilterBar'
 import AttendanceLogsList from './AttendanceLogsList'
 import AttendanceSettings from './AttendanceSettings'
+import AttendanceStats from './AttendanceStats'
 
 export default function AdminAttendance() {
   const [logs, setLogs] = useState([])
@@ -162,6 +163,13 @@ export default function AdminAttendance() {
             <FileText size={16} /> Logs & Analytics
           </button>
           <button
+            onClick={() => setActiveTab('stats')}
+            className="apple-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: activeTab === 'stats' ? 'var(--apple-card)' : 'transparent', color: activeTab === 'stats' ? '#fff' : 'var(--apple-text-secondary)', border: 'none' }}
+          >
+            <BarChart2 size={16} /> Stats
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className="apple-btn"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: activeTab === 'settings' ? 'var(--apple-card)' : 'transparent', color: activeTab === 'settings' ? '#fff' : 'var(--apple-text-secondary)', border: 'none' }}
@@ -195,6 +203,8 @@ export default function AdminAttendance() {
             handleDeleteLog={handleDeleteLog}
           />
         </>
+      ) : activeTab === 'stats' ? (
+        <AttendanceStats users={users} teams={teams} />
       ) : (
         <AttendanceSettings />
       )}

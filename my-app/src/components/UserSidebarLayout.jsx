@@ -32,6 +32,13 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
+    // Automatically close sidebar on mobile when navigating to a new route
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
     if (!user?.id) return
     supabase
       .from('profiles')
@@ -198,7 +205,6 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
                   key={path} to={path}
                   className={`admin-sidebar-link${active ? ' active' : ''}`}
                   title={collapsed ? label : ''}
-                  onClick={() => { if (window.innerWidth <= 768 || isMobileView) setSidebarOpen(false) }}
                   style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }}
                 >
                   <div style={{ position: 'relative' }}>
@@ -239,7 +245,6 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
                     key={path} to={path}
                     className={`admin-sidebar-link${active ? ' active' : ''}`}
                     title={collapsed ? label : ''}
-                    onClick={() => { if (window.innerWidth <= 768 || isMobileView) setSidebarOpen(false) }}
                     style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }}
                   >
                     <Icon size={collapsed ? 22 : 18} strokeWidth={active ? 2.5 : 2} />
