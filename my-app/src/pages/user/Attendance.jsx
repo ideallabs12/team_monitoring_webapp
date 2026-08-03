@@ -346,8 +346,6 @@ export default function Attendance({ user }) {
       requireSelfie = !!data?.attendance_require_selfie;
       setSelfieEnabled(requireSelfie);
       
-      // Temporary debug alert
-      alert(`Debug Info: The database returned requireSelfie = ${requireSelfie}`);
     } catch (e) {
       console.error("Failed to fetch selfie settings", e);
       setErrorMsg("Unable to verify selfie settings. " + (e.message || ""));
