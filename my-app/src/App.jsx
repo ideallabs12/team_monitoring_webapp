@@ -31,6 +31,7 @@ import UserSettings from './pages/user/UserSettings'
 import Attendance from './pages/user/Attendance'
 import UserAnnouncements from './pages/user/UserAnnouncements'
 import Meetings from './pages/common/Meetings'
+import UserLeaves from './pages/user/UserLeaves'
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminHome from './pages/admin/AdminHome'
@@ -52,12 +53,16 @@ import AdminExportData from './pages/admin/AdminExportData'
 import VirtualTemplatesHome from './pages/admin/virtualtemplates/VirtualTemplatesHome'
 import Template3 from './pages/admin/virtualtemplates/Template3'
 import Testing from './pages/admin/virtualtemplates/Testing'
+import HrLayout from './pages/hr/HrLayout'
+import HrHome from './pages/hr/HrHome'
+import LeaveApprovals from './pages/hr/LeaveApprovals'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
   const [user, setUser] = useState(null)
   const [hasProfile, setHasProfile] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isHr, setIsHr] = useState(false)
   const [isExecutive, setIsExecutive] = useState(false)
   const [featureAccess, setFeatureAccess] = useState(null)
   const [isDeactivated, setIsDeactivated] = useState(false)
@@ -173,6 +178,7 @@ function App() {
           setUser(null)
           setHasProfile(false)
           setIsAdmin(false)
+          setIsHr(false)
           setIsExecutive(false)
           setIsDeactivated(false)
           profileFetchedFor.current = null
@@ -247,6 +253,7 @@ function App() {
 
         if (data.platform_role === 'admin' || data.platform_role === 'executive') {
           setIsAdmin(true)
+          setIsHr(false)
           setIsExecutive(data.platform_role === 'executive')
           setFeatureAccess(data.feature_access || null)
           setHasProfile(true)
@@ -255,8 +262,20 @@ function App() {
             action_type: 'admin_activity',
             details: { description: `${data.platform_role === 'executive' ? 'Executive' : 'Admin'} logged in`, email: currentUser.email, device: deviceInfo }
           }).then()
+        } else if (data.platform_role === 'hr') {
+          setIsAdmin(false)
+          setIsHr(true)
+          setIsExecutive(false)
+          setFeatureAccess(data.feature_access || null)
+          setHasProfile(true)
+          supabase.from('audit_logs').insert({
+            user_id: userId,
+            action_type: 'login',
+            details: { email: currentUser.email, device: deviceInfo, role: 'HR' }
+          }).then()
         } else {
           setIsAdmin(false)
+          setIsHr(false)
           setIsExecutive(false)
           setFeatureAccess(data.feature_access || null)
           const completed = !!data.first_name || data.profile_completed === true
@@ -279,6 +298,7 @@ function App() {
           setHasProfile(false)
           setIsDeactivated(false)
           setIsAdmin(false)
+          setIsHr(false)
           setIsExecutive(false)
           setFeatureAccess(null)
           return
@@ -291,6 +311,7 @@ function App() {
         }
         setIsDeactivated(false)
         setIsAdmin(false)
+        setIsHr(false)
         setIsExecutive(false)
         setFeatureAccess(null)
       }
@@ -303,6 +324,7 @@ function App() {
       setHasProfile(false)
       setIsDeactivated(false)
       setIsAdmin(false)
+      setIsHr(false)
       setIsExecutive(false)
     } finally {
       setLoading(false)
@@ -312,6 +334,7 @@ function App() {
   const handleProfileCompleted = () => {
     setHasProfile(true)
     setIsAdmin(false)
+    setIsHr(false)
     setIsExecutive(false)
     setIsDeactivated(true)
   }
@@ -328,7 +351,7 @@ function App() {
   // If the user is logged in but is NOT an admin, block them with the maintenance screen.
   // Unauthenticated users (user === null) will see the login screen, allowing admins to log in.
   // Additionally, if the admin is specifically forced into maintenance mode, block them.
-  if ((systemSettings.maintenance_mode && user && !isAdmin) || (user && featureAccess?.maintenanceModeForced)) {
+  if ((systemSettings.maintenance_mode && user && !isAdmin && !isHr) || (user && featureAccess?.maintenanceModeForced)) {
     return <MaintenanceScreen />
   }
 
@@ -345,7 +368,7 @@ function App() {
           path="/"
           element={
             user
-              ? (isAdmin ? <Navigate to="/admin/home" replace /> : <Navigate to={hasProfile ? "/home" : "/complete-profile"} replace />)
+              ? (isAdmin ? <Navigate to="/admin/home" replace /> : isHr ? <Navigate to="/hr/home" replace /> : <Navigate to={hasProfile ? "/home" : "/complete-profile"} replace />)
               : <Login user={user} isAdmin={isAdmin} />
           }
         />
@@ -358,35 +381,51 @@ function App() {
           element={
             !user ? <Navigate to="/" replace />
               : isAdmin ? <Navigate to="/admin/home" replace />
-                : hasProfile === null ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
-                  : hasProfile ? <Navigate to="/home" replace />
-                    : <CompleteProfile user={user} onComplete={handleProfileCompleted} />
+                : isHr ? <Navigate to="/hr/home" replace />
+                  : hasProfile === null ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
+                    : hasProfile ? <Navigate to="/home" replace />
+                      : <CompleteProfile user={user} onComplete={handleProfileCompleted} />
           }
         />
 
         {/* Regular User Routes */}
         <Route element={<Layout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} />}>
-          <Route path="/home" element={hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/historical-revenue" element={hasProfile && !isAdmin ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/revenue-history" element={hasProfile && !isAdmin ? <RevenueHistory user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-dis-report" element={hasProfile && !isAdmin ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/leaderboard" element={hasProfile && !isAdmin ? (systemSettings.show_leaderboard ? <Leaderboard user={user} /> : <Navigate to="/home" replace />) : <Navigate to="/complete-profile" replace />} />
-          <Route path="/milestones" element={hasProfile && !isAdmin ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/sales-analytics" element={hasProfile && !isAdmin ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/reviews" element={hasProfile && !isAdmin ? <UserReviews user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
-          <Route path="/meetings" element={hasProfile && !isAdmin ? <Meetings user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/virtual-events" element={hasProfile && !isAdmin ? <VirtualTemplatesHome /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/virtual-events/testing" element={hasProfile && !isAdmin ? <Testing /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/home" element={hasProfile && !isAdmin && !isHr ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team" element={hasProfile && !isAdmin && !isHr ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/revenue" element={hasProfile && !isAdmin && !isHr ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/historical-revenue" element={hasProfile && !isAdmin && !isHr ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/revenue-history" element={hasProfile && !isAdmin && !isHr ? <RevenueHistory user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/dis" element={hasProfile && !isAdmin && !isHr ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-analytics" element={hasProfile && !isAdmin && !isHr ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-management" element={hasProfile && !isAdmin && !isHr ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-dis-report" element={hasProfile && !isAdmin && !isHr ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/leaderboard" element={hasProfile && !isAdmin && !isHr ? (systemSettings.show_leaderboard ? <Leaderboard user={user} /> : <Navigate to="/home" replace />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/milestones" element={hasProfile && !isAdmin && !isHr ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/sales-analytics" element={hasProfile && !isAdmin && !isHr ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/reviews" element={hasProfile && !isAdmin && !isHr ? <UserReviews user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/profile" element={hasProfile && !isAdmin && !isHr ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/settings" element={hasProfile && !isAdmin && !isHr ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/attendance" element={hasProfile && !isAdmin && !isHr ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/announcements" element={hasProfile && !isAdmin && !isHr ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
+          <Route path="/meetings" element={hasProfile && !isAdmin && !isHr ? <Meetings user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events" element={hasProfile && !isAdmin && !isHr ? <VirtualTemplatesHome /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/template3" element={hasProfile && !isAdmin && !isHr ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/testing" element={hasProfile && !isAdmin && !isHr ? <Testing /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/leaves" element={hasProfile && !isAdmin && !isHr ? <UserLeaves user={user} /> : <Navigate to="/complete-profile" replace />} />
+        </Route>
+
+        {/* HR Routes */}
+        <Route path="/hr" element={isHr ? <HrLayout user={user} isDeactivated={isDeactivated} /> : <Navigate to="/" replace />}>
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<HrHome />} />
+          <Route path="teams" element={<AdminTeams />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="attendance" element={<AdminAttendance />} />
+          <Route path="copystats" element={<CopyStats />} />
+          <Route path="leaderboard" element={<Leaderboard user={user} />} />
+          <Route path="milestones" element={<Milestones user={user} />} />
+          <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="leaves" element={<LeaveApprovals user={user} />} />
         </Route>
 
         {/* Admin Routes */}
@@ -409,6 +448,16 @@ function App() {
           <Route path="milestones" element={<Milestones user={user} />} />
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
+          <Route path="writeups" element={<AdminWriteUps />} />
+          <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="leaves" element={<LeaveApprovals user={user} />} />
+          <Route path="virtual-events" element={<VirtualTemplatesHome />} />
+          <Route path="export-data" element={<AdminExportData />} />
+          <Route path="virtual-events">
+            <Route index element={<VirtualTemplatesHome />} />
+            <Route path="template3" element={<Template3 />} />
+            <Route path="testing" element={<Testing />} />
+          </Route>
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
           <Route path="meetings" element={<Meetings user={user} />} />
@@ -424,7 +473,7 @@ function App() {
         <Route path="*" element={
           loading || (user && hasProfile === null)
             ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>
-            : <Navigate to={user ? (isAdmin ? "/admin/home" : (hasProfile ? "/home" : "/complete-profile")) : "/"} replace />
+            : <Navigate to={user ? (isAdmin ? "/admin/home" : isHr ? "/hr/home" : (hasProfile ? "/home" : "/complete-profile")) : "/"} replace />
         } />
       </Routes>
     </Router>

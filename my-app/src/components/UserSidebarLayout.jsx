@@ -21,7 +21,8 @@ import {
   LayoutTemplate,
   Flag,
   CheckSquare,
-  Video
+  Video,
+  Calendar
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -129,6 +130,8 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   if (isAttendanceEnabled) {
     navLinks.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
   }
+  
+  navLinks.push({ path: '/leaves', label: 'Leaves', icon: Calendar })
 
   const othersLinks = [
     { path: '/milestones', label: 'Milestones', icon: Flag },

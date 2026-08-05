@@ -15,9 +15,30 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-export default function AttendanceLogsList({ logs, loading, officeLocations, handleApprove, handleReject, handleDeleteLog }) {
+export default function AttendanceLogsList({ logs, allLogs, users, searchQuery, teams, selectedTeam, loading, officeLocations, handleApprove, handleReject, handleDeleteLog }) {
   const [showPhotos, setShowPhotos] = useState(false)
-  const [activeTab, setActiveTab] = useState('punchin')
+  const [activeTab, setActiveTab] = useState('punchin') // 'punchin', 'punchout', 'absent'
+
+  // Filter users by attendance_enabled teams
+  const enabledTeamIds = new Set((teams || []).filter(t => t.attendance_enabled).map(t => t.id));
+  const attendanceEnabledUsers = (users || []).filter(u => enabledTeamIds.has(u.team_id));
+
+  // Determine if we should show a message for disabled team
+  let isTeamDisabled = false;
+  if (selectedTeam !== 'all') {
+    const team = (teams || []).find(t => t.id === selectedTeam);
+    if (team && !team.attendance_enabled) {
+      isTeamDisabled = true;
+    }
+  }
+
+  // Calculate absent users
+  const presentUserIds = new Set((allLogs || []).map(log => log.user_id));
+  let absentUsers = attendanceEnabledUsers.filter(u => !presentUserIds.has(u.id));
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    absentUsers = absentUsers.filter(u => `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase().includes(query));
+  }
 
   const getDistanceText = (log) => {
     if (log.profiles?.wfh_enabled) return 'WFH'
@@ -82,11 +103,43 @@ export default function AttendanceLogsList({ logs, loading, officeLocations, han
         >
           Punch Out
         </button>
+        <button 
+          onClick={() => setActiveTab('absent')}
+          style={{ flex: 1, padding: '12px', background: activeTab === 'absent' ? '#ef4444' : 'transparent', color: activeTab === 'absent' ? '#fff' : 'var(--apple-text-secondary)', border: 'none', borderRadius: '8px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s', fontSize: '1rem' }}
+        >
+          Absent ({absentUsers.length})
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
         {loading ? (
           <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>Loading logs...</div>
+        ) : activeTab === 'absent' ? (
+          isTeamDisabled ? (
+            <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>
+              This team doesn't have attendance tracking enabled.
+            </div>
+          ) : absentUsers.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>
+              No absent users found.
+            </div>
+          ) : (
+            absentUsers.map((user) => (
+              <div key={user.id} className="apple-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  {user.first_name?.[0] || ''}{user.last_name?.[0] || ''}
+                </div>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#fff', fontSize: '1.1rem', textTransform: 'capitalize' }}>
+                    {user.first_name} {user.last_name}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '4px', fontWeight: '500' }}>
+                    Didn't punch in
+                  </div>
+                </div>
+              </div>
+            ))
+          )
         ) : logs.length === 0 ? (
           <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>No attendance logs found.</div>
         ) : (

@@ -54,12 +54,12 @@ export default function CompleteProfile({ user, onComplete }) {
         last_name: lastName,
         email: user.email,
         phone: phone,
-        team_id: selectedTeamId || null,
+        team_id: selectedTeamId === 'none' ? null : (selectedTeamId || null),
         platform_role: user.email === 'signatureglobalconferences@gmail.com' ? 'admin' : 'user',
         has_revenue_logging: true,
         has_dis_reporting: true,
         profile_completed: true,
-        is_deactivated: false
+        is_deactivated: true
       };
 
       // 1. Insert/Update Profile with team_id
@@ -185,6 +185,7 @@ export default function CompleteProfile({ user, onComplete }) {
                 }}
               >
                 <option value="" disabled>Select a Team</option>
+                <option value="none">No Team (Admin/HR)</option>
                 {teams.map(team => (
                   <option key={team.id} value={team.id}>{team.name}</option>
                 ))}

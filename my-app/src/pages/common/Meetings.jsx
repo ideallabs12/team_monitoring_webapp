@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Calendar, Clock, User, Mail, FileText, List, Link as LinkIcon, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, User, Mail, FileText, List, Link as LinkIcon, CheckCircle, AlignLeft } from 'lucide-react';
 
 export default function Meetings({ user }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [activeSection, setActiveSection] = useState('summary');
 
   useEffect(() => {
     fetchMeetings();
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedMeeting) {
+      setActiveSection('summary');
+    }
+  }, [selectedMeeting]);
 
   const fetchMeetings = async () => {
     setLoading(true);
@@ -214,60 +221,109 @@ export default function Meetings({ user }) {
                 </div>
               </div>
 
-              {selectedMeeting.summary && (
-                <div style={{ marginBottom: '32px' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px', color: 'var(--apple-text-primary)' }}>
-                    <List size={20} color="var(--apple-accent-purple)" />
-                    Summary
-                  </h3>
-                  <div style={{ background: 'var(--apple-bg-secondary)', padding: '24px', borderRadius: '12px', lineHeight: '1.6', color: 'var(--apple-text-secondary)', fontSize: '0.95rem' }}>
-                    {renderMarkdown(selectedMeeting.summary)}
-                  </div>
-                </div>
-              )}
-
-              {selectedMeeting.action_items && parseActionItems(selectedMeeting.action_items).length > 0 && (
-                <div style={{ marginBottom: '32px' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px', color: 'var(--apple-text-primary)' }}>
-                    <CheckCircle size={20} color="var(--apple-accent-green)" />
-                    Action Items
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {parseActionItems(selectedMeeting.action_items).map((item, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'var(--apple-bg-secondary)', padding: '14px 16px', borderRadius: '12px' }}>
-                        <div style={{ marginTop: '2px', color: 'var(--apple-accent-green)' }}><CheckCircle size={18} /></div>
-                        <div style={{ lineHeight: '1.5', color: 'var(--apple-text-primary)', fontSize: '0.95rem' }}>
-                          {typeof item === 'string' ? item : (
-                            <div>
-                              <strong>{item.description || item.text}</strong>
-                              {item.assignee?.name && <span style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', background: 'var(--apple-bg)', padding: '2px 6px', borderRadius: '4px' }}>Assignee: {item.assignee.name}</span>}
-                              {item.recording_playback_url && <a href={item.recording_playback_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--apple-accent-blue)', textDecoration: 'none' }}>View</a>}
+              {(() => {
+                const availableSections = [
+                  { 
+                    id: 'summary', 
+                    title: 'Summary', 
+                    icon: <AlignLeft size={20} color="#a855f7" />, 
+                    isAvailable: !!selectedMeeting.summary,
+                    content: selectedMeeting.summary ? renderMarkdown(selectedMeeting.summary) : null
+                  },
+                  { 
+                    id: 'action_items', 
+                    title: 'Actionables', 
+                    icon: <CheckCircle size={20} color="var(--apple-accent-green)" />, 
+                    isAvailable: selectedMeeting.action_items && parseActionItems(selectedMeeting.action_items).length > 0,
+                    content: selectedMeeting.action_items ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {parseActionItems(selectedMeeting.action_items).map((item, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'var(--apple-bg)', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+                            <div style={{ marginTop: '2px', color: 'var(--apple-accent-green)' }}><CheckCircle size={18} /></div>
+                            <div style={{ lineHeight: '1.5', color: 'var(--apple-text-primary)', fontSize: '0.95rem' }}>
+                              {typeof item === 'string' ? item : (
+                                <div>
+                                  <strong>{item.description || item.text}</strong>
+                                  {item.assignee?.name && <span style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', background: 'var(--apple-bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>Assignee: {item.assignee.name}</span>}
+                                  {item.recording_playback_url && <a href={item.recording_playback_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--apple-accent-blue)', textDecoration: 'none' }}>View</a>}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null
+                  },
+                  { 
+                    id: 'transcript', 
+                    title: 'Transcript', 
+                    icon: <FileText size={20} color="var(--apple-accent-blue)" />, 
+                    isAvailable: true,
+                    content: (
+                      <div style={{ maxHeight: '600px', overflowY: 'auto', paddingRight: '8px' }}>
+                        {renderTranscript(selectedMeeting.transcript)}
+                      </div>
+                    )
+                  }
+                ].filter(s => s.isAvailable);
+                
+                // If the activeSection is not available, fallback, but respect null (all closed)
+                const currentActive = activeSection === null 
+                  ? null 
+                  : (availableSections.some(s => s.id === activeSection) ? activeSection : availableSections[0]?.id);
+                
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeIn 0.3s ease' }}>
+                    {availableSections.map((section) => {
+                      const isActive = section.id === currentActive;
+                      return (
+                        <div key={section.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div 
+                            onClick={() => setActiveSection(isActive ? null : section.id)}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '12px', 
+                              padding: '16px 20px',
+                              background: isActive ? 'var(--apple-bg-secondary)' : 'transparent',
+                              border: '1px solid var(--apple-border)',
+                              borderRadius: isActive ? '12px 12px 0 0' : '12px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              userSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isActive) e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            {section.icon}
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: '600', margin: 0, color: 'var(--apple-text-primary)' }}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          {isActive && (
+                            <div style={{ 
+                              background: 'var(--apple-bg-secondary)', 
+                              border: '1px solid var(--apple-border)',
+                              borderTop: 'none',
+                              borderRadius: '0 0 12px 12px',
+                              padding: '24px',
+                              lineHeight: '1.6', 
+                              color: 'var(--apple-text-secondary)', 
+                              fontSize: '0.95rem'
+                            }}>
+                              {section.content}
                             </div>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                </div>
-              )}
-
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px', color: 'var(--apple-text-primary)' }}>
-                  <FileText size={20} color="var(--apple-accent-blue)" />
-                  Transcript
-                </h3>
-                <div style={{ 
-                  background: 'var(--apple-bg-secondary)', 
-                  padding: '24px', 
-                  borderRadius: '12px', 
-                  fontSize: '0.95rem',
-                  maxHeight: '600px',
-                  overflowY: 'auto',
-                  border: '1px solid var(--apple-border)'
-                }}>
-                  {renderTranscript(selectedMeeting.transcript)}
-                </div>
-              </div>
+                );
+              })()}
 
             </div>
           ) : (

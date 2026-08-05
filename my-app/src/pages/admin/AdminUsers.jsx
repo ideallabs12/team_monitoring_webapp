@@ -7,8 +7,8 @@ import UserRevenue from '../user/UserRevenue'
 let adminUsersCache = { loaded: false, users: [], teams: [], revenues: [], disReports: [] }
 
 export default function AdminUsers() {
-  const { user, featureAccess } = useOutletContext() || {}
-  const canAccessControlPanel = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.controlPanel
+  const { user, featureAccess, isHrView } = useOutletContext() || {}
+  const canAccessControlPanel = !isHrView && (user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.controlPanel)
   const [loading, setLoading] = useState(!adminUsersCache.loaded)
   const [users, setUsers] = useState(adminUsersCache.users)
   const [teams, setTeams] = useState(adminUsersCache.teams)
@@ -20,6 +20,7 @@ export default function AdminUsers() {
   const [filterTeam, setFilterTeam] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterRole, setFilterRole] = useState('all')
+  const [filterGender, setFilterGender] = useState('all')
 
   // Profile Detail View State
   const [viewingProfileUser, setViewingProfileUser] = useState(null)
@@ -258,6 +259,27 @@ export default function AdminUsers() {
     }
   }
 
+  // Update Generic Profile Field
+  const handleUpdateProfileField = async (field, value) => {
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [field]: value })
+        .eq('id', viewingProfileUser.id)
+      if (error) throw error
+
+      setSuccessMsg(`Successfully updated profile field!`)
+      updateProfileUser({ [field]: value })
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update profile field.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Send Password Reset Email
   const handleSendResetEmail = async () => {
     setSaving(true)
@@ -481,9 +503,15 @@ export default function AdminUsers() {
                               ? !isTeamLead
                               : false
 
-      return matchesSearch && matchesTeam && matchesStatus && matchesRole
+      const matchesGender = filterGender === 'all'
+                            ? true
+                            : filterGender === 'not_assigned'
+                              ? !user.gender
+                              : user.gender === filterGender
+
+      return matchesSearch && matchesTeam && matchesStatus && matchesRole && matchesGender
     })
-  }, [nonAdminUsers, teams, searchQuery, filterTeam, filterStatus, filterRole])
+  }, [nonAdminUsers, teams, searchQuery, filterTeam, filterStatus, filterRole, filterGender])
 
   // End modal logic removal
 
@@ -576,6 +604,24 @@ export default function AdminUsers() {
                 }}
               >
                 Control Panel
+              </button>
+            )}
+            {canAccessControlPanel && (
+              <button
+                onClick={() => setActiveTab('update_profile')}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: activeTab === 'update_profile' ? 'var(--apple-accent-blue)' : 'transparent',
+                  color: activeTab === 'update_profile' ? '#fff' : 'var(--apple-text-secondary)',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s var(--apple-ease)'
+                }}
+              >
+                Update Profile
               </button>
             )}
           </div>
@@ -695,6 +741,20 @@ export default function AdminUsers() {
                     }}
                   >
                     Team Lead
+                  </button>
+                  <button
+                    onClick={() => handleUpdatePlatformRole('hr')}
+                    disabled={saving || viewingProfileUser.platform_role === 'hr'}
+                    className="apple-btn"
+                    style={{
+                      flex: 1,
+                      background: viewingProfileUser.platform_role === 'hr' ? '#10b981' : 'rgba(255,255,255,0.05)',
+                      color: viewingProfileUser.platform_role === 'hr' ? '#0f172a' : 'var(--apple-text-secondary)',
+                      borderColor: viewingProfileUser.platform_role === 'hr' ? '#10b981' : 'var(--apple-border)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    HR Role
                   </button>
                 </div>
               </div>
@@ -924,6 +984,69 @@ export default function AdminUsers() {
           {/* Removed Column 2 Wrapper */}
           
         </div>
+        )}
+
+        {canAccessControlPanel && activeTab === 'update_profile' && (
+          <div className="apple-card" style={{ padding: '24px', marginBottom: '28px' }}>
+            <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserIcon size={18} style={{ color: '#818cf8' }} /> Update Profile Details
+            </h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
+              {/* Editable Gender Field */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Gender</label>
+                <select
+                  className="apple-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'var(--apple-bg-secondary)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)' }}
+                  value={viewingProfileUser.gender || ''}
+                  onChange={(e) => handleUpdateProfileField('gender', e.target.value)}
+                  disabled={saving}
+                >
+                  <option value="" disabled>NA</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Read-only Display Details */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Phone</label>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--apple-border)', color: viewingProfileUser.phone ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
+                  {viewingProfileUser.phone || 'NA'}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Company</label>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--apple-border)', color: viewingProfileUser.company_name ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
+                  {viewingProfileUser.company_name || 'NA'}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Experience</label>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--apple-border)', color: viewingProfileUser.experience ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
+                  {viewingProfileUser.experience || 'NA'}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Timezone</label>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--apple-border)', color: viewingProfileUser.timezone ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
+                  {viewingProfileUser.timezone || 'NA'}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase' }}>Expected Revenue</label>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--apple-border)', color: viewingProfileUser.expected_revenue ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)' }}>
+                  {viewingProfileUser.expected_revenue ? `$${viewingProfileUser.expected_revenue}` : 'NA'}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'profile' && (
@@ -1164,20 +1287,39 @@ export default function AdminUsers() {
               <option value="deactivated">Deactivated Accounts</option>
             </select>
             <select 
+              className="apple-input" 
+              style={{ width: '150px', padding: '10px 14px', borderRadius: '12px' }}
               value={filterRole} 
               onChange={e => setFilterRole(e.target.value)}
-              className="apple-input"
-              style={{ flex: 1, minWidth: '160px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--apple-border)', color: 'var(--apple-text-primary)', fontSize: '0.85rem' }}
             >
               <option value="all">All Roles</option>
-              <option value="user">Users</option>
-              <option value="teamlead">Team Leads</option>
+              <option value="user">User</option>
+              <option value="teamlead">Team Lead</option>
             </select>
-            {(filterTeam !== 'all' || filterStatus !== 'all' || filterRole !== 'all') && (
+            <select 
+              className="apple-input" 
+              style={{ width: '150px', padding: '10px 14px', borderRadius: '12px' }}
+              value={filterGender} 
+              onChange={e => setFilterGender(e.target.value)}
+            >
+              <option value="all">All Genders</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="not_assigned">Not Assigned</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {(filterTeam !== 'all' || filterStatus !== 'all' || filterRole !== 'all' || filterGender !== 'all') && (
               <button 
-                onClick={() => { setFilterTeam('all'); setFilterStatus('all'); setFilterRole('all'); }}
-                className="apple-btn-secondary"
-                style={{ flex: '0 0 auto', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--apple-border)', background: 'transparent', color: 'var(--apple-text-secondary)', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}
+                className="apple-btn"
+                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                onClick={() => {
+                  setFilterTeam('all')
+                  setFilterStatus('all')
+                  setFilterRole('all')
+                  setFilterGender('all')
+                }}
               >
                 Clear Filters
               </button>
@@ -1266,9 +1408,9 @@ export default function AdminUsers() {
                             fontSize: '0.75rem',
                             fontWeight: '600',
                             textTransform: 'uppercase',
-                            background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(99, 102, 241, 0.12)',
-                            border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
-                            color: user.platform_role === 'admin' ? '#f87171' : '#818cf8'
+                            background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : user.platform_role === 'hr' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(99, 102, 241, 0.12)',
+                            border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : user.platform_role === 'hr' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
+                            color: user.platform_role === 'admin' ? '#f87171' : user.platform_role === 'hr' ? '#10b981' : '#818cf8'
                           }}>
                             {user.platform_role || 'user'}
                           </span>
@@ -1358,9 +1500,9 @@ export default function AdminUsers() {
                         fontSize: '0.65rem',
                         fontWeight: '700',
                         textTransform: 'uppercase',
-                        background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(99, 102, 241, 0.12)',
-                        border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
-                        color: user.platform_role === 'admin' ? '#f87171' : '#818cf8'
+                        background: user.platform_role === 'admin' ? 'rgba(239, 68, 68, 0.12)' : user.platform_role === 'hr' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(99, 102, 241, 0.12)',
+                        border: user.platform_role === 'admin' ? '1px solid rgba(239, 68, 68, 0.25)' : user.platform_role === 'hr' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
+                        color: user.platform_role === 'admin' ? '#f87171' : user.platform_role === 'hr' ? '#10b981' : '#818cf8'
                       }}>
                         {user.platform_role || 'user'}
                       </span>

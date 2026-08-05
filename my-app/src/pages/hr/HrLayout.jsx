@@ -5,53 +5,28 @@ import {
   LayoutDashboard,
   Users,
   User,
-  FileText,
-  DollarSign,
-  TrendingUp,
-  ClipboardList,
-  Settings,
-  LogOut,
-  BarChart2,
-  Menu,
-  X,
+  MapPin,
   Trophy,
   Crown,
   Network,
-  Sun,
-  Moon,
-  Calendar,
-  Star,
-  Sparkles,
-  MapPin,
-  Shield,
+  LogOut,
+  Menu,
+  X,
+  Copy,
   Megaphone,
-  Download,
-  Video,
-  Copy
+  Calendar
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { path: '/admin/home',        label: 'Dashboard',      icon: LayoutDashboard },
-  { path: '/admin/teams',       label: 'Teams',          icon: Network },
-  { path: '/admin/users',       label: 'Users',          icon: User },
-  { path: '/admin/dis',         label: 'DIS Reports',    icon: FileText },
-  { path: '/admin/write-ups',   label: 'Review Write-Ups', icon: Calendar },
-  { path: '/admin/reviews',     label: 'Review Approvals', icon: Star },
-  { path: '/admin/revenue',     label: 'Revenue',        icon: DollarSign },
-  { path: '/admin/analytics',   label: 'Analytics',      icon: TrendingUp },
-  { path: '/admin/copystats',   label: 'Copy Stats',     icon: Copy },
-  { path: '/admin/ai-analytics',label: 'AI Analytics',   icon: Sparkles },
-  { path: '/admin/leaderboard', label: 'Leaderboard',    icon: Trophy },
-  { path: '/admin/milestones',  label: 'Milestones',     icon: Crown },
-  { path: '/admin/auditlogs',   label: 'Audit Logs',     icon: ClipboardList },
-  { path: '/admin/attendance',  label: 'Attendance',     icon: MapPin },
-  { path: '/admin/announcements',label: 'Announcements', icon: Megaphone },
-  { path: '/admin/leaves',      label: 'Leaves',         icon: Calendar },
-  { path: '/admin/export-data', label: 'Export Data',    icon: Download },
-  { path: '/admin/virtual-events', label: 'Virtual Events', icon: Video },
-  { path: '/admin/settings',    label: 'Settings',       icon: Settings },
-  { path: '/admin/meetings',    label: 'Meetings',       icon: Video },
-  { path: '/admin/role-manager',label: 'Specials',       icon: Shield },
+  { path: '/hr/home',        label: 'Dashboard',      icon: LayoutDashboard },
+  { path: '/hr/teams',       label: 'Teams',          icon: Network },
+  { path: '/hr/users',       label: 'Users',          icon: User },
+  { path: '/hr/attendance',  label: 'Attendance',     icon: MapPin },
+  { path: '/hr/copystats',   label: 'Copy Stats',     icon: Copy },
+  { path: '/hr/leaderboard', label: 'Leaderboard',    icon: Trophy },
+  { path: '/hr/milestones',  label: 'Milestones',     icon: Crown },
+  { path: '/hr/announcements', label: 'Announcements', icon: Megaphone },
+  { path: '/hr/leaves',      label: 'Leaves',         icon: Calendar },
 ]
 
 function RestrictedAccessView() {
@@ -68,7 +43,7 @@ function RestrictedAccessView() {
   )
 }
 
-export default function AdminLayout({ user, isDeactivated, isExecutive, featureAccess }) {
+export default function HrLayout({ user, isDeactivated }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
@@ -102,11 +77,11 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
   // Derive initials for avatar
   const initials = profile
     ? `${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`.toUpperCase()
-    : 'SA'
+    : 'HR'
 
   const fullName = profile
     ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim()
-    : 'System Admin'
+    : 'HR Representative'
 
   const renderSidebarContent = (isMobileView) => {
     const collapsed = isMobileView ? false : isCollapsed
@@ -166,21 +141,7 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
 
         {/* ── Navigation ── */}
         <nav className="admin-sidebar-nav" style={{ padding: collapsed ? '0 8px' : '0 10px' }}>
-          {NAV_ITEMS.filter(item => {
-            if (user?.email === 'signatureglobalconferences@gmail.com') return true;
-            if (item.path === '/admin/role-manager') return false;
-
-            if (featureAccess) {
-              if (item.path === '/admin/ai-analytics') return !!featureAccess.aiAnalytics;
-              if (item.path === '/admin/attendance') return !!featureAccess.attendance;
-              if (item.path === '/admin/auditlogs') return !!featureAccess.auditLogs;
-              if (item.path === '/admin/settings') return !!featureAccess.settings;
-              if (item.path === '/admin/write-ups') return !!featureAccess.writeUps;
-              if (item.path === '/admin/reviews') return !!featureAccess.reviews;
-            }
-            
-            return true
-          }).map(({ path, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
             const active = isActive(path)
             return (
               <Link
@@ -202,15 +163,15 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
 
           {!collapsed ? (
             <div className="admin-sidebar-profile">
-              <div className="admin-sidebar-avatar">{initials}</div>
+              <div className="admin-sidebar-avatar" style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>{initials}</div>
               <div className="admin-sidebar-profile-info">
                 <span className="admin-sidebar-profile-name">{fullName}</span>
-                <span className="admin-sidebar-role-badge">Admin</span>
+                <span className="admin-sidebar-role-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>HR</span>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }} title={fullName}>
-              <div className="admin-sidebar-avatar" style={{ width: '36px', height: '36px' }}>{initials}</div>
+              <div className="admin-sidebar-avatar" style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #10b981, #34d399)' }}>{initials}</div>
             </div>
           )}
 
@@ -260,23 +221,23 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
-              All-Hands Admin
+              All-Hands HR
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
-              background: 'linear-gradient(135deg, var(--apple-accent-blue), #30d5c8)',
+              background: 'linear-gradient(135deg, #10b981, #34d399)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.7rem', fontWeight: '700', color: '#fff', flexShrink: 0
             }}>
-              {profile ? `${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`.toUpperCase() : 'SA'}
+              {initials}
             </div>
           </div>
         </div>
 
         <main className="admin-content">
-          {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ user, profile, isExecutive, featureAccess }} />}
+          {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ user, profile, isHrView: true }} />}
         </main>
       </div>
     </div>

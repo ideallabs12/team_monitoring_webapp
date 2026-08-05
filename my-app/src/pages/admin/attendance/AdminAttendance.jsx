@@ -198,9 +198,14 @@ export default function AdminAttendance() {
 
           <AttendanceLogsList 
             logs={filteredLogs}
+            allLogs={logs}
             loading={loading}
             officeLocations={officeLocations}
             handleDeleteLog={handleDeleteLog}
+            users={availableUsers}
+            searchQuery={search}
+            teams={teams}
+            selectedTeam={selectedTeam}
           />
         </>
       ) : activeTab === 'stats' ? (

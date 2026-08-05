@@ -466,6 +466,19 @@ export default function AdminUserControlPanel() {
               >
                 Team Lead
               </button>
+              <button
+                onClick={() => handleUpdatePlatformRole('hr')}
+                disabled={saving || user.platform_role === 'hr'}
+                className="apple-btn"
+                style={{
+                  flex: 1,
+                  background: user.platform_role === 'hr' ? '#10b981' : 'rgba(255,255,255,0.05)',
+                  color: user.platform_role === 'hr' ? '#0f172a' : '#94a3b8',
+                  borderColor: user.platform_role === 'hr' ? '#10b981' : 'var(--apple-border)'
+                }}
+              >
+                HR Role
+              </button>
             </div>
           </div>
 
