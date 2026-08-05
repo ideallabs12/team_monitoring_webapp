@@ -322,32 +322,29 @@ export default function Attendance({ user }) {
       console.error('GPS error:', err)
     }
 
+    // STRICT ENFORCEMENT: MUST HAVE LOCATION
+    if (!fetchedLocation) {
+      setErrorMsg('Location permission is strictly required to punch in/out. Please enable location access in your browser.')
+      setChecking(false)
+      return
+    }
+
     if (profile?.require_gps_attendance) {
-      if (!fetchedLocation) {
-        if (!profile.wfh_enabled) {
+      if (profile.wfh_enabled || officeLocations.length === 0) {
+        setGpsStatus('skipped')
+        validLocations = [...officeLocations] 
+      } else {
+        for (const loc of officeLocations) {
+          const distance = getDistanceFromLatLonInMeters(fetchedLocation.lat, fetchedLocation.lng, loc.latitude, loc.longitude)
+          if (distance <= (loc.radius_meters || 300)) {
+            validLocations.push(loc)
+          }
+        }
+        if (validLocations.length > 0) {
+          setGpsStatus('success')
+        } else {
           setGpsStatus('fail')
           gpsPassed = false
-        } else {
-          setGpsStatus('skipped')
-          validLocations = [...officeLocations] 
-        }
-      } else {
-        if (profile.wfh_enabled || officeLocations.length === 0) {
-          setGpsStatus('skipped')
-          validLocations = [...officeLocations] 
-        } else {
-          for (const loc of officeLocations) {
-            const distance = getDistanceFromLatLonInMeters(fetchedLocation.lat, fetchedLocation.lng, loc.latitude, loc.longitude)
-            if (distance <= (loc.radius_meters || 300)) {
-              validLocations.push(loc)
-            }
-          }
-          if (validLocations.length > 0) {
-            setGpsStatus('success')
-          } else {
-            setGpsStatus('fail')
-            gpsPassed = false
-          }
         }
       }
     } else {
@@ -355,38 +352,17 @@ export default function Attendance({ user }) {
       validLocations = [...officeLocations] 
     }
 
-    // Fetch global setting for selfie in realtime
-    let requireSelfie = false;
-    try {
-      const { data, error } = await supabase.from('system_settings').select('attendance_require_selfie').eq('id', 1).single();
-      if (error) throw error;
-      requireSelfie = !!data?.attendance_require_selfie;
-      setSelfieEnabled(requireSelfie);
-      
-    } catch (e) {
-      console.error("Failed to fetch selfie settings", e);
-      setErrorMsg("Unable to verify selfie settings. " + (e.message || ""));
-      setChecking(false);
-      return; // Stop the punch-in process until this is resolved
-    }
+    // STRICT ENFORCEMENT: MUST HAVE SELFIE
+    let requireSelfie = true;
+    setSelfieEnabled(true);
 
     setChecking(false)
 
     if (!gpsPassed) {
       setShowExceptionForm(true)
-      if (requireSelfie) {
-        setShowCamera(true) // Show camera even for exceptions
-      }
+      setShowCamera(true)
     } else {
-      if (requireSelfie) {
-        setShowCamera(true) // Wait for user to capture selfie
-      } else {
-        if (action === 'in') {
-          handleCheckIn(false, fetchedLocation)
-        } else {
-          handleCheckOut(false, fetchedLocation)
-        }
-      }
+      setShowCamera(true)
     }
   }
 
@@ -410,13 +386,19 @@ export default function Attendance({ user }) {
     setChecking(true)
     setErrorMsg('')
     
+    if (!overrideLocation) {
+      setErrorMsg('Location coordinates are missing. Please allow location access.')
+      setChecking(false)
+      return
+    }
+
     if (isException && exceptionReason.trim().length < 10) {
       setErrorMsg('Please provide a valid reason (minimum 10 characters).')
       setChecking(false)
       return
     }
     
-    if (showCamera && !selfieFile) {
+    if (!selfieFile) {
       setErrorMsg('Please capture a selfie before punching in.')
       setChecking(false)
       return
@@ -464,13 +446,19 @@ export default function Attendance({ user }) {
     setChecking(true)
     setErrorMsg('')
     
+    if (!overrideLocation) {
+      setErrorMsg('Location coordinates are missing. Please allow location access.')
+      setChecking(false)
+      return
+    }
+
     if (isException && exceptionReason.trim().length < 10) {
       setErrorMsg('Please provide a valid reason (minimum 10 characters).')
       setChecking(false)
       return
     }
     
-    if (showCamera && !selfieFile) {
+    if (!selfieFile) {
       setErrorMsg('Please capture a selfie before punching out.')
       setChecking(false)
       return
