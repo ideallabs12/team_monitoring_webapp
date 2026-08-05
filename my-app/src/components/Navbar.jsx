@@ -79,6 +79,7 @@ export default function Navbar({ user }) {
   }
   
   othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
+  othersLinks.push({ to: '/meetings', label: 'Meetings', desc: 'Meeting transcripts and summaries' })
   
   if (profile?.is_sales_executive) {
     othersLinks.push({ to: '/sales-analytics', label: 'Sales Executive', desc: 'Call activity & analytics' })

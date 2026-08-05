@@ -20,7 +20,8 @@ import {
   Megaphone,
   LayoutTemplate,
   Flag,
-  CheckSquare
+  CheckSquare,
+  Video
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -133,6 +134,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     { path: '/milestones', label: 'Milestones', icon: Flag },
     { path: '/reviews', label: 'Reviews', icon: Star },
     { path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
+    { path: '/meetings', label: 'Meetings', icon: Video },
   ]
   
   if (profile?.has_revenue_logging !== false) {
@@ -330,7 +332,12 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
           </div>
         </div>
 
-        <main className="admin-content" style={{ animation: 'fadeIn 0.3s var(--apple-ease)' }}>
+        <main 
+          className="admin-content" 
+          style={{ 
+            animation: 'fadeIn 0.3s var(--apple-ease)'
+          }}
+        >
           {isDeactivated ? <RestrictedAccessView /> : <Outlet context={{ featureAccess }} />}
         </main>
       </div>

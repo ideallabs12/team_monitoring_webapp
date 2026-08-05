@@ -55,11 +55,11 @@ export default function CompleteProfile({ user, onComplete }) {
         email: user.email,
         phone: phone,
         team_id: selectedTeamId || null,
-        platform_role: 'employee',
+        platform_role: user.email === 'signatureglobalconferences@gmail.com' ? 'admin' : 'user',
         has_revenue_logging: true,
         has_dis_reporting: true,
         profile_completed: true,
-        is_deactivated: true
+        is_deactivated: false
       };
 
       // 1. Insert/Update Profile with team_id

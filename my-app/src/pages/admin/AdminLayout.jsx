@@ -49,6 +49,7 @@ const NAV_ITEMS = [
   { path: '/admin/export-data', label: 'Export Data',    icon: Download },
   { path: '/admin/virtual-events', label: 'Virtual Events', icon: Video },
   { path: '/admin/settings',    label: 'Settings',       icon: Settings },
+  { path: '/admin/meetings',    label: 'Meetings',       icon: Video },
   { path: '/admin/role-manager',label: 'Specials',       icon: Shield },
 ]
 

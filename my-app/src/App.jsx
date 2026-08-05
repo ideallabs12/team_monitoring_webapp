@@ -30,6 +30,7 @@ import UserReviews from './pages/user/UserReviews'
 import UserSettings from './pages/user/UserSettings'
 import Attendance from './pages/user/Attendance'
 import UserAnnouncements from './pages/user/UserAnnouncements'
+import Meetings from './pages/common/Meetings'
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminHome from './pages/admin/AdminHome'
@@ -382,6 +383,7 @@ function App() {
           <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
+          <Route path="/meetings" element={hasProfile && !isAdmin ? <Meetings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events" element={hasProfile && !isAdmin ? <VirtualTemplatesHome /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events/testing" element={hasProfile && !isAdmin ? <Testing /> : <Navigate to="/complete-profile" replace />} />
@@ -409,6 +411,7 @@ function App() {
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="meetings" element={<Meetings user={user} />} />
           <Route path="export-data" element={<AdminExportData />} />
           <Route path="virtual-events">
             <Route index element={<VirtualTemplatesHome />} />

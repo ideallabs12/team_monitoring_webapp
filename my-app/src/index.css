@@ -708,6 +708,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .admin-sidebar-nav::-webkit-scrollbar { display: none; }
 .admin-sidebar-nav { scrollbar-width: none; }
 
+/* Utility class to hide scrollbars */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
 /* ── Brand ── */
 .admin-sidebar-brand {
   display: flex;

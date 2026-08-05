@@ -128,8 +128,24 @@ export default function Attendance({ user }) {
   }, [showCamera, selfiePreviewUrl])
 
   const startCamera = async () => {
-    // Force native camera for 100% reliability across all mobile devices
-    setUseNativeCamera(true)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' } 
+      })
+      streamRef.current = stream
+      setUseNativeCamera(false)
+      
+      // Need a small timeout to ensure videoRef is rendered since useNativeCamera state just flipped
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+      }, 50)
+    } catch (err) {
+      console.error('Error accessing live camera:', err)
+      // Fallback to native file picker if they block camera or it fails
+      setUseNativeCamera(true)
+    }
   }
 
   const stopCamera = () => {
@@ -284,37 +300,44 @@ export default function Attendance({ user }) {
     let fetchedLocation = null
     let validLocations = []
 
-    if (profile?.require_gps_attendance) {
+    try {
+      let position;
       try {
-        let position;
-        // If WFH is enabled or no office locations exist, bypass GPS completely to save time
-        if (profile.wfh_enabled || officeLocations.length === 0) {
-          position = { coords: { latitude: null, longitude: null } };
+        // Try high accuracy (GPS) first, but with a shorter timeout (5s)
+        position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 })
+        })
+      } catch (err) {
+        console.warn('High accuracy GPS failed/timed out, falling back to low accuracy...')
+        // Fallback to low accuracy (Wi-Fi/IP based) which is usually instant and works indoors
+        position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 })
+        })
+      }
+      const lat = position.coords.latitude
+      const lng = position.coords.longitude
+      fetchedLocation = { lat, lng }
+      setCurrentLocation({ lat, lng })
+    } catch (err) {
+      console.error('GPS error:', err)
+    }
+
+    if (profile?.require_gps_attendance) {
+      if (!fetchedLocation) {
+        if (!profile.wfh_enabled) {
+          setGpsStatus('fail')
+          gpsPassed = false
         } else {
-          try {
-            // Try high accuracy (GPS) first, but with a shorter timeout (5s)
-            position = await new Promise((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 })
-            })
-          } catch (err) {
-            console.warn('High accuracy GPS failed/timed out, falling back to low accuracy...')
-            // Fallback to low accuracy (Wi-Fi/IP based) which is usually instant and works indoors
-            position = await new Promise((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 })
-            })
-          }
+          setGpsStatus('skipped')
+          validLocations = [...officeLocations] 
         }
-        const lat = position.coords.latitude
-        const lng = position.coords.longitude
-        fetchedLocation = { lat, lng }
-        setCurrentLocation({ lat, lng })
-        
+      } else {
         if (profile.wfh_enabled || officeLocations.length === 0) {
           setGpsStatus('skipped')
           validLocations = [...officeLocations] 
         } else {
           for (const loc of officeLocations) {
-            const distance = getDistanceFromLatLonInMeters(lat, lng, loc.latitude, loc.longitude)
+            const distance = getDistanceFromLatLonInMeters(fetchedLocation.lat, fetchedLocation.lng, loc.latitude, loc.longitude)
             if (distance <= (loc.radius_meters || 300)) {
               validLocations.push(loc)
             }
@@ -325,12 +348,6 @@ export default function Attendance({ user }) {
             setGpsStatus('fail')
             gpsPassed = false
           }
-        }
-      } catch (err) {
-        console.error('GPS error:', err)
-        if (!profile.wfh_enabled) {
-          setGpsStatus('fail')
-          gpsPassed = false
         }
       }
     } else {

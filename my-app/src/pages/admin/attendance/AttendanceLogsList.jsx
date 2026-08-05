@@ -20,6 +20,7 @@ export default function AttendanceLogsList({ logs, loading, officeLocations, han
   const [activeTab, setActiveTab] = useState('punchin')
 
   const getDistanceText = (log) => {
+    if (log.profiles?.wfh_enabled) return 'WFH'
     if (!log.latitude || !log.longitude) return 'No Location Recorded'
     if (officeLocations.length === 0) return `${log.latitude.toFixed(5)}, ${log.longitude.toFixed(5)}`
     
