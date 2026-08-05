@@ -22,7 +22,8 @@ import {
   Flag,
   CheckSquare,
   Video,
-  Calendar
+  Calendar,
+  Smartphone
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -44,7 +45,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     if (!user?.id) return
     supabase
       .from('profiles')
-      .select('first_name, last_name, platform_role, has_revenue_logging, has_dis_reporting, exclude_from_analytics, is_sales_executive, teams!profiles_team_id_fkey(attendance_enabled)')
+      .select('first_name, last_name, platform_role, email, has_revenue_logging, has_dis_reporting, exclude_from_analytics, is_sales_executive, teams!profiles_team_id_fkey(attendance_enabled)')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => { if (data) setProfile(data) })
@@ -79,7 +80,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams' }, () => {
         supabase
           .from('profiles')
-          .select('first_name, last_name, platform_role, has_revenue_logging, has_dis_reporting, exclude_from_analytics, is_sales_executive, teams!profiles_team_id_fkey(attendance_enabled)')
+          .select('first_name, last_name, platform_role, email, has_revenue_logging, has_dis_reporting, exclude_from_analytics, is_sales_executive, teams!profiles_team_id_fkey(attendance_enabled)')
           .eq('id', user.id)
           .maybeSingle()
           .then(({ data }) => { if (data) setProfile(data) })
@@ -132,6 +133,10 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   }
   
   navLinks.push({ path: '/leaves', label: 'Leaves', icon: Calendar })
+
+  if (profile?.email === 'user1@gmail.com' || profile?.email === 'tech1@gmail.com') {
+    navLinks.push({ path: '/test-upi', label: 'Test UPI', icon: Smartphone })
+  }
 
   const othersLinks = [
     { path: '/milestones', label: 'Milestones', icon: Flag },
