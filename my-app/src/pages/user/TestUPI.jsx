@@ -22,8 +22,7 @@ export default function TestUPI({ user }) {
     )
   }
 
-  const handlePayment = (e) => {
-    e.preventDefault()
+  const handleSpecificPayment = (schemePrefix) => {
     if (!amount || !userUpiId) {
       alert("Please enter both amount and your UPI ID.")
       return
@@ -33,11 +32,15 @@ export default function TestUPI({ user }) {
     const payeeName = 'Ideallabs'
     const note = encodeURIComponent(`Payment from ${userUpiId}`)
     
-    // Standard UPI deep link format
-    const upiLink = `upi://pay?pa=${payeeVPA}&pn=${payeeName}&am=${amount}&cu=INR&tn=${note}`
+    // Scheme specific UPI deep link format
+    const upiLink = `${schemePrefix}?pa=${payeeVPA}&pn=${payeeName}&am=${amount}&cu=INR&tn=${note}`
 
-    // Attempt to open the UPI app
     window.location.href = upiLink
+  }
+
+  const handlePayment = (e) => {
+    e.preventDefault()
+    handleSpecificPayment('upi://pay')
   }
 
   return (
@@ -82,13 +85,43 @@ export default function TestUPI({ user }) {
             />
           </div>
 
-          <button type="submit" className="apple-btn" style={{ marginTop: '12px', padding: '14px', fontSize: '1.1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle size={20} /> Open UPI App to Pay
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+            <button 
+              type="button" 
+              onClick={() => handleSpecificPayment('gpay://upi/pay')}
+              className="apple-btn" 
+              style={{ padding: '12px', fontSize: '1rem', background: '#ffffff', color: '#3c4043', border: '1px solid #dadce0' }}
+            >
+              Google Pay
+            </button>
+            <button 
+              type="button" 
+              onClick={() => handleSpecificPayment('phonepe://pay')}
+              className="apple-btn" 
+              style={{ padding: '12px', fontSize: '1rem', background: '#5f259f', color: '#ffffff' }}
+            >
+              PhonePe
+            </button>
+            <button 
+              type="button" 
+              onClick={() => handleSpecificPayment('paytmmp://pay')}
+              className="apple-btn" 
+              style={{ padding: '12px', fontSize: '1rem', background: '#00baf2', color: '#ffffff' }}
+            >
+              Paytm
+            </button>
+            <button 
+              type="submit" 
+              className="apple-btn" 
+              style={{ padding: '12px', fontSize: '1rem' }}
+            >
+              Other UPI App
+            </button>
+          </div>
         </form>
 
         <div style={{ marginTop: '24px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', textAlign: 'center', lineHeight: '1.5' }}>
-          <strong>Note:</strong> This will attempt to open any installed UPI apps (GPay, PhonePe, Paytm, etc.) on your mobile device. Payee is set to <strong>9948781888@ybl</strong>.
+          <strong>Note:</strong> Some devices may route all generic UPI requests to a default app (like WhatsApp). Use the specific app buttons if you wish to override the default. Payee is set to <strong>9948781888@ybl</strong>.
         </div>
       </div>
     </div>
