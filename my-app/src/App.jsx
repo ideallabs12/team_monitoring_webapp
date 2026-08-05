@@ -56,7 +56,6 @@ import Testing from './pages/admin/virtualtemplates/Testing'
 import HrLayout from './pages/hr/HrLayout'
 import HrHome from './pages/hr/HrHome'
 import LeaveApprovals from './pages/hr/LeaveApprovals'
-import TestUPI from './pages/user/TestUPI'
 import { PresenceProvider } from './components/PresenceProvider'
 
 function App() {
@@ -413,7 +412,6 @@ function App() {
           <Route path="/virtual-events/template3" element={hasProfile && !isAdmin && !isHr ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events/testing" element={hasProfile && !isAdmin && !isHr ? <Testing /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/leaves" element={hasProfile && !isAdmin && !isHr ? <UserLeaves user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/test-upi" element={<TestUPI user={user} />} />
         </Route>
 
         {/* HR Routes */}

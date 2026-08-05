@@ -22,8 +22,7 @@ import {
   Flag,
   CheckSquare,
   Video,
-  Calendar,
-  Smartphone
+  Calendar
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -134,9 +133,6 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   
   navLinks.push({ path: '/leaves', label: 'Leaves', icon: Calendar })
 
-  if (profile?.email === 'user1@gmail.com' || profile?.email === 'tech1@gmail.com') {
-    navLinks.push({ path: '/test-upi', label: 'Test UPI', icon: Smartphone })
-  }
 
   const othersLinks = [
     { path: '/milestones', label: 'Milestones', icon: Flag },
