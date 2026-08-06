@@ -23,6 +23,15 @@ export default function Meetings({ user }) {
     setLoading(true);
     setSelectedMeeting(null);
     try {
+      // Attempt to sync meetings for the selected date
+      try {
+        await supabase.functions.invoke('sync-fathom-date', {
+          body: { date: selectedDate }
+        });
+      } catch (syncErr) {
+        console.error('Error syncing Fathom meetings:', syncErr);
+      }
+
       const { data, error } = await supabase
         .from('fathom_meetings')
         .select('*')
