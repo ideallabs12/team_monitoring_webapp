@@ -155,7 +155,9 @@ export default function AttendanceLogsList({ logs, allLogs, users, searchQuery, 
                     </div>
                   ) : (
                     <div style={{ width: '100%', height: '80px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--apple-border)' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>No Photo Provided</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                        {activeTab === 'punchout' && !log.check_out_time ? 'Not Punched Out Yet' : 'No Photo Provided'}
+                      </span>
                     </div>
                   )
                 )}

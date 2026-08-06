@@ -671,15 +671,22 @@ export default function Attendance({ user }) {
                         Retake
                       </button>
                     )}
-                    <button 
-                      onClick={() => pendingAction === 'in' ? handleCheckIn(false) : handleCheckOut(false)} 
-                      disabled={uploadingSelfie || checking}
-                      className="apple-btn apple-btn-primary" 
-                      style={{ flex: 2 }}
-                    >
-                      {uploadingSelfie ? 'Uploading...' : `Submit & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
-                    </button>
+                    {!showExceptionForm && (
+                      <button 
+                        onClick={() => pendingAction === 'in' ? handleCheckIn(false) : handleCheckOut(false)} 
+                        disabled={uploadingSelfie || checking}
+                        className="apple-btn apple-btn-primary" 
+                        style={{ flex: 2 }}
+                      >
+                        {uploadingSelfie ? 'Uploading...' : `Submit & Punch ${pendingAction === 'in' ? 'In' : 'Out'}`}
+                      </button>
+                    )}
                   </div>
+                  {showExceptionForm && (
+                    <div style={{ marginTop: '12px', fontSize: '0.85rem', color: '#fbbf24', textAlign: 'center' }}>
+                      Please scroll down to fill out the Exception Form to complete your punch {pendingAction}.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
