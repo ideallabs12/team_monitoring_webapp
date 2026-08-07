@@ -55,6 +55,100 @@ serve(async (req) => {
 
     console.log(`Found ${targetMeetings.length} meetings for ${date}. Inserting into database...`)
 
+    // ─── DEBUG: Print full raw Fathom response for each meeting ───────────────
+    console.log(`\n${'='.repeat(60)}`)
+    console.log(`[DEBUG] RAW FATHOM RESPONSE — ${allMeetings.length} total meetings returned`)
+    console.log(`[DEBUG] Filtered to ${targetMeetings.length} meetings for date: ${date}`)
+    console.log(`${'='.repeat(60)}`)
+
+    for (const [idx, meeting] of targetMeetings.entries()) {
+      console.log(`\n[DEBUG] ── Meeting #${idx + 1} ─────────────────────────────────`)
+
+      // 1. All top-level keys (so we know the full schema)
+      console.log(`[DEBUG] Top-level keys: ${Object.keys(meeting).join(', ')}`)
+
+      // 2. Core identifiers
+      console.log(`[DEBUG] id: ${meeting.id}`)
+      console.log(`[DEBUG] recording_id: ${meeting.recording_id}`)
+      console.log(`[DEBUG] title: ${meeting.title}`)
+      console.log(`[DEBUG] created_at: ${meeting.created_at}`)
+      console.log(`[DEBUG] url: ${meeting.url}`)
+      console.log(`[DEBUG] video_url: ${meeting.video_url}`)
+
+      // 3. Owner / recorder — who ran Fathom
+      console.log(`[DEBUG] recorded_by: ${JSON.stringify(meeting.recorded_by)}`)
+      console.log(`[DEBUG] owner: ${JSON.stringify(meeting.owner)}`)
+
+      // 4. Calendar invitees — main email source for scheduled meetings
+      console.log(`[DEBUG] calendar_invitees (count: ${meeting.calendar_invitees?.length ?? 0}):`)
+      if (meeting.calendar_invitees?.length) {
+        meeting.calendar_invitees.forEach((inv: any, i: number) => {
+          console.log(`  [${i}] name="${inv.name}" email="${inv.email}" domain="${inv.email_domain}" is_external=${inv.is_external} matched_speaker="${inv.matched_speaker_display_name}"`)
+        })
+      } else {
+        console.log(`  (empty — ad-hoc or no calendar event linked)`)
+      }
+
+      // 5. Participants / attendees — may exist as a separate field
+      console.log(`[DEBUG] participants (count: ${meeting.participants?.length ?? 0}):`)
+      if (meeting.participants?.length) {
+        meeting.participants.forEach((p: any, i: number) => {
+          console.log(`  [${i}] ${JSON.stringify(p)}`)
+        })
+      } else {
+        console.log(`  (no "participants" field returned by Fathom)`)
+      }
+
+      // 6. Attendees — another possible field name
+      console.log(`[DEBUG] attendees (count: ${meeting.attendees?.length ?? 0}):`)
+      if (meeting.attendees?.length) {
+        meeting.attendees.forEach((a: any, i: number) => {
+          console.log(`  [${i}] ${JSON.stringify(a)}`)
+        })
+      } else {
+        console.log(`  (no "attendees" field returned by Fathom)`)
+      }
+
+      // 7. Transcript speaker emails
+      const transcriptRaw = meeting.transcript
+      const transcriptArr = Array.isArray(transcriptRaw) ? transcriptRaw : (() => {
+        try { return typeof transcriptRaw === 'string' ? JSON.parse(transcriptRaw) : [] } catch { return [] }
+      })()
+      const speakerEmails = new Map<string, string>()
+      for (const seg of transcriptArr) {
+        if (seg?.speaker?.display_name) {
+          const name = seg.speaker.display_name
+          const email = seg.speaker.matched_calendar_invitee_email || ''
+          if (!speakerEmails.has(name)) speakerEmails.set(name, email)
+        }
+      }
+      console.log(`[DEBUG] Transcript speakers (unique):`)
+      if (speakerEmails.size) {
+        speakerEmails.forEach((email, name) => {
+          console.log(`  name="${name}" matched_calendar_invitee_email="${email || '(none)'}"`)
+        })
+      } else {
+        console.log(`  (no structured transcript / no speakers found)`)
+      }
+
+      // 8. Scan ALL top-level keys for anything that looks like an email
+      console.log(`[DEBUG] Email-like values in top-level fields:`)
+      let foundEmailField = false
+      for (const [key, val] of Object.entries(meeting)) {
+        if (key === 'transcript' || key === 'summary' || key === 'action_items') continue // skip large blobs
+        const str = typeof val === 'string' ? val : JSON.stringify(val)
+        if (str && str.includes('@') && str.includes('.')) {
+          console.log(`  key="${key}" value snippet: ${str.substring(0, 200)}`)
+          foundEmailField = true
+        }
+      }
+      if (!foundEmailField) console.log(`  (no email-like values found outside calendar_invitees)`)
+
+      console.log(`[DEBUG] ─────────────────────────────────────────────────────`)
+    }
+    console.log(`[DEBUG] End of raw Fathom dump\n`)
+    // ─── END DEBUG ────────────────────────────────────────────────────────────
+
     // Initialize Supabase Admin Client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? 'https://pzalalbpxlwtcnmkaegb.supabase.co',

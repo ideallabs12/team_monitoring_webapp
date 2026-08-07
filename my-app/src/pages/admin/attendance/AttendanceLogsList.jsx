@@ -40,11 +40,28 @@ export default function AttendanceLogsList({ logs, allLogs, users, searchQuery, 
     absentUsers = absentUsers.filter(u => `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase().includes(query));
   }
 
-  const getDistanceText = (log) => {
+  const getDistanceText = (log, tab) => {
+    // On punch-out tab: if the person hasn't punched out, distance is irrelevant
+    if (tab === 'punchout') {
+      if (!log.check_out_time) return 'Not Punched Out'
+      if (log.profiles?.wfh_enabled) return 'WFH'
+      // Use punch-out location if available, otherwise fall back to punch-in
+      const lat = log.checkout_latitude ?? log.latitude
+      const lng = log.checkout_longitude ?? log.longitude
+      if (!lat || !lng) return 'No Location Recorded'
+      if (officeLocations.length === 0) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+      let minDistance = Infinity
+      for (const loc of officeLocations) {
+        const dist = getDistanceFromLatLonInMeters(lat, lng, loc.latitude, loc.longitude)
+        if (dist < minDistance) minDistance = dist
+      }
+      return `${Math.round(minDistance)} mts away`
+    }
+
+    // Punch-in tab: use punch-in GPS
     if (log.profiles?.wfh_enabled) return 'WFH'
     if (!log.latitude || !log.longitude) return 'No Location Recorded'
     if (officeLocations.length === 0) return `${log.latitude.toFixed(5)}, ${log.longitude.toFixed(5)}`
-    
     let minDistance = Infinity
     for (const loc of officeLocations) {
       const dist = getDistanceFromLatLonInMeters(log.latitude, log.longitude, loc.latitude, loc.longitude)
@@ -174,7 +191,15 @@ export default function AttendanceLogsList({ logs, allLogs, users, searchQuery, 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>
                       <span>{new Date(log.attendance_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       <span style={{ display: 'inline-block', width: '3px', height: '3px', borderRadius: '50%', background: 'var(--apple-text-secondary)' }}></span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}><MapPin size={10} /> {getDistanceText(log)}</span>
+                      {(() => {
+                        const distText = getDistanceText(log, activeTab)
+                        const isNotPunchedOut = distText === 'Not Punched Out'
+                        return (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: isNotPunchedOut ? '#f97316' : 'inherit', fontWeight: isNotPunchedOut ? '600' : 'inherit' }}>
+                            {isNotPunchedOut ? <XCircle size={10} /> : <MapPin size={10} />} {distText}
+                          </span>
+                        )
+                      })()}
                     </div>
                   </div>
                   <button onClick={() => handleDeleteLog(log.id)} style={{ padding: '2px', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer' }} title="Delete Log">
