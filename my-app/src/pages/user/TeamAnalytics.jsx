@@ -10,7 +10,8 @@ import {
   Check, 
   Edit3, 
   AlertCircle,
-  TrendingDown
+  TrendingDown,
+  Target
 } from 'lucide-react'
 import { 
   AreaChart, 
@@ -28,6 +29,7 @@ import {
   getLastNMonths, 
   formatRevenueMonthShort, 
   sumEffectiveTargets,
+  getEffectiveTargetAmount,
   filterRevenuesByPeriod,
   filterRevenuesByCompletedPeriod,
   sumRevenues,
@@ -118,11 +120,11 @@ export default function TeamAnalytics({ user }) {
         // 1. Fetch team members (excluding admins)
         const { data: members, error: memError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, email, platform_role, exclude_from_analytics')
+          .select('id, first_name, last_name, email, platform_role, exclude_from_analytics, is_deactivated')
           .eq('team_id', profile.team_id)
         
         if (memError) throw memError
-        const nonAdminMembers = (members || []).filter(m => m.platform_role !== 'admin' && !m.exclude_from_analytics)
+        const nonAdminMembers = (members || []).filter(m => m.platform_role !== 'admin' && !m.exclude_from_analytics && !m.is_deactivated)
         setTeamMembers(nonAdminMembers)
         
         const memberUserIds = nonAdminMembers.map(m => m.id)
@@ -305,6 +307,27 @@ export default function TeamAnalytics({ user }) {
     return Math.max(...breakdownTrendData.map(d => d.total), 1)
   }, [breakdownTrendData])
 
+  // Individual Target vs Reached — current month only, scoped to this team
+  const individualTargetStats = useMemo(() => {
+    const currentMonth = getCurrentMonthStr()
+    return teamMembers.map(member => {
+      const target = getEffectiveTargetAmount(targets, member.id, profile?.team_id, currentMonth)
+      const reached = revenues
+        .filter(r => r.user_id === member.id && r.revenue_month === currentMonth)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+      const pct = target > 0 ? Math.min((reached / target) * 100, 100) : 0
+      const exceeded = target > 0 && reached >= target
+      return {
+        id: member.id,
+        name: `${member.first_name} ${member.last_name}`,
+        target,
+        reached,
+        pct: Number(pct.toFixed(1)),
+        exceeded
+      }
+    }).sort((a, b) => b.pct - a.pct)
+  }, [teamMembers, targets, revenues, profile])
+
   if (accessDenied) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 20px' }}>
@@ -385,6 +408,192 @@ export default function TeamAnalytics({ user }) {
             <span>Assigned targets for {currentMonthStats.monthLabel}</span>
           </div>
         </div>
+      </div>
+
+      {/* ===== INDIVIDUAL TARGET VS REACHED ===== */}
+      <div className="apple-card" style={{ marginBottom: '32px', padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '16px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <Target size={18} color="#0071e3" />
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: '#fff' }}>Individual Target vs Reached</h3>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
+              Current month performance per team member — {currentMonthStats.monthLabel}
+            </p>
+          </div>
+        </div>
+
+        {individualTargetStats.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
+            No team members found.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {individualTargetStats.map((member, idx) => {
+              const barColor = member.exceeded
+                ? '#4cd964'
+                : member.pct >= 80
+                ? '#30d5c8'
+                : member.pct >= 50
+                ? '#ff9500'
+                : '#ff2d55'
+              const rankColor = CHART_COLORS[idx % CHART_COLORS.length]
+              return (
+                <div key={member.id} style={{
+                  background: member.exceeded
+                    ? 'linear-gradient(135deg, rgba(76,217,100,0.06) 0%, rgba(30,41,59,0.4) 100%)'
+                    : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${member.exceeded ? 'rgba(76,217,100,0.22)' : 'rgba(255,255,255,0.07)'}`,
+                  borderRadius: '14px',
+                  padding: '16px 20px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  {/* Left accent strip */}
+                  <div style={{ position: 'absolute', left: 0, top: 0, width: '3px', height: '100%', background: rankColor, borderRadius: '14px 0 0 14px' }} />
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', paddingLeft: '8px' }}>
+                    {/* Rank badge */}
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${rankColor}20`, border: `1.5px solid ${rankColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: '800', color: rankColor, flexShrink: 0 }}>
+                      {idx + 1}
+                    </div>
+
+                    {/* Name */}
+                    <div style={{ flex: '1 1 120px', minWidth: '100px' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#fff' }}>{member.name}</div>
+                      {member.target === 0 && (
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(120,120,128,0.7)', marginTop: '2px' }}>No target assigned</div>
+                      )}
+                    </div>
+
+                    {/* Progress bar section */}
+                    <div style={{ flex: '3 1 200px', minWidth: '180px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
+                          Reached: <span style={{ fontWeight: '700', color: '#fff' }}>${member.reached.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>
+                          Target: <span style={{ fontWeight: '700', color: '#0071e3' }}>{member.target > 0 ? `$${member.target.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '—'}</span>
+                        </span>
+                      </div>
+                      <div style={{ height: '7px', background: 'rgba(255,255,255,0.07)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: member.target > 0 ? `${Math.min((member.reached / member.target) * 100, 100)}%` : '0%',
+                          background: `linear-gradient(90deg, ${barColor}aa, ${barColor})`,
+                          borderRadius: '4px',
+                          transition: 'width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }} />
+                      </div>
+                    </div>
+
+                    {/* Achievement badge */}
+                    <div style={{ flexShrink: 0, minWidth: '60px', textAlign: 'center' }}>
+                      {member.target === 0 ? (
+                        <span style={{ fontSize: '0.72rem', color: 'rgba(120,120,128,0.6)', background: 'rgba(120,120,128,0.1)', padding: '3px 8px', borderRadius: '6px', fontWeight: '600' }}>—</span>
+                      ) : member.exceeded ? (
+                        <span style={{ fontSize: '0.72rem', background: 'rgba(76,217,100,0.15)', color: '#4cd964', padding: '3px 8px', borderRadius: '6px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap' }}>
+                          <Check size={10} /> Met
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: barColor }}>{member.pct}%</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* ===== TEAM TOTAL SUMMARY ===== */}
+        {(() => {
+          const totalTarget = individualTargetStats.reduce((s, m) => s + m.target, 0)
+          const totalReached = individualTargetStats.reduce((s, m) => s + m.reached, 0)
+          const totalPct = totalTarget > 0 ? Math.min((totalReached / totalTarget) * 100, 100) : 0
+          const totalExceeded = totalTarget > 0 && totalReached >= totalTarget
+          const totalBarColor = totalExceeded
+            ? '#4cd964'
+            : totalPct >= 80 ? '#30d5c8'
+            : totalPct >= 50 ? '#ff9500'
+            : '#ff2d55'
+          return (
+            <div style={{
+              marginTop: '20px',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              paddingTop: '20px'
+            }}>
+              <div style={{
+                background: totalExceeded
+                  ? 'linear-gradient(135deg, rgba(76,217,100,0.1) 0%, rgba(30,41,59,0.6) 100%)'
+                  : 'linear-gradient(135deg, rgba(0,113,227,0.08) 0%, rgba(30,41,59,0.6) 100%)',
+                border: `1px solid ${totalExceeded ? 'rgba(76,217,100,0.3)' : 'rgba(0,113,227,0.25)'}`,
+                borderRadius: '16px',
+                padding: '20px 24px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Users size={16} color="var(--apple-text-secondary)" />
+                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Whole Team Total</span>
+                  </div>
+                  {totalExceeded ? (
+                    <span style={{ fontSize: '0.78rem', background: 'rgba(76,217,100,0.15)', color: '#4cd964', padding: '4px 12px', borderRadius: '8px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={12} /> Target Met
+                    </span>
+                  ) : totalTarget > 0 ? (
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: totalBarColor }}>{totalPct.toFixed(1)}% of target</span>
+                  ) : null}
+                </div>
+
+                <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Total Reached</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', letterSpacing: '-0.02em' }}>
+                      ${totalReached.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Total Target</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#0071e3', letterSpacing: '-0.02em' }}>
+                      {totalTarget > 0 ? `$${totalTarget.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '—'}
+                    </div>
+                  </div>
+                  {totalTarget > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Remaining</div>
+                      <div style={{ fontSize: '1.8rem', fontWeight: '800', letterSpacing: '-0.02em', color: totalExceeded ? '#4cd964' : '#ff9500' }}>
+                        {totalExceeded
+                          ? `+$${(totalReached - totalTarget).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                          : `$${(totalTarget - totalReached).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {totalTarget > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)' }}>Progress</span>
+                      <span style={{ fontSize: '0.72rem', color: totalBarColor, fontWeight: '700' }}>{totalPct.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: '10px', background: 'rgba(255,255,255,0.07)', borderRadius: '6px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${totalPct}%`,
+                        background: `linear-gradient(90deg, ${totalBarColor}88, ${totalBarColor})`,
+                        borderRadius: '6px',
+                        transition: 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        boxShadow: `0 0 8px ${totalBarColor}55`
+                      }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* PERFORMANCE INSIGHTS CONTAINER CARD */}

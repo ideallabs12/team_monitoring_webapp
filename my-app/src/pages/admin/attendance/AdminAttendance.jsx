@@ -52,7 +52,7 @@ export default function AdminAttendance() {
           .order('created_at', { ascending: false }),
         supabase.from('office_locations').select('*').eq('is_active', true),
         supabase.from('teams').select('*'),
-        supabase.from('profiles').select('id, first_name, last_name, team_id')
+        supabase.from('profiles').select('id, first_name, last_name, team_id, is_deactivated')
       ])
 
       if (logsRes.error) throw logsRes.error
@@ -60,7 +60,7 @@ export default function AdminAttendance() {
       setLogs(logsRes.data || [])
       setOfficeLocations(locRes.data || [])
       setTeams(teamsRes.data || [])
-      setUsers(profilesRes.data || [])
+      setUsers((profilesRes.data || []).filter(u => !u.is_deactivated))
       
     } catch (err) {
       console.error('Error fetching data:', err)

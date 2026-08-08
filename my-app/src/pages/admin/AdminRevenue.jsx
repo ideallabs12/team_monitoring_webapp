@@ -120,7 +120,7 @@ export default function AdminRevenue() {
   }, [])
 
   const nonAdminProfiles = useMemo(
-    () => profiles.filter(p => p.platform_role !== 'admin'),
+    () => profiles.filter(p => p.platform_role !== 'admin' && !p.is_deactivated),
     [profiles]
   )
   const nonAdminIds = useMemo(

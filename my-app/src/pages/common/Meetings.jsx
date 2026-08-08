@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Calendar, Clock, User, Mail, FileText, List, Link as LinkIcon, CheckCircle, AlignLeft } from 'lucide-react';
+import { Calendar, Clock, User, Mail, FileText, List, Link as LinkIcon, CheckCircle, AlignLeft, RefreshCw } from 'lucide-react';
 
 export default function Meetings({ user }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -11,6 +11,28 @@ export default function Meetings({ user }) {
 
   useEffect(() => {
     fetchMeetings();
+
+    // Set up real-time subscription for the selected date
+    const channel = supabase
+      .channel('fathom_meetings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fathom_meetings',
+          filter: `meeting_date=eq.${selectedDate}`
+        },
+        (payload) => {
+          console.log('Real-time meeting update received:', payload);
+          loadMeetingsFromDB();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedDate]);
 
   useEffect(() => {
@@ -19,9 +41,31 @@ export default function Meetings({ user }) {
     }
   }, [selectedMeeting]);
 
+  const loadMeetingsFromDB = async () => {
+    const { data, error } = await supabase
+      .from('fathom_meetings')
+      .select('*')
+      .eq('meeting_date', selectedDate)
+      .order('meeting_time', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching meetings from DB:', error);
+      return;
+    }
+    
+    setMeetings(data || []);
+    
+    // If a meeting is currently selected, update its details
+    setSelectedMeeting(current => {
+      if (!current) return null;
+      const updated = data?.find(m => m.id === current.id);
+      return updated || current;
+    });
+  };
+
   const fetchMeetings = async () => {
     setLoading(true);
-    setSelectedMeeting(null);
+    // Not unsetting selectedMeeting here so the UI doesn't jump during a manual refresh
     try {
       // Attempt to sync meetings for the selected date
       try {
@@ -32,14 +76,7 @@ export default function Meetings({ user }) {
         console.error('Error syncing Fathom meetings:', syncErr);
       }
 
-      const { data, error } = await supabase
-        .from('fathom_meetings')
-        .select('*')
-        .eq('meeting_date', selectedDate)
-        .order('meeting_time', { ascending: false });
-
-      if (error) throw error;
-      setMeetings(data || []);
+      await loadMeetingsFromDB();
     } catch (err) {
       console.error('Error fetching meetings:', err);
     } finally {
@@ -133,30 +170,64 @@ export default function Meetings({ user }) {
         </p>
       </div>
 
-      <div className="apple-card" style={{ marginBottom: '24px', padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <Calendar size={24} color="var(--apple-text-secondary)" />
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <label htmlFor="meeting-date" style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>
-            Select Date
-          </label>
-          <input 
-            type="date" 
-            id="meeting-date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '12px',
-              border: '1px solid var(--apple-border)',
-              background: 'var(--apple-bg-secondary)',
-              color: 'var(--apple-text-primary)',
-              fontSize: '1rem',
-              fontFamily: 'inherit',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          />
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      <div className="apple-card" style={{ marginBottom: '24px', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Calendar size={24} color="var(--apple-text-secondary)" />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <label htmlFor="meeting-date" style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>
+              Select Date
+            </label>
+            <input 
+              type="date" 
+              id="meeting-date"
+              value={selectedDate}
+              onChange={handleDateChange}
+              style={{
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: '1px solid var(--apple-border)',
+                background: 'var(--apple-bg-secondary)',
+                color: 'var(--apple-text-primary)',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            />
+          </div>
         </div>
+        
+        <button
+          onClick={fetchMeetings}
+          disabled={loading}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 16px',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'var(--apple-accent-blue)',
+            color: 'white',
+            fontWeight: '600',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+            transition: 'all 0.2s ease',
+            minWidth: '150px',
+            justifyContent: 'center'
+          }}
+        >
+          <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          {loading ? 'Fetching...' : 'Fetch Meetings'}
+        </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>

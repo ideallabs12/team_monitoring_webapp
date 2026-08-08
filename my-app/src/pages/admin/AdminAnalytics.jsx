@@ -53,10 +53,9 @@ export default function AdminAnalytics() {
 
   const currentDateStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  // Memberships derived from profiles (team_id field)
   const memberships = useMemo(() => {
     return profiles
-      .filter(p => p.team_id)
+      .filter(p => p.team_id && !p.is_deactivated)
       .map(p => ({
         user_id: p.id,
         team_id: p.team_id,
@@ -188,9 +187,8 @@ export default function AdminAnalytics() {
     }
   }
 
-  // ── BASE DERIVED DATA ───────────────────────────────────────────
   const nonAdminProfiles = useMemo(
-    () => profiles.filter(p => p.platform_role !== 'admin' && !p.exclude_from_analytics),
+    () => profiles.filter(p => p.platform_role !== 'admin' && !p.exclude_from_analytics && !p.is_deactivated),
     [profiles]
   )
   const activeTeams = useMemo(

@@ -99,8 +99,8 @@ export default function TeamDisReport({ user }) {
       const allMissingData = missingReportsRes.data || []
       const holidayFlag = holidaysRes.data && holidaysRes.data.length > 0
 
-      // Filter out admins from team members
-      const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin')
+      // Filter out admins and deactivated members
+      const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin' && !p.is_deactivated)
       const memberIds = new Set(nonAdminProfiles.map(p => p.id))
 
       // Only care about reports from our team members

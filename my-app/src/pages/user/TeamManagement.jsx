@@ -119,7 +119,7 @@ export default function TeamManagement({ user }) {
           .eq('team_id', profile.team_id)
         
         if (memError) throw memError
-        const nonAdminMembers = (members || []).filter(m => m.platform_role !== 'admin')
+        const nonAdminMembers = (members || []).filter(m => m.platform_role !== 'admin' && !m.is_deactivated)
         setTeamMembers(nonAdminMembers)
         
         const memberUserIds = nonAdminMembers.map(m => m.id)

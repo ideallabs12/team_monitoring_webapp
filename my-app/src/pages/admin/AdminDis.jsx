@@ -90,7 +90,7 @@ export default function AdminDis() {
       const reportsData = reportsRes.data || []
       const selectedDateReports = selectedDateReportsRes.data || []
 
-      const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin')
+      const nonAdminProfiles = profilesData.filter(p => p.platform_role !== 'admin' && !p.is_deactivated)
 
       const submittedUserIds = new Set(selectedDateReports.map(r => r.user_id))
       const holidayFlag = holidaysRes.data && holidaysRes.data.length > 0

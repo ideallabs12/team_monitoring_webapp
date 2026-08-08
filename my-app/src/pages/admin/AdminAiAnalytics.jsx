@@ -85,13 +85,13 @@ export default function AdminAiAnalytics() {
         }
 
         const [usersRes, teamsRes, revRes, disRes] = await Promise.all([
-          supabase.from('profiles').select('id, first_name, last_name, platform_role'),
+          supabase.from('profiles').select('id, first_name, last_name, platform_role, is_deactivated'),
           supabase.from('teams').select('id, name'),
           supabase.from('monthly_revenues').select('amount, user_id, revenue_month'),
           supabase.from('dis_reports').select('positive_leads, expected_revenue, user_id, report_date')
         ])
 
-        const trends = calculateTrends(revRes.data || [], disRes.data || [], usersRes.data || [])
+        const trends = calculateTrends(revRes.data || [], disRes.data || [], (usersRes.data || []).filter(u => !u.is_deactivated))
         
         setAnalyticsStory({
           ...trends,
