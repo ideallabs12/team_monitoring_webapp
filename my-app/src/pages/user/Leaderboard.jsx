@@ -98,8 +98,9 @@ export default function Leaderboard({ user }) {
     return ranked
   }, [revenues, profiles])
 
-  const topIndividual = individualRankings.length > 0 ? individualRankings[0] : null
-  const topIndividualTeam = topIndividual ? teams.find(t => t.id === topIndividual.team_id) : null
+  const topIndividuals = individualRankings.length > 0 
+    ? individualRankings.filter(p => p.total === individualRankings[0].total) 
+    : []
 
   // Team Rankings
   const teamRankings = useMemo(() => {
@@ -121,7 +122,9 @@ export default function Leaderboard({ user }) {
     return ranked
   }, [revenues, teams])
 
-  const topTeam = teamRankings.length > 0 && teamRankings[0].total > 0 ? teamRankings[0] : null
+  const topTeams = teamRankings.length > 0 && teamRankings[0].total > 0
+    ? teamRankings.filter(t => t.total === teamRankings[0].total)
+    : []
 
   if (loading) {
     return (
@@ -150,62 +153,99 @@ export default function Leaderboard({ user }) {
       )}
 
       {/* Top Performers Highlight Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px', marginBottom: '40px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '40px' }}>
         
-        {/* Top Individual Card */}
-        <div className="apple-card" style={{ 
-          position: 'relative', overflow: 'hidden', padding: '32px 24px', 
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(18,18,20,0.95) 100%)',
-          border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 8px 32px rgba(245,158,11,0.05)'
-        }}>
-          <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.1, transform: 'rotate(15deg)' }}>
-            <Star size={120} color="#f59e0b" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Award size={20} color="#f59e0b" />
-            <span style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b' }}>Top Individual</span>
-          </div>
-          {topIndividual ? (
-            <>
-              <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', marginBottom: '4px', letterSpacing: '-0.02em' }}>
-                {topIndividual.name}
-              </div>
-              <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', marginBottom: '20px' }}>
-                {topIndividualTeam ? topIndividualTeam.name : 'Unknown Team'}
-              </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80', letterSpacing: '-0.03em' }}>
-                ${topIndividual.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            </>
+        {/* Top Individual Cards */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '24px' }}>
+          {topIndividuals.length > 0 ? (
+            topIndividuals.map((indiv, index) => {
+              const team = teams.find(t => t.id === indiv.team_id)
+              return (
+                <div key={indiv.id} className="apple-card" style={{ 
+                  flex: '1 1 280px',
+                  position: 'relative', overflow: 'hidden', padding: '32px 24px', 
+                  background: 'linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(18,18,20,0.95) 100%)',
+                  border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 8px 32px rgba(245,158,11,0.05)',
+                  display: 'flex', flexDirection: 'column'
+                }}>
+                  <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.1, transform: 'rotate(15deg)' }}>
+                    <Star size={120} color="#f59e0b" />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <Award size={20} color="#f59e0b" />
+                    <span style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b' }}>
+                      Top Individual {topIndividuals.length > 1 ? `(Tie)` : ''}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', marginBottom: '4px', letterSpacing: '-0.02em' }}>
+                    {indiv.name}
+                  </div>
+                  <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', marginBottom: '20px' }}>
+                    {team ? team.name : 'Unknown Team'}
+                  </div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80', letterSpacing: '-0.03em', marginTop: 'auto' }}>
+                    ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              )
+            })
           ) : (
-            <div style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', marginTop: '20px' }}>No revenue logged yet this month.</div>
+            <div className="apple-card" style={{ 
+              flex: '1 1 280px',
+              position: 'relative', overflow: 'hidden', padding: '32px 24px', 
+              background: 'linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(18,18,20,0.95) 100%)',
+              border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 8px 32px rgba(245,158,11,0.05)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <Award size={20} color="#f59e0b" />
+                <span style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b' }}>Top Individual</span>
+              </div>
+              <div style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', marginTop: '20px' }}>No revenue logged yet this month.</div>
+            </div>
           )}
         </div>
 
-        {/* Top Team Card */}
-        <div className="apple-card" style={{ 
-          position: 'relative', overflow: 'hidden', padding: '32px 24px', 
-          background: 'linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(18,18,20,0.95) 100%)',
-          border: '1px solid rgba(96,165,250,0.2)', boxShadow: '0 8px 32px rgba(96,165,250,0.05)'
-        }}>
-          <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.1, transform: 'rotate(-10deg)' }}>
-            <Users size={120} color="#60a5fa" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <TrendingUp size={20} color="#60a5fa" />
-            <span style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#60a5fa' }}>Top Team</span>
-          </div>
-          {topTeam ? (
-            <>
-              <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', marginBottom: '24px', letterSpacing: '-0.02em' }}>
-                {topTeam.name}
+        {/* Top Team Cards */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '24px' }}>
+          {topTeams.length > 0 ? (
+            topTeams.map((team, index) => (
+              <div key={team.id} className="apple-card" style={{ 
+                flex: '1 1 280px',
+                position: 'relative', overflow: 'hidden', padding: '32px 24px', 
+                background: 'linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(18,18,20,0.95) 100%)',
+                border: '1px solid rgba(96,165,250,0.2)', boxShadow: '0 8px 32px rgba(96,165,250,0.05)',
+                display: 'flex', flexDirection: 'column'
+              }}>
+                <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.1, transform: 'rotate(-10deg)' }}>
+                  <Users size={120} color="#60a5fa" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <TrendingUp size={20} color="#60a5fa" />
+                  <span style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#60a5fa' }}>
+                    Top Team {topTeams.length > 1 ? `(Tie)` : ''}
+                  </span>
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff', marginBottom: '24px', letterSpacing: '-0.02em' }}>
+                  {team.name}
+                </div>
+                <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80', letterSpacing: '-0.03em', marginTop: 'auto' }}>
+                  ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80', letterSpacing: '-0.03em' }}>
-                ${topTeam.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            </>
+            ))
           ) : (
-            <div style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', marginTop: '20px' }}>No revenue logged yet this month.</div>
+            <div className="apple-card" style={{ 
+              flex: '1 1 280px',
+              position: 'relative', overflow: 'hidden', padding: '32px 24px', 
+              background: 'linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(18,18,20,0.95) 100%)',
+              border: '1px solid rgba(96,165,250,0.2)', boxShadow: '0 8px 32px rgba(96,165,250,0.05)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <TrendingUp size={20} color="#60a5fa" />
+                <span style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#60a5fa' }}>Top Team</span>
+              </div>
+              <div style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', marginTop: '20px' }}>No revenue logged yet this month.</div>
+            </div>
           )}
         </div>
 

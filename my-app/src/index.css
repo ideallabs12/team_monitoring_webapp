@@ -3131,3 +3131,174 @@ select.apple-input {
     background: transparent !important;
   }
 }
+
+/* =====================================================
+   SPEAKER CRM THEME SUPPORT
+   Dark mode (default) — maps light-coded inline colors
+   to dark equivalents using CSS custom properties.
+   ===================================================== */
+:root {
+  --crm-bg: #161617;
+  --crm-card: #1c1c1e;
+  --crm-card-hover: #252528;
+  --crm-border: rgba(255,255,255,0.08);
+  --crm-border-strong: rgba(255,255,255,0.16);
+  --crm-text: #f5f5f7;
+  --crm-text-secondary: #86868b;
+  --crm-text-muted: #64748b;
+  --crm-input-bg: #1c1c1e;
+  --crm-input-border: rgba(255,255,255,0.12);
+  --crm-table-header-bg: #1c1c1e;
+  --crm-row-hover: rgba(255,255,255,0.04);
+  --crm-section-bg: #161617;
+  --crm-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+[data-theme="light"] {
+  --crm-bg: #ffffff;
+  --crm-card: #ffffff;
+  --crm-card-hover: #f8fafc;
+  --crm-border: #e2e8f0;
+  --crm-border-strong: #cbd5e1;
+  --crm-text: #0f172a;
+  --crm-text-secondary: #475569;
+  --crm-text-muted: #64748b;
+  --crm-input-bg: #ffffff;
+  --crm-input-border: #cbd5e1;
+  --crm-table-header-bg: #f8fafc;
+  --crm-row-hover: #f8fafc;
+  --crm-section-bg: #f8fafc;
+  --crm-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+/* CRM Page Containers */
+.crm-page {
+  color: var(--crm-text);
+}
+
+/* CRM Cards, sections, and panels */
+.crm-page div[style*="background: #ffffff"],
+.crm-page div[style*="background: rgb(255, 255, 255)"] {
+  background: var(--crm-card) !important;
+  border-color: var(--crm-border) !important;
+}
+
+.crm-page div[style*="background: #f8fafc"],
+.crm-page div[style*="background: rgb(248, 250, 252)"] {
+  background: var(--crm-section-bg) !important;
+  border-color: var(--crm-border) !important;
+}
+
+/* CRM heading text */
+.crm-page h1, .crm-page h2, .crm-page h3 {
+  color: var(--crm-text) !important;
+}
+
+/* CRM labels */
+.crm-page label {
+  color: var(--crm-text-secondary) !important;
+}
+
+/* CRM inputs, selects, textareas */
+.crm-page input,
+.crm-page select,
+.crm-page textarea {
+  background: var(--crm-input-bg) !important;
+  border-color: var(--crm-input-border) !important;
+  color: var(--crm-text) !important;
+}
+
+.crm-page input::placeholder,
+.crm-page textarea::placeholder {
+  color: var(--crm-text-muted) !important;
+}
+
+/* CRM table */
+.crm-page table {
+  color: var(--crm-text);
+}
+
+.crm-page thead tr {
+  background: var(--crm-table-header-bg) !important;
+  border-color: var(--crm-border) !important;
+}
+
+.crm-page thead th {
+  color: var(--crm-text-secondary) !important;
+}
+
+.crm-page tbody tr {
+  border-color: var(--crm-border) !important;
+}
+
+.crm-page tbody td {
+  color: var(--crm-text) !important;
+}
+
+/* CRM body text overrides */
+.crm-page p {
+  color: var(--crm-text-muted) !important;
+}
+
+/* CRM owner/info banner */
+.crm-page div[style*="border: 1px solid #e2e8f0"],
+.crm-page div[style*="border: 1px solid rgb(226, 232, 240)"] {
+  border-color: var(--crm-border) !important;
+}
+
+/* Activity timeline entries */
+.crm-page div[style*="border-left: 3px solid #e2e8f0"] {
+  border-left-color: var(--crm-border) !important;
+}
+
+/* Section backgrounds for locked stages */
+.crm-page div[style*="background: #fffbe6"],
+.crm-page div[style*="background: rgb(255, 251, 230)"] {
+  background: rgba(234, 179, 8, 0.08) !important;
+  border-color: rgba(234, 179, 8, 0.2) !important;
+  color: var(--crm-text) !important;
+}
+
+/* CRM info banners */
+.crm-page div[style*="background: #f0fdf4"],
+.crm-page div[style*="background: rgb(240, 253, 244)"] {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.crm-page div[style*="background: #eff6ff"],
+.crm-page div[style*="background: rgb(239, 246, 255)"] {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Connected From company badge in table */
+.crm-page span[style*="background: #f1f5f9"] {
+  background: var(--crm-section-bg) !important;
+  border-color: var(--crm-border) !important;
+  color: var(--crm-text-secondary) !important;
+}
+
+/* Owner banner */
+.crm-page div[style*="background: #f0f9ff"],
+.crm-page div[style*="background: rgb(240, 249, 255)"] {
+  background: rgba(37, 99, 235, 0.06) !important;
+  border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.crm-page div[style*="background: #fef2f2"],
+.crm-page div[style*="background: rgb(254, 242, 242)"] {
+  background: rgba(239, 68, 68, 0.06) !important;
+  border-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Reassign modal */
+.crm-page div[style*="background: rgba(0,0,0,0.5)"],
+.crm-page div[style*="background: rgba(0, 0, 0, 0.5)"] {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.crm-page div[style*="background: #ffffff"][style*="borderRadius: '20px'"],
+.crm-page div[style*="background: #ffffff"][style*="border-radius: 20px"] {
+  background: var(--crm-card) !important;
+}

@@ -60,6 +60,7 @@ export default function Navbar({ user }) {
 
   const navLinks = [
     { to: '/home', label: 'Home' },
+    { to: '/crm/speakers', label: 'Speakers CRM' },
     { to: '/announcements', label: 'Announcements' },
     { to: '/virtual-events', label: 'Virtual Events' },
     { to: '/team', label: 'Team' }

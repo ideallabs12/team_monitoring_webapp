@@ -111,6 +111,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   // Build nav links based on profile
   const navLinks = [
     { path: '/home', label: 'Home', icon: Home },
+    { path: '/crm/speakers', label: 'Speakers CRM', icon: Users },
   ]
   
   navLinks.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
@@ -131,7 +132,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     navLinks.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
   }
   
-  navLinks.push({ path: '/leaves', label: 'Leaves', icon: Calendar })
+
 
 
   const othersLinks = [

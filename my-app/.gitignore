@@ -59,3 +59,7 @@ check_rpc.js
 enable_tech_attendance.sql
 milestone_rpc.sql
 update_leaderboard_rpc.sql
+remove_hr_and_leaves.sql
+speakers_crm_schema.sql
+speakers_crm_v2_migration.sql
+speakers_crm_v3_workflow.sql

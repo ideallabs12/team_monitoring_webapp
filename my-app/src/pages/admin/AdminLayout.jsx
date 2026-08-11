@@ -46,7 +46,7 @@ const NAV_ITEMS = [
   { path: '/admin/auditlogs',   label: 'Audit Logs',     icon: ClipboardList },
   { path: '/admin/attendance',  label: 'Attendance',     icon: MapPin },
   { path: '/admin/announcements',label: 'Announcements', icon: Megaphone },
-  { path: '/admin/leaves',      label: 'Leaves',         icon: Calendar },
+
   { path: '/admin/export-data', label: 'Export Data',    icon: Download },
   { path: '/admin/virtual-events', label: 'Virtual Events', icon: Video },
   { path: '/admin/settings',    label: 'Settings',       icon: Settings },
