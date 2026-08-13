@@ -411,10 +411,17 @@ export default function RevenueHistory({ user }) {
                       >
                         <td style={{ padding: '16px 20px', color: 'var(--apple-text-secondary)', fontSize: '0.88rem', whiteSpace: 'nowrap' }}>
                           <div style={{ fontWeight: '600', color: '#fff' }}>{formatRevenueMonth(monthStr)}</div>
+                          {record.created_at && (
+                            <div style={{ fontSize: '0.72rem', marginTop: '4px', opacity: 0.8 }}>
+                              {new Date(record.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                          )}
                           {isHistorical && (
-                            <span style={{ fontSize: '0.62rem', background: 'rgba(255,159,10,0.12)', color: '#ff9f0a', border: '1px solid rgba(255,159,10,0.25)', borderRadius: '4px', padding: '1px 5px', fontWeight: '700' }}>
-                              HISTORICAL
-                            </span>
+                            <div style={{ marginTop: '4px' }}>
+                              <span style={{ fontSize: '0.62rem', background: 'rgba(255,159,10,0.12)', color: '#ff9f0a', border: '1px solid rgba(255,159,10,0.25)', borderRadius: '4px', padding: '1px 5px', fontWeight: '700' }}>
+                                HISTORICAL
+                              </span>
+                            </div>
                           )}
                         </td>
                         <td style={{ padding: '16px 20px', fontWeight: '600', color: '#fff', fontSize: '0.9rem' }}>
@@ -474,12 +481,17 @@ export default function RevenueHistory({ user }) {
                   <div key={record.id} className="apple-mobile-list-item">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                           <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.95rem' }}>{formatRevenueMonth(monthStr)}</div>
                           {isHistorical && (
                             <span style={{ fontSize: '0.6rem', background: 'rgba(255,159,10,0.12)', color: '#ff9f0a', border: '1px solid rgba(255,159,10,0.25)', borderRadius: '4px', padding: '1px 5px', fontWeight: '700' }}>HISTORICAL</span>
                           )}
                         </div>
+                        {record.created_at && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>
+                            Logged: {new Date(record.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        )}
                         <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', fontWeight: '600' }}>{record.teams?.name || '—'}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>
                           {record.week_number ? `Week ${record.week_number}` : 'No Week'} ·{' '}

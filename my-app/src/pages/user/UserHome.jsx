@@ -137,12 +137,11 @@ export default function UserHome({ user, isAdminView }) {
       if (!user) return
 
       try {
-        const [profileRes, revRes, reportsRes, annRes, revLogsRes, targetsRes] = await Promise.all([
+        const [profileRes, revRes, reportsRes, annRes, targetsRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
           supabase.from('monthly_revenues').select('*').eq('user_id', user.id),
           supabase.from('dis_reports').select('*').eq('user_id', user.id).order('report_date', { ascending: false }).limit(5),
           supabase.from('announcements').select('*').eq('status', 'published').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(1),
-          supabase.from('revenue_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
           supabase.from('monthly_targets').select('*').eq('user_id', user.id)
         ])
         
@@ -177,11 +176,6 @@ export default function UserHome({ user, isAdminView }) {
         if (reportsRes.data) {
           setDisReports(reportsRes.data)
           globalHomeCache.disReports = reportsRes.data
-        }
-
-        if (revLogsRes.data) {
-          setRevenueLogs(revLogsRes.data)
-          globalHomeCache.revenueLogs = revLogsRes.data
         }
 
         if (targetsRes.data) {
@@ -259,6 +253,10 @@ export default function UserHome({ user, isAdminView }) {
     }).reverse() // Reverse so left to right = oldest to newest
   }, [userTargets, userRevenues, userTeams, user])
 
+  const recentRevenues = useMemo(() => {
+    return [...userRevenues].sort((a, b) => new Date(b.created_at || b.revenue_month) - new Date(a.created_at || a.revenue_month)).slice(0, 5)
+  }, [userRevenues])
+
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading your dashboard...</div>
 
   return (
@@ -325,11 +323,8 @@ export default function UserHome({ user, isAdminView }) {
         )}
       </div>
 
-      {/* Main Layout Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '24px' }}>
-        
-        {/* Left Column: Charts and Announcements */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Middle Section: Charts and Announcements */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
           
           {profile?.has_revenue_logging !== false && (
             <div className="apple-card" style={{ height: '360px', display: 'flex', flexDirection: 'column' }}>
@@ -427,22 +422,22 @@ export default function UserHome({ user, isAdminView }) {
 
         </div>
 
-        {/* Right Column: Activity Feeds */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Bottom Section: Activity Feeds */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
           
           {profile?.has_revenue_logging !== false && (
             <div className="apple-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h2 className="apple-title-small" style={{ margin: 0 }}>Recent Revenue</h2>
                 {!isAdminView && (
-                  <Link to="/revenue" className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                  <Link to="/revenue" className="apple-btn apple-btn-primary" style={{ padding: '6px 12px', fontSize: '0.85rem', position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
                     + Log Revenue
                   </Link>
                 )}
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {revenueLogs.length > 0 ? revenueLogs.map(log => (
+                {recentRevenues.length > 0 ? recentRevenues.map(log => (
                   <div key={log.id} style={{ 
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '12px', borderRadius: '12px',
@@ -450,10 +445,10 @@ export default function UserHome({ user, isAdminView }) {
                   }}>
                     <div>
                       <div style={{ color: '#fff', fontWeight: '600', fontSize: '0.9rem', marginBottom: '2px' }}>
-                        {log.details || 'Revenue Entry'}
+                        {log.client_name || log.source || 'Revenue Entry'}
                       </div>
                       <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.75rem' }}>
-                        {new Date(log.created_at).toLocaleDateString()}
+                        {log.created_at ? new Date(log.created_at).toLocaleDateString() : log.revenue_month}
                       </div>
                     </div>
                     <div style={{ color: 'var(--apple-accent-green)', fontWeight: '700', fontSize: '1rem' }}>
@@ -474,7 +469,7 @@ export default function UserHome({ user, isAdminView }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h2 className="apple-title-small" style={{ margin: 0 }}>Recent DIS Reports</h2>
                 {!isAdminView && (
-                  <Link to="/dis" className="apple-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                  <Link to="/dis" className="apple-btn apple-btn-primary" style={{ padding: '6px 12px', fontSize: '0.85rem', position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
                     + Submit DIS
                   </Link>
                 )}
@@ -511,8 +506,6 @@ export default function UserHome({ user, isAdminView }) {
           )}
 
         </div>
-
-      </div>
     </div>
   )
 }
