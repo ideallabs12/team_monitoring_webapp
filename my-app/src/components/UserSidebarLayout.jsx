@@ -127,8 +127,8 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   navLinks.push({ path: '/profile', label: 'Profile', icon: UserIcon })
   navLinks.push({ path: '/settings', label: 'Settings', icon: SettingsIcon })
 
-  const isAttendanceEnabled = profile?.teams?.attendance_enabled === true;
-  if (isAttendanceEnabled) {
+  const isAdmin = profile?.platform_role?.toLowerCase() === 'admin';
+  if (isAdmin) {
     navLinks.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
   }
   

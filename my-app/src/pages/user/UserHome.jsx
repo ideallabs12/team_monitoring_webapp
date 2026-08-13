@@ -8,7 +8,7 @@ import {
   formatRevenueMonthShort,
   getEffectiveTargetAmount
 } from '../../utils/revenueUtils'
-import AttendanceWidget from '../../components/AttendanceWidget'
+
 
 
 let globalHomeCache = {
@@ -164,12 +164,6 @@ export default function UserHome({ user, isAdminView }) {
       {/* Main Grid Wrapper */}
       <div className="apple-responsive-grid">
         
-        {/* TOP FULL-WIDTH: Attendance Widget */}
-        {!isAdminView && (
-          <div style={{ gridColumn: '1 / -1' }}>
-            <AttendanceWidget user={user} compact={true} />
-          </div>
-        )}
 
         {/* LEFT COLUMN: Profile & Teams Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

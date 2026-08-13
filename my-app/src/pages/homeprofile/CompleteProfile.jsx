@@ -15,6 +15,12 @@ export default function CompleteProfile({ user, onComplete }) {
   const [teams, setTeams] = useState([])
   const [selectedTeamId, setSelectedTeamId] = useState('') // Single team selection
   
+  const [jobTitle, setJobTitle] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [dateOfJoining, setDateOfJoining] = useState('')
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(null)
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -48,6 +54,27 @@ export default function CompleteProfile({ user, onComplete }) {
     }
 
     try {
+      let uploadedAvatarUrl = null;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile);
+          
+        if (uploadError) {
+          setError('Failed to upload profile picture: ' + uploadError.message);
+          setLoading(false);
+          return;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+          
+        uploadedAvatarUrl = publicUrl;
+      }
+
       const profileData = {
         id: user.id,
         first_name: firstName,
@@ -59,7 +86,11 @@ export default function CompleteProfile({ user, onComplete }) {
         has_revenue_logging: true,
         has_dis_reporting: true,
         profile_completed: true,
-        is_deactivated: true
+        is_deactivated: true,
+        job_title: jobTitle || null,
+        date_of_birth: dateOfBirth || null,
+        date_of_joining: dateOfJoining || null,
+        avatar_url: uploadedAvatarUrl || null
       };
 
       // 1. Insert/Update Profile with team_id
@@ -109,6 +140,30 @@ export default function CompleteProfile({ user, onComplete }) {
 
         <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
           
+          <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Profile Picture (Optional)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Preview" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--apple-border)' }} />
+              ) : (
+                <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--apple-border)', color: 'var(--text-secondary)' }}>
+                  No Image
+                </div>
+              )}
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setAvatarFile(e.target.files[0])
+                    setAvatarPreview(URL.createObjectURL(e.target.files[0]))
+                  }
+                }}
+                style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}
+              />
+            </div>
+          </div>
+          
           <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>First Name</label>
@@ -151,15 +206,53 @@ export default function CompleteProfile({ user, onComplete }) {
               placeholder="+1 234 567 8900"
               required
               style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)',
-                background: 'rgba(15, 23, 42, 0.5)',
-                color: '#fff',
-                fontSize: '1rem'
+                width: '100%', padding: '12px', borderRadius: '8px',
+                border: '1px solid var(--border-color)', background: 'rgba(15, 23, 42, 0.5)', color: '#fff', fontSize: '1rem'
               }}
             />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+              Role / Job Title (Optional)
+            </label>
+            <input 
+              type="text" 
+              value={jobTitle}
+              onChange={(e) => setJobTitle(e.target.value)}
+              placeholder="e.g. Sales Executive"
+              style={{
+                width: '100%', padding: '12px', borderRadius: '8px',
+                border: '1px solid var(--border-color)', background: 'rgba(15, 23, 42, 0.5)', color: '#fff', fontSize: '1rem'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Date of Birth (Optional)</label>
+              <input 
+                type="date" 
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '8px',
+                  border: '1px solid var(--border-color)', background: 'rgba(15, 23, 42, 0.5)', color: '#fff', fontSize: '1rem'
+                }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Date of Joining (Optional)</label>
+              <input 
+                type="date" 
+                value={dateOfJoining}
+                onChange={(e) => setDateOfJoining(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '8px',
+                  border: '1px solid var(--border-color)', background: 'rgba(15, 23, 42, 0.5)', color: '#fff', fontSize: '1rem'
+                }}
+              />
+            </div>
           </div>
 
           <div style={{ marginBottom: '20px' }}>

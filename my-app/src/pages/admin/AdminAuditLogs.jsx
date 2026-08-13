@@ -172,11 +172,22 @@ export default function AdminAuditLogs() {
   const renderDetails = (log) => {
     const { action_type, details } = log
     if (!details) return null
+    
+    // Helper to format log.created_at to DD-MM-YYYY
+    const formatLogDate = () => {
+      if (!log.created_at) return '';
+      const d = new Date(log.created_at);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
     if (action_type === 'revenue_added') {
-      return `Added $${details.amount} for ${details.revenue_month}`
+      return `Added $${details.amount} on ${formatLogDate()}`
     }
     if (action_type === 'revenue_updated') {
-      return `Updated revenue to $${details.new_amount} for ${details.revenue_month}`
+      return `Updated revenue to $${details.new_amount} on ${formatLogDate()}`
     }
     if (action_type === 'login') {
       const dev = details.device ? ` from ${details.device}` : ''

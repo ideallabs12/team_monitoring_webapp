@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin, Calendar, LayoutGrid, List } from 'lucide-react'
+import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin, Calendar, LayoutGrid, List, Star } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import UserRevenue from '../user/UserRevenue'
 
@@ -21,13 +21,32 @@ export default function AdminUsers() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterRole, setFilterRole] = useState('all')
   const [filterGender, setFilterGender] = useState('all')
-  const [viewMode, setViewMode] = useState('rows') // 'rows' | 'cards'
+  const [viewMode, setViewMode] = useState('cards') // 'rows' | 'cards'
 
   // Profile Detail View State
   const [viewingProfileUser, setViewingProfileUser] = useState(null)
   const [activeTab, setActiveTab] = useState('profile')
   const [userDisReports, setUserDisReports] = useState([])
   const [loadingDis, setLoadingDis] = useState(false)
+
+  const handleOpenProfile = async (targetUser) => {
+    setViewingProfileUser(targetUser)
+    if (user?.id) {
+      try {
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action_type: 'admin_page_view',
+          details: {
+            page_name: `Profile: ${targetUser.first_name} ${targetUser.last_name}`,
+            target_user_id: targetUser.id,
+            target_email: targetUser.email
+          }
+        })
+      } catch (e) {
+        console.error('Error logging profile view:', e)
+      }
+    }
+  }
 
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -632,30 +651,43 @@ export default function AdminUsers() {
         <div className="apple-card" style={{ padding: '24px', marginBottom: '28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
             <div style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '12px',
+              width: '64px',
+              height: '64px',
+              borderRadius: '16px',
               background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '1.25rem',
+              fontSize: '1.5rem',
               fontWeight: 'bold',
-              color: 'white'
+              color: 'white',
+              overflow: 'hidden',
+              flexShrink: 0
             }}>
-              {viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'}
+              {viewingProfileUser.avatar_url ? (
+                <img src={viewingProfileUser.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'
+              )}
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>
+              <h3 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>
                 {viewingProfileUser.first_name} {viewingProfileUser.last_name}
               </h3>
-              <span style={{ fontSize: '0.78rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
-                {viewingProfileUser.platform_role || 'Member'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>
+                  {viewingProfileUser.job_title || viewingProfileUser.platform_role || 'Member'}
+                </span>
+                {viewingProfileUser.job_title && (
+                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', fontWeight: '600', textTransform: 'uppercase' }}>
+                    {viewingProfileUser.platform_role || 'user'}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
                 <Mail size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Email Address
@@ -696,6 +728,20 @@ export default function AdminUsers() {
                   </a>
                 )}
               </div>
+            </div>
+
+            <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                <Calendar size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Date of Birth
+              </div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.date_of_birth ? new Date(viewingProfileUser.date_of_birth).toLocaleDateString() : '—'}</div>
+            </div>
+
+            <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', marginBottom: '2px', fontWeight: '500' }}>
+                <Activity size={12} style={{ marginRight: '6px', verticalAlign: 'middle' }} /> Date of Joining
+              </div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-primary)', fontWeight: '500' }}>{viewingProfileUser.date_of_joining ? new Date(viewingProfileUser.date_of_joining).toLocaleDateString() : '—'}</div>
             </div>
 
           </div>
@@ -743,20 +789,7 @@ export default function AdminUsers() {
                   >
                     Team Lead
                   </button>
-                  <button
-                    onClick={() => handleUpdatePlatformRole('hr')}
-                    disabled={saving || viewingProfileUser.platform_role === 'hr'}
-                    className="apple-btn"
-                    style={{
-                      flex: 1,
-                      background: viewingProfileUser.platform_role === 'hr' ? '#10b981' : 'rgba(255,255,255,0.05)',
-                      color: viewingProfileUser.platform_role === 'hr' ? '#0f172a' : 'var(--apple-text-secondary)',
-                      borderColor: viewingProfileUser.platform_role === 'hr' ? '#10b981' : 'var(--apple-border)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    HR Role
-                  </button>
+
                 </div>
               </div>
 
@@ -1434,13 +1467,23 @@ export default function AdminUsers() {
                             key={user.id}
                             className="watchlist-row"
                             style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', opacity: isDeactivated ? 0.6 : 1, cursor: 'pointer' }}
-                            onClick={() => setViewingProfileUser(user)}
+                            onClick={() => handleOpenProfile(user)}
                           >
-                            <td style={{ padding: '14px 12px', maxWidth: '200px' }}>
-                              <div className="truncate-text" style={{ fontWeight: '600', color: '#fff' }}>
-                                {user.first_name} {user.last_name}
+                            <td style={{ padding: '14px 12px', maxWidth: '250px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{
+                                  width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #0071e3, #30d5c8)', 
+                                  color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem', flexShrink: 0, overflow: 'hidden'
+                                }}>
+                                  {user.avatar_url ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.first_name?.[0]?.toUpperCase()}
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                  <div className="truncate-text" style={{ fontWeight: '600', color: '#fff' }}>
+                                    {user.first_name} {user.last_name}
+                                  </div>
+                                  <div className="truncate-text" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{user.email}</div>
+                                </div>
                               </div>
-                              <div className="truncate-text" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{user.email}</div>
                             </td>
                             <td style={{ padding: '14px 12px' }}>
                               <span style={{
@@ -1503,7 +1546,7 @@ export default function AdminUsers() {
                       <div
                         key={user.id}
                         className="user-mobile-card"
-                        onClick={() => setViewingProfileUser(user)}
+                        onClick={() => handleOpenProfile(user)}
                         style={{
                           padding: '16px',
                           cursor: 'pointer',
@@ -1519,10 +1562,18 @@ export default function AdminUsers() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                          <div style={{
+                            width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #0071e3, #30d5c8)', 
+                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1rem', flexShrink: 0, overflow: 'hidden'
+                          }}>
+                            {user.avatar_url ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.first_name?.[0]?.toUpperCase()}
+                          </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div className="truncate-text" style={{ fontWeight: '600', color: '#fff', fontSize: '1.05rem', marginBottom: '2px' }}>{user.first_name} {user.last_name}</div>
-                            <div className="truncate-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{user.email}</div>
+                            <div className="truncate-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                              {user.job_title ? user.job_title : user.email}
+                            </div>
                           </div>
                           <span style={{ flexShrink: 0, padding: '2px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase', background: user.platform_role === 'admin' ? 'rgba(239,68,68,0.12)' : 'rgba(99,102,241,0.12)', border: user.platform_role === 'admin' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(99,102,241,0.25)', color: user.platform_role === 'admin' ? '#f87171' : '#818cf8' }}>{user.platform_role || 'user'}</span>
                         </div>
@@ -1567,7 +1618,7 @@ export default function AdminUsers() {
                     return (
                       <div
                         key={user.id}
-                        onClick={() => setViewingProfileUser(user)}
+                        onClick={() => handleOpenProfile(user)}
                         style={{
                           position: 'relative',
                           padding: '24px 20px 20px',
@@ -1609,53 +1660,70 @@ export default function AdminUsers() {
                         }} />
 
                         {/* Avatar */}
-                        <div style={{
-                          width: '64px', height: '64px', borderRadius: '50%',
-                          background: gradient,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '1.4rem', fontWeight: '700', color: '#fff',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                          flexShrink: 0,
-                          letterSpacing: '-0.02em'
-                        }}>
-                          {initials}
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <div style={{
+                            width: '110px', height: '110px', borderRadius: '36px',
+                            background: gradient,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '2.5rem', fontWeight: '700', color: '#fff',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                            flexShrink: 0,
+                            letterSpacing: '-0.02em',
+                            overflow: 'hidden',
+                            border: '2px solid rgba(255, 255, 255, 0.1)'
+                          }}>
+                            {user.avatar_url ? (
+                              <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              initials
+                            )}
+                          </div>
+                          {(user.platform_role === 'teamlead' || user.platform_role === 'team lead') && (
+                            <div style={{
+                              position: 'absolute',
+                              bottom: '-6px',
+                              right: '-6px',
+                              background: '#fbbf24',
+                              borderRadius: '50%',
+                              padding: '6px',
+                              boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)',
+                              border: '2px solid rgba(255,255,255,0.1)'
+                            }}>
+                              <Star size={18} color="#fff" fill="#fff" />
+                            </div>
+                          )}
                         </div>
 
                         {/* Name */}
-                        <div style={{ width: '100%' }}>
-                          <div style={{ fontWeight: '700', fontSize: '0.97rem', color: '#fff', lineHeight: 1.3, marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ width: '100%', marginTop: '4px' }}>
+                          <div style={{ fontWeight: '700', fontSize: '1.1rem', color: '#fff', lineHeight: 1.3, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user.first_name} {user.last_name}
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: 'var(--apple-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user.email}
                           </div>
                         </div>
 
                         {/* Badges row */}
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-                          {/* Role badge */}
-                          <span style={{ padding: '3px 9px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', background: roleColor.bg, border: `1px solid ${roleColor.border}`, color: roleColor.text }}>
-                            {user.platform_role || 'user'}
-                          </span>
-
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', marginTop: '4px' }}>
                           {/* Team badge */}
                           {teamName ? (
-                            <span style={{ padding: '3px 9px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '600', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)', color: '#38bdf8', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)', color: '#38bdf8', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {teamName}
                             </span>
                           ) : (
-                            <span style={{ padding: '3px 9px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '500', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '500', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
                               No Team
                             </span>
                           )}
-                        </div>
 
-                        {/* Gender pill (if set) */}
-                        {user.gender && (
-                          <div style={{ fontSize: '0.7rem', color: 'var(--apple-text-secondary)', letterSpacing: '0.03em', textTransform: 'capitalize' }}>
-                            {user.gender === 'male' ? '♂' : user.gender === 'female' ? '♀' : ''} {user.gender}
-                          </div>
-                        )}
+                          {/* Gender pill (if set) */}
+                          {user.gender && (
+                            <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--apple-text-secondary)', textTransform: 'capitalize' }}>
+                              {user.gender === 'male' ? '♂' : user.gender === 'female' ? '♀' : ''} {user.gender}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )
                   })}

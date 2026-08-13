@@ -17,6 +17,7 @@ export default function UserRevenue({ user, isAdminView }) {
   const [revenues, setRevenues] = useState(revenueCache.userId === user?.id ? revenueCache.revenues : [])
   const [teams, setTeams] = useState(revenueCache.userId === user?.id ? revenueCache.teams : [])
   const [loading, setLoading] = useState(revenueCache.userId !== user?.id)
+  const [systemSettings, setSystemSettings] = useState(null)
 
   // Form state
   const [selectedTeam, setSelectedTeam] = useState('')
@@ -56,17 +57,36 @@ export default function UserRevenue({ user, isAdminView }) {
   const [allTeams, setAllTeams] = useState(revenueCache.userId === user?.id ? revenueCache.allTeams : [])
 
   useEffect(() => {
-
     if (user) loadData()
+    
+    const settingsChannel = supabase.channel('user_revenue_system_settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings', filter: 'id=eq.1' }, (payload) => {
+        if (payload.new) {
+          setSystemSettings(prev => ({
+            ...prev,
+            revenue_allow_past: payload.new.revenue_allow_past
+          }))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(settingsChannel)
+    }
   }, [user])
 
   async function loadData() {
     try {
-      const [profileRes, allTeamsRes, revDataRes] = await Promise.all([
+      const [profileRes, allTeamsRes, revDataRes, settingsRes] = await Promise.all([
         supabase.from('profiles').select('team_id, secondary_team_id, has_revenue_logging').eq('id', user.id).single(),
         supabase.from('teams').select('*'),
-        supabase.from('monthly_revenues').select('*, teams(name)').eq('user_id', user.id).order('revenue_month', { ascending: false })
+        supabase.from('monthly_revenues').select('*, teams(name)').eq('user_id', user.id).order('revenue_month', { ascending: false }),
+        supabase.from('system_settings').select('revenue_allow_past').eq('id', 1).single()
       ])
+
+      if (settingsRes.data) {
+        setSystemSettings(settingsRes.data)
+      }
 
       setAllTeams(allTeamsRes.data || [])
 
@@ -249,6 +269,11 @@ export default function UserRevenue({ user, isAdminView }) {
     }
     if (isFutureMonth(selectedYear, selectedMonth)) {
       setMessage({ type: 'error', text: 'Cannot add revenue for a future month.' })
+      return
+    }
+
+    if (isPastMonthCheck && !systemSettings?.revenue_allow_past) {
+      setMessage({ type: 'error', text: 'Cannot add or edit revenue for past months.' })
       return
     }
 
@@ -450,6 +475,16 @@ export default function UserRevenue({ user, isAdminView }) {
               </Link>
             )}
           </div>
+
+          {isPastMonthCheck && !systemSettings?.revenue_allow_past && (
+            <div style={{
+              padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
+              background: 'rgba(255,69,58,0.08)', border: '1px solid var(--apple-accent-red)',
+              color: 'var(--apple-accent-red)', fontSize: '0.88rem', fontWeight: '500'
+            }}>
+              ⏳ Submitting or editing revenue for past months is currently disabled.
+            </div>
+          )}
 
           {teams.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--apple-text-secondary)' }}>
@@ -671,12 +706,12 @@ export default function UserRevenue({ user, isAdminView }) {
 
               {/* Submit Button */}
               {editingRecord ? (
-                <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <button type="submit" disabled={saving || (isPastMonthCheck && !systemSettings?.revenue_allow_past)} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                   <PlusCircle size={20} />
                   {saving ? 'Saving...' : 'Update Contribution'}
                 </button>
               ) : (
-                <button type="submit" disabled={saving} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <button type="submit" disabled={saving || (isPastMonthCheck && !systemSettings?.revenue_allow_past)} className="apple-btn apple-btn-primary" style={{ width: '100%', height: '52px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                   <PlusCircle size={20} />
                   {saving ? 'Saving...' : 'Log Contribution'}
                 </button>

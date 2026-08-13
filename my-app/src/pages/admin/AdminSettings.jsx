@@ -27,6 +27,9 @@ export default function AdminSettings() {
   // DIS settings state
   const [disLocked, setDisLocked] = useState(false)
   const [disAllowPast, setDisAllowPast] = useState(false)
+  
+  // Revenue settings state
+  const [revenueAllowPast, setRevenueAllowPast] = useState(false)
   const [holidays, setHolidays] = useState([])
   
   // New Holiday form
@@ -62,6 +65,7 @@ export default function AdminSettings() {
           setDisLocked(payload.new.dis_locked || false)
           setDisAllowPast(payload.new.dis_allow_past || false)
           setAllowReviewPaste(payload.new.allow_review_paste || false)
+          setRevenueAllowPast(payload.new.revenue_allow_past || false)
         }
       })
       .subscribe()
@@ -89,6 +93,7 @@ export default function AdminSettings() {
         setDisLocked(settingsData.dis_locked || false)
         setDisAllowPast(settingsData.dis_allow_past || false)
         setAllowReviewPaste(settingsData.allow_review_paste || false)
+        setRevenueAllowPast(settingsData.revenue_allow_past || false)
       }
 
       // Load Holidays
@@ -159,6 +164,7 @@ export default function AdminSettings() {
           dis_locked: disLocked,
           dis_allow_past: disAllowPast,
           allow_review_paste: allowReviewPaste,
+          revenue_allow_past: revenueAllowPast,
           updated_at: new Date().toISOString()
         })
         .eq('id', 1)
@@ -593,6 +599,19 @@ export default function AdminSettings() {
                 style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: allowReviewPaste  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
               >
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: allowReviewPaste  ? '16px' : '0px', transition: 'left 150ms ease' }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>Allow Past Revenue Submissions</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Allows users to log or edit revenue for past months.</div>
+              </div>
+              <button
+                onClick={() => setRevenueAllowPast(!revenueAllowPast)}
+                style={{ position: 'relative', display: 'inline-block', width: '40px', minWidth: '40px', height: '24px', minHeight: '24px', borderRadius: '14px', padding: 0, background: revenueAllowPast  ? 'var(--apple-accent-blue)' : 'rgba(150, 150, 150, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 150ms ease', flexShrink: 0 }}
+              >
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: revenueAllowPast  ? '16px' : '0px', transition: 'left 150ms ease' }} />
               </button>
             </div>
 

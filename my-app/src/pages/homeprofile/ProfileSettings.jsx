@@ -15,6 +15,10 @@ let globalProfileCache = {
   lastName: '',
   phone: '',
   email: '',
+  jobTitle: '',
+  dateOfBirth: '',
+  dateOfJoining: '',
+  avatarUrl: null,
   teams: [],
   revenues: []
 }
@@ -29,6 +33,12 @@ export default function ProfileSettings({ user }) {
   const [lastName, setLastName] = useState(globalProfileCache.lastName)
   const [phone, setPhone] = useState(globalProfileCache.phone)
   const [email, setEmail] = useState(globalProfileCache.email)
+  const [jobTitle, setJobTitle] = useState(globalProfileCache.jobTitle)
+  const [dateOfBirth, setDateOfBirth] = useState(globalProfileCache.dateOfBirth)
+  const [dateOfJoining, setDateOfJoining] = useState(globalProfileCache.dateOfJoining)
+  const [avatarUrl, setAvatarUrl] = useState(globalProfileCache.avatarUrl)
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(null)
   const [password, setPassword] = useState('')
 
   // Extra features state
@@ -66,13 +76,26 @@ export default function ProfileSettings({ user }) {
           const fn = profileRes.data.first_name || ''
           const ln = profileRes.data.last_name || ''
           const ph = profileRes.data.phone || ''
+          const jt = profileRes.data.job_title || ''
+          const dob = profileRes.data.date_of_birth || ''
+          const doj = profileRes.data.date_of_joining || ''
+          const au = profileRes.data.avatar_url || null
+
           setFirstName(fn)
           setLastName(ln)
           setPhone(ph)
+          setJobTitle(jt)
+          setDateOfBirth(dob)
+          setDateOfJoining(doj)
+          setAvatarUrl(au)
           
           globalProfileCache.firstName = fn
           globalProfileCache.lastName = ln
           globalProfileCache.phone = ph
+          globalProfileCache.jobTitle = jt
+          globalProfileCache.dateOfBirth = dob
+          globalProfileCache.dateOfJoining = doj
+          globalProfileCache.avatarUrl = au
         }
         if (teamsRes.data) {
           setTeams(teamsRes.data)
@@ -103,11 +126,49 @@ export default function ProfileSettings({ user }) {
     setSaving(true)
     setMessage({ type: '', text: '' })
     try {
+      let uploadedAvatarUrl = avatarUrl;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+          
+        uploadedAvatarUrl = publicUrl;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({ first_name: firstName, last_name: lastName, phone: phone })
+        .update({ 
+          first_name: firstName, 
+          last_name: lastName, 
+          phone: phone,
+          job_title: jobTitle || null,
+          date_of_birth: dateOfBirth || null,
+          date_of_joining: dateOfJoining || null,
+          avatar_url: uploadedAvatarUrl || null
+        })
         .eq('id', user.id)
       if (error) throw error
+
+      setAvatarUrl(uploadedAvatarUrl)
+      setAvatarFile(null)
+      setAvatarPreview(null)
+      
+      globalProfileCache.jobTitle = jobTitle;
+      globalProfileCache.dateOfBirth = dateOfBirth;
+      globalProfileCache.dateOfJoining = dateOfJoining;
+      globalProfileCache.avatarUrl = uploadedAvatarUrl;
+      globalProfileCache.firstName = firstName;
+      globalProfileCache.lastName = lastName;
+      globalProfileCache.phone = phone;
+
       setMessage({ type: 'success', text: 'Personal information updated successfully!' })
     } catch (err) {
       setMessage({ type: 'error', text: err.message })
@@ -173,6 +234,30 @@ export default function ProfileSettings({ user }) {
           <form onSubmit={handleSaveProfile} className="apple-card">
             <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>Personal Information</h3>
             
+            <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {avatarPreview || avatarUrl ? (
+                <img src={avatarPreview || avatarUrl} alt="Avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--apple-border)' }} />
+              ) : (
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--apple-border)', color: 'var(--text-secondary)' }}>
+                  No Image
+                </div>
+              )}
+              <div>
+                <label className="apple-form-label" style={{ marginBottom: '8px' }}>Profile Picture (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setAvatarFile(e.target.files[0])
+                      setAvatarPreview(URL.createObjectURL(e.target.files[0]))
+                    }
+                  }}
+                  style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}
+                />
+              </div>
+            </div>
+
             <div className="apple-two-col-grid" style={{ marginBottom: '16px' }}>
               <div>
                 <label className="apple-form-label">First Name</label>
@@ -194,14 +279,47 @@ export default function ProfileSettings({ user }) {
               </div>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label className="apple-form-label">Phone Number</label>
-              <input 
-                type="tel" 
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="apple-form-control"
-              />
+            <div className="apple-two-col-grid" style={{ marginBottom: '16px' }}>
+              <div>
+                <label className="apple-form-label">Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="apple-form-control"
+                />
+              </div>
+              <div>
+                <label className="apple-form-label">Role / Job Title (Optional)</label>
+                <input 
+                  type="text" 
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g. Sales Executive"
+                  className="apple-form-control"
+                />
+              </div>
+            </div>
+            
+            <div className="apple-two-col-grid" style={{ marginBottom: '24px' }}>
+              <div>
+                <label className="apple-form-label">Date of Birth (Optional)</label>
+                <input 
+                  type="date" 
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="apple-form-control"
+                />
+              </div>
+              <div>
+                <label className="apple-form-label">Date of Joining (Optional)</label>
+                <input 
+                  type="date" 
+                  value={dateOfJoining}
+                  onChange={(e) => setDateOfJoining(e.target.value)}
+                  className="apple-form-control"
+                />
+              </div>
             </div>
             
             <button type="submit" className="apple-btn apple-btn-primary" disabled={saving}>
