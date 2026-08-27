@@ -484,7 +484,7 @@ export default function AdminHome() {
         /* Responsive Grid layouts */
         .admin-stats-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 16px;
           margin-bottom: 24px;
           width: 100%;
@@ -737,13 +737,7 @@ export default function AdminHome() {
           change={momChange}
           pulse
         />
-        <StatCard
-          label={`TOP SALES EXEC (${new Date().toLocaleString('en-US', { month: 'long' }).toUpperCase()})`}
-          value={topSalesExecutive ? fmtCompact(topSalesExecutive.revenue) : '$0'}
-          sub={topSalesExecutive ? `${topSalesExecutive.name} • ${topSalesExecutive.calls} call logs` : 'No call logs this month'}
-          color="var(--apple-accent-green)"
-          icon={PhoneCall}
-        />
+
         <StatCard
           label="DIS COMPLIANCE"
           value={`${compliancePct}%`}
