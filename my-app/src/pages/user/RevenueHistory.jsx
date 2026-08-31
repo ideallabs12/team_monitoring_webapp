@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { normalizeMonth, formatRevenueMonth, MONTH_NAMES } from '../../utils/revenueUtils'
+import { normalizeMonth, formatRevenueMonth, MONTH_NAMES, parseRevenueMonth } from '../../utils/revenueUtils'
 import { Search, TrendingUp, Filter, ChevronDown, X, Edit2, Trash2 } from 'lucide-react'
 
 const SOURCE_OPTIONS = ['All', 'Instagram', 'Facebook', 'TikTok', 'Twitter', 'LinkedIn', 'Email Marketing', 'Organic Search', 'Referral', 'Website', 'Other', 'Unknown']
@@ -56,7 +56,7 @@ export default function RevenueHistory({ user }) {
 
   // Derive filter option lists from data
   const availableYears = useMemo(() => {
-    const years = [...new Set(revenues.map(r => new Date(normalizeMonth(r.revenue_month)).getFullYear()))]
+    const years = [...new Set(revenues.map(r => parseRevenueMonth(normalizeMonth(r.revenue_month)).getFullYear()))]
     return years.sort((a, b) => b - a)
   }, [revenues])
 
@@ -70,10 +70,10 @@ export default function RevenueHistory({ user }) {
     let list = [...revenues]
 
     if (filterYear !== 'All') {
-      list = list.filter(r => new Date(normalizeMonth(r.revenue_month)).getFullYear() === Number(filterYear))
+      list = list.filter(r => parseRevenueMonth(normalizeMonth(r.revenue_month)).getFullYear() === Number(filterYear))
     }
     if (filterMonth !== 'All') {
-      list = list.filter(r => new Date(normalizeMonth(r.revenue_month)).getMonth() === Number(filterMonth))
+      list = list.filter(r => parseRevenueMonth(normalizeMonth(r.revenue_month)).getMonth() === Number(filterMonth))
     }
     if (filterTeam !== 'All') {
       list = list.filter(r => r.team_id === filterTeam)
@@ -104,8 +104,8 @@ export default function RevenueHistory({ user }) {
 
     // Sort
     list.sort((a, b) => {
-      if (sortBy === 'date_desc') return new Date(b.revenue_month) - new Date(a.revenue_month)
-      if (sortBy === 'date_asc') return new Date(a.revenue_month) - new Date(b.revenue_month)
+      if (sortBy === 'date_desc') return parseRevenueMonth(normalizeMonth(b.revenue_month)) - parseRevenueMonth(normalizeMonth(a.revenue_month))
+      if (sortBy === 'date_asc') return parseRevenueMonth(normalizeMonth(a.revenue_month)) - parseRevenueMonth(normalizeMonth(b.revenue_month))
       if (sortBy === 'amount_desc') return Number(b.amount) - Number(a.amount)
       if (sortBy === 'amount_asc') return Number(a.amount) - Number(b.amount)
       return 0

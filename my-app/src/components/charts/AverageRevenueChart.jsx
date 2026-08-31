@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
-import { normalizeMonth, getLastNMonths, MONTH_NAMES, sumRevenues } from '../../utils/revenueUtils'
+import { normalizeMonth, getLastNMonths, MONTH_NAMES, sumRevenues, parseRevenueMonth } from '../../utils/revenueUtils'
 
 const PERIOD_OPTIONS = [
   { label: '2M', value: 2 },
@@ -30,7 +30,7 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
     return months.map(monthStr => {
       const monthRevs = revenues.filter(r => normalizeMonth(r.revenue_month) === monthStr)
       const total = sumRevenues(monthRevs)
-      const d = new Date(monthStr)
+      const d = parseRevenueMonth(monthStr)
       const shortLabel = MONTH_NAMES[d.getMonth()].substring(0, 3)
       const fullLabel = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`
 
@@ -185,9 +185,14 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
                 </filter>
               </defs>
               <XAxis
-                dataKey="label"
+                dataKey="month"
                 stroke="transparent"
                 tick={{ fill: 'var(--apple-text-secondary)', fontSize: '0.78rem', fontWeight: '500' }}
+                tickFormatter={(val) => {
+                  if (!val) return '';
+                  const [y, m] = val.split('-');
+                  return MONTH_NAMES[parseInt(m, 10) - 1].substring(0, 3);
+                }}
                 tickLine={false}
                 axisLine={false}
                 dy={10}
