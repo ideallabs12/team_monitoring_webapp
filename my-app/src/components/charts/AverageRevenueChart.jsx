@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
-import { normalizeMonth, getLastNMonths, MONTH_NAMES, sumRevenues, parseRevenueMonth } from '../../utils/revenueUtils'
+import { normalizeMonth, getLastNCompletedMonths, getLastNMonths, MONTH_NAMES, sumRevenues, parseRevenueMonth } from '../../utils/revenueUtils'
 
 const PERIOD_OPTIONS = [
   { label: '2M', value: 2 },
@@ -12,18 +12,19 @@ const PERIOD_OPTIONS = [
 
 export default function AverageRevenueChart({ revenues = [], title = "Performance Trend" }) {
   const [selectedPeriod, setSelectedPeriod] = useState(6)
+  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(false)
 
   // Build monthly trend data
   const chartData = useMemo(() => {
     let months
     if (selectedPeriod > 0) {
-      months = getLastNMonths(selectedPeriod).reverse()
+      months = (includeCurrentMonth ? getLastNMonths(selectedPeriod) : getLastNCompletedMonths(selectedPeriod)).reverse()
     } else {
       // All time: collect unique months from revenues, sorted ascending
       const uniqueMonths = [...new Set(revenues.map(r => normalizeMonth(r.revenue_month)))]
       months = uniqueMonths.sort()
       if (months.length === 0) {
-        months = getLastNMonths(6).reverse()
+        months = (includeCurrentMonth ? getLastNMonths(6) : getLastNCompletedMonths(6)).reverse()
       }
     }
 
@@ -41,7 +42,7 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
         revenue: Number(total.toFixed(2))
       }
     })
-  }, [revenues, selectedPeriod])
+  }, [revenues, selectedPeriod, includeCurrentMonth])
 
   // Determine trend direction for color
   const trendInfo = useMemo(() => {
@@ -130,38 +131,61 @@ export default function AverageRevenueChart({ revenues = [], title = "Performanc
           )}
         </div>
 
-        {/* Period selector tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '2px',
-          background: 'var(--apple-bg)',
-          borderRadius: '10px',
-          padding: '3px',
-          border: '1px solid var(--apple-border)'
-        }}>
-          {PERIOD_OPTIONS.map(p => {
-            const isActive = selectedPeriod === p.value
-            return (
-              <button
-                key={p.value}
-                onClick={() => setSelectedPeriod(p.value)}
-                style={{
-                  padding: '6px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: isActive ? 'rgba(0, 113, 227, 0.25)' : 'transparent',
-                  color: isActive ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
-                  fontSize: '0.8rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  letterSpacing: '0.02em'
-                }}
-              >
-                {p.label}
-              </button>
-            )
-          })}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          {/* Period selector tabs */}
+          <div style={{
+            display: 'flex',
+            gap: '2px',
+            background: 'var(--apple-bg)',
+            borderRadius: '10px',
+            padding: '3px',
+            border: '1px solid var(--apple-border)'
+          }}>
+            {PERIOD_OPTIONS.map(p => {
+              const isActive = selectedPeriod === p.value
+              return (
+                <button
+                  key={p.value}
+                  onClick={() => setSelectedPeriod(p.value)}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: isActive ? 'rgba(0, 113, 227, 0.25)' : 'transparent',
+                    color: isActive ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  {p.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Include current month toggle */}
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.8rem',
+            color: 'var(--apple-text-secondary)',
+            cursor: 'pointer'
+          }}>
+            <input 
+              type="checkbox" 
+              checked={includeCurrentMonth}
+              onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+              style={{
+                accentColor: 'rgba(0, 113, 227, 1)',
+                cursor: 'pointer'
+              }}
+            />
+            Include this month
+          </label>
         </div>
       </div>
 
