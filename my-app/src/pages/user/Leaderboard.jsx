@@ -153,10 +153,10 @@ export default function Leaderboard({ user }) {
             value={selectedMonth} 
             onChange={e => setSelectedMonth(Number(e.target.value))}
             className="apple-select"
-            style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+            style={{ padding: '8px 12px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--apple-border, #ccc)', color: 'inherit', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
           >
             {MONTH_NAMES.map((m, i) => (
-              <option key={m} value={i} disabled={isFutureMonth(selectedYear, i)} style={{ background: '#1c1c1e', color: '#fff' }}>
+              <option key={m} value={i} disabled={isFutureMonth(selectedYear, i)}>
                 {m}
               </option>
             ))}
@@ -172,10 +172,10 @@ export default function Leaderboard({ user }) {
               }
             }}
             className="apple-select"
-            style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+            style={{ padding: '8px 12px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--apple-border, #ccc)', color: 'inherit', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
           >
             {getAvailableYears().map(y => (
-              <option key={y} value={y} style={{ background: '#1c1c1e', color: '#fff' }}>
+              <option key={y} value={y}>
                 {y}
               </option>
             ))}
