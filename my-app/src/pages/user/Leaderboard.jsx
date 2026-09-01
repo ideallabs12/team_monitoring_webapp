@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { Trophy, Medal, Star, Award, TrendingUp, Users } from 'lucide-react'
-import { toRevenueMonthString, sumRevenues, MONTH_NAMES } from '../../utils/revenueUtils'
+import { toRevenueMonthString, sumRevenues, MONTH_NAMES, getAvailableYears, isFutureMonth } from '../../utils/revenueUtils'
 
 const RankBadge = ({ rank, topRank }) => {
   let bg = 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))'
@@ -49,15 +49,16 @@ export default function Leaderboard({ user }) {
   const [profiles, setProfiles] = useState([])
   const [revenues, setRevenues] = useState([])
 
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth()
+  const currentDate = new Date()
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth())
 
   useEffect(() => {
     async function fetchLeaderboardData() {
       if (!user) return
       setLoading(true)
       try {
-        const targetMonthStr = toRevenueMonthString(currentYear, currentMonth)
+        const targetMonthStr = toRevenueMonthString(selectedYear, selectedMonth)
 
         const { data, error: rpcError } = await supabase.rpc('get_leaderboard_data', {
           target_month: targetMonthStr
@@ -75,7 +76,7 @@ export default function Leaderboard({ user }) {
       }
     }
     fetchLeaderboardData()
-  }, [user, currentYear, currentMonth])
+  }, [user, selectedYear, selectedMonth])
 
   // Top Performing Individual
   const individualRankings = useMemo(() => {
@@ -136,14 +137,50 @@ export default function Leaderboard({ user }) {
 
   return (
     <div className="apple-page-container" style={{ animation: 'fadeIn 0.4s ease-out' }}>
-      <div className="apple-page-header" style={{ marginBottom: '28px' }}>
-        <h1 className="apple-page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Trophy size={36} color="#f59e0b" style={{ filter: 'drop-shadow(0 0 12px rgba(245,158,11,0.4))' }} />
-          Leaderboard
-        </h1>
-        <p className="apple-page-subtitle">
-          Top performers for {MONTH_NAMES[currentMonth]} {currentYear}
-        </p>
+      <div className="apple-page-header" style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 className="apple-page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Trophy size={36} color="#f59e0b" style={{ filter: 'drop-shadow(0 0 12px rgba(245,158,11,0.4))' }} />
+            Leaderboard
+          </h1>
+          <p className="apple-page-subtitle">
+            Top performers for {MONTH_NAMES[selectedMonth]} {selectedYear}
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <select 
+            value={selectedMonth} 
+            onChange={e => setSelectedMonth(Number(e.target.value))}
+            className="apple-select"
+            style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+          >
+            {MONTH_NAMES.map((m, i) => (
+              <option key={m} value={i} disabled={isFutureMonth(selectedYear, i)} style={{ background: '#1c1c1e', color: '#fff' }}>
+                {m}
+              </option>
+            ))}
+          </select>
+          
+          <select 
+            value={selectedYear} 
+            onChange={e => {
+              const newYear = Number(e.target.value)
+              setSelectedYear(newYear)
+              if (isFutureMonth(newYear, selectedMonth)) {
+                setSelectedMonth(new Date().getMonth())
+              }
+            }}
+            className="apple-select"
+            style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--apple-border)', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+          >
+            {getAvailableYears().map(y => (
+              <option key={y} value={y} style={{ background: '#1c1c1e', color: '#fff' }}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && (
