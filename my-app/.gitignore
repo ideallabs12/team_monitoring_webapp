@@ -63,3 +63,13 @@ remove_hr_and_leaves.sql
 speakers_crm_schema.sql
 speakers_crm_v2_migration.sql
 speakers_crm_v3_workflow.sql
+
+# Temporary scratch and data export files
+all_data_dump.json
+create_revenue_excel.py
+dump_data.mjs
+generate_monthly_revenue_excel.py
+public/Monthly_Revenue_Summary.xlsx
+public/Revenue_Data_Jan_Aug_2026.xlsx
+*.xlsx
+

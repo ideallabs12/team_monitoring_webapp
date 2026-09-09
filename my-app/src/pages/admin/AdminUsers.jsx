@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin, Calendar, LayoutGrid, List, Star } from 'lucide-react'
+import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin, Calendar, LayoutGrid, List, Star, Camera } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import UserRevenue from '../user/UserRevenue'
 
@@ -300,6 +300,67 @@ export default function AdminUsers() {
     }
   }
 
+  // Admin Upload Profile Photo for User
+  const handleUploadAvatar = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !viewingProfileUser) return
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${viewingProfileUser.id}-${Date.now()}.${fileExt}`
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', viewingProfileUser.id)
+
+      if (updateError) throw updateError
+
+      setSuccessMsg('User profile photo updated successfully!')
+      updateProfileUser({ avatar_url: publicUrl })
+    } catch (err) {
+      console.error('Error uploading avatar:', err)
+      setErrorMsg(err.message || 'Failed to upload profile photo.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Admin Remove Profile Photo for User
+  const handleRemoveAvatar = async () => {
+    if (!viewingProfileUser) return
+    setSaving(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', viewingProfileUser.id)
+
+      if (updateError) throw updateError
+
+      setSuccessMsg('User profile photo removed successfully!')
+      updateProfileUser({ avatar_url: null })
+    } catch (err) {
+      console.error('Error removing avatar:', err)
+      setErrorMsg(err.message || 'Failed to remove profile photo.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Send Password Reset Email
   const handleSendResetEmail = async () => {
     setSaving(true)
@@ -485,7 +546,7 @@ export default function AdminUsers() {
   // Exclude admin profiles from the entire directory
   const nonAdminUsers = useMemo(() => users.filter(u => u.platform_role !== 'admin'), [users])
 
-  // Filtered users: Email, Team, and Name search
+  // Filtered users: Email, Team, Name, and Phone search
   const filteredUsers = useMemo(() => {
     return nonAdminUsers.filter(user => {
       const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase()
@@ -493,11 +554,36 @@ export default function AdminUsers() {
       
       const userTeam = user.team_id ? teams.find(t => t.id === user.team_id)?.name.toLowerCase() : ''
 
-      const query = searchQuery.toLowerCase()
-      const matchesSearch = (
+      const query = searchQuery.toLowerCase().trim()
+
+      // Phone search logic (matches raw phone string, formatted digits, and country code)
+      const rawPhone = (user.phone || '').toLowerCase()
+      const rawCountryCode = (user.country_code || user.countryCode || '').toLowerCase()
+      const combinedPhone = `${rawCountryCode} ${rawPhone}`.trim()
+      const phoneDigits = rawPhone.replace(/\D/g, '')
+      const countryDigits = rawCountryCode.replace(/\D/g, '')
+      const fullPhoneDigits = countryDigits 
+        ? `${countryDigits}${phoneDigits}` 
+        : (phoneDigits.length === 10 ? `91${phoneDigits}` : phoneDigits)
+
+      const isPotentialPhoneSearch = /^[\d\s\-+().]+$/.test(query)
+      const queryDigits = query.replace(/\D/g, '')
+
+      const matchesPhone = Boolean(
+        (rawPhone && rawPhone.includes(query)) ||
+        (combinedPhone && combinedPhone.includes(query)) ||
+        (isPotentialPhoneSearch && queryDigits.length > 0 && (
+          (phoneDigits && phoneDigits.includes(queryDigits)) ||
+          (fullPhoneDigits && fullPhoneDigits.includes(queryDigits)) ||
+          (phoneDigits.length >= 6 && queryDigits.includes(phoneDigits))
+        ))
+      )
+
+      const matchesSearch = !query || (
         fullName.includes(query) ||
         email.includes(query) ||
-        userTeam.includes(query)
+        userTeam.includes(query) ||
+        matchesPhone
       )
 
       const matchesTeam = filterTeam === 'all' 
@@ -651,9 +737,10 @@ export default function AdminUsers() {
         <div className="apple-card" style={{ padding: '24px', marginBottom: '28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '16px',
+              position: 'relative',
+              width: '68px',
+              height: '68px',
+              borderRadius: '20px',
               background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
               display: 'flex',
               alignItems: 'center',
@@ -661,13 +748,45 @@ export default function AdminUsers() {
               fontSize: '1.5rem',
               fontWeight: 'bold',
               color: 'white',
-              overflow: 'hidden',
               flexShrink: 0
             }}>
-              {viewingProfileUser.avatar_url ? (
-                <img src={viewingProfileUser.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'
+              <div style={{ width: '100%', height: '100%', borderRadius: '20px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {viewingProfileUser.avatar_url ? (
+                  <img src={viewingProfileUser.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'
+                )}
+              </div>
+              {canAccessControlPanel && (
+                <label
+                  title="Upload profile photo"
+                  style={{
+                    position: 'absolute',
+                    bottom: '-4px',
+                    right: '-4px',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: 'var(--apple-accent-blue)',
+                    border: '2px solid #1c1c1e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    color: '#fff',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    transition: 'transform 0.2s ease'
+                  }}
+                >
+                  <Camera size={13} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadAvatar}
+                    disabled={saving}
+                    style={{ display: 'none' }}
+                  />
+                </label>
               )}
             </div>
             <div>
@@ -1026,6 +1145,104 @@ export default function AdminUsers() {
               <UserIcon size={18} style={{ color: '#818cf8' }} /> Update Profile Details
             </h3>
             
+            {/* Profile Photo Option for Admin */}
+            <div style={{
+              marginBottom: '28px',
+              padding: '20px',
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid var(--apple-border)',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #0071e3, #30d5c8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: 'white',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  border: '2px solid var(--apple-border)'
+                }}>
+                  {viewingProfileUser.avatar_url ? (
+                    <img src={viewingProfileUser.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    viewingProfileUser.first_name?.[0]?.toUpperCase() || 'M'
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--apple-text-primary)', marginBottom: '4px' }}>
+                    User Profile Photo
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
+                    {viewingProfileUser.avatar_url ? 'Photo uploaded. Click below to change or remove.' : 'No photo uploaded yet. Add a profile photo for this user.'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  background: 'var(--apple-accent-blue)',
+                  color: '#fff',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 8px rgba(0, 113, 227, 0.3)'
+                }}>
+                  <Camera size={16} /> {viewingProfileUser.avatar_url ? 'Change Photo' : 'Add Photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadAvatar}
+                    disabled={saving}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+
+                {viewingProfileUser.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    disabled={saving}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      color: '#f87171',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      opacity: saving ? 0.7 : 1,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Trash2 size={16} /> Remove Photo
+                  </button>
+                )}
+              </div>
+            </div>
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
               {/* Editable Gender Field */}
               <div>
@@ -1281,7 +1498,7 @@ export default function AdminUsers() {
               <Search size={18} style={{ position: 'absolute', left: '14px', top: '14px', color: '#64748b' }} />
               <input
                 type="text"
-                placeholder="Search by name, email, or team assignment..."
+                placeholder="Search by name, email, phone number, or team assignment..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="form-control"
@@ -1481,7 +1698,9 @@ export default function AdminUsers() {
                                   <div className="truncate-text" style={{ fontWeight: '600', color: '#fff' }}>
                                     {user.first_name} {user.last_name}
                                   </div>
-                                  <div className="truncate-text" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{user.email}</div>
+                                  <div className="truncate-text" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                    {user.email}{user.phone ? ` • ${user.phone}` : ''}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -1572,7 +1791,7 @@ export default function AdminUsers() {
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div className="truncate-text" style={{ fontWeight: '600', color: '#fff', fontSize: '1.05rem', marginBottom: '2px' }}>{user.first_name} {user.last_name}</div>
                             <div className="truncate-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                              {user.job_title ? user.job_title : user.email}
+                              {user.job_title ? user.job_title : user.email}{user.phone ? ` • ${user.phone}` : ''}
                             </div>
                           </div>
                           <span style={{ flexShrink: 0, padding: '2px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase', background: user.platform_role === 'admin' ? 'rgba(239,68,68,0.12)' : 'rgba(99,102,241,0.12)', border: user.platform_role === 'admin' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(99,102,241,0.25)', color: user.platform_role === 'admin' ? '#f87171' : '#818cf8' }}>{user.platform_role || 'user'}</span>
@@ -1702,6 +1921,11 @@ export default function AdminUsers() {
                           <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user.email}
                           </div>
+                          {user.phone && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                              {user.phone}
+                            </div>
+                          )}
                         </div>
 
                         {/* Badges row */}

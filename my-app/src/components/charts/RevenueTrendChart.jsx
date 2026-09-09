@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import {
   getLastNMonths,
+  getLastNCompletedMonths,
   normalizeMonth,
   toRevenueMonthString,
   getAvailableYears,
@@ -69,6 +70,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
   const [revDistMode, setRevDistMode] = useState('preset') // 'preset' | 'custom'
   const [revDistYear, setRevDistYear] = useState(new Date().getFullYear())
   const [revDistMonth, setRevDistMonth] = useState(new Date().getMonth())
+  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(false)
   const [animationKey, setAnimationKey] = useState(0)
 
   // Compute active months based on mode
@@ -76,8 +78,8 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
     if (revDistMode === 'custom') {
       return [toRevenueMonthString(revDistYear, revDistMonth)]
     }
-    return getLastNMonths(revDistPeriod).reverse()
-  }, [revDistMode, revDistPeriod, revDistYear, revDistMonth])
+    return (includeCurrentMonth ? getLastNMonths(revDistPeriod) : getLastNCompletedMonths(revDistPeriod)).reverse()
+  }, [revDistMode, revDistPeriod, revDistYear, revDistMonth, includeCurrentMonth])
 
   const activeMonthSet = useMemo(() => new Set(activeMonths), [activeMonths])
 
@@ -166,6 +168,30 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
               </button>
             ))}
           </div>
+
+          {/* Include current month toggle */}
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.8rem',
+            color: 'var(--apple-text-secondary)',
+            cursor: isCustomActive ? 'default' : 'pointer',
+            marginLeft: '8px',
+            opacity: isCustomActive ? 0.5 : 1
+          }}>
+            <input 
+              type="checkbox" 
+              checked={includeCurrentMonth}
+              onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+              disabled={isCustomActive}
+              style={{
+                accentColor: 'rgba(0, 113, 227, 1)',
+                cursor: isCustomActive ? 'default' : 'pointer'
+              }}
+            />
+            Include this month
+          </label>
 
           {/* Separator */}
           <span style={{ color: 'var(--apple-border)', fontSize: '0.9rem', userSelect: 'none' }}>|</span>

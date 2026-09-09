@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, LabelList
 } from 'recharts'
-import { getLastNMonths } from '../../utils/revenueUtils'
+import { getLastNMonths, getLastNCompletedMonths } from '../../utils/revenueUtils'
 import { calculateTargetVsActual } from '../../utils/analyticsUtils'
 
 const PERIOD_OPTIONS = [
@@ -102,8 +102,9 @@ export default function TargetVsActualChart({
 }) {
   const [period, setPeriod] = useState(6)
   const [selectedTeamId, setSelectedTeamId] = useState('all')
+  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(false)
 
-  const months = useMemo(() => getLastNMonths(period).reverse(), [period])
+  const months = useMemo(() => (includeCurrentMonth ? getLastNMonths(period) : getLastNCompletedMonths(period)).reverse(), [period, includeCurrentMonth])
 
   const data = useMemo(() =>
     calculateTargetVsActual(targets, revenues, months, selectedTeamId, memberships, profiles, teams),
@@ -198,6 +199,27 @@ export default function TargetVsActualChart({
             </button>
           ))}
         </div>
+
+        {/* Include current month toggle */}
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.8rem',
+          color: 'var(--apple-text-secondary)',
+          cursor: 'pointer'
+        }}>
+          <input 
+            type="checkbox" 
+            checked={includeCurrentMonth}
+            onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+            style={{
+              accentColor: 'rgba(0, 113, 227, 1)',
+              cursor: 'pointer'
+            }}
+          />
+          Include this month
+        </label>
 
         {/* Team selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
