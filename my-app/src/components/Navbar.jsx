@@ -55,7 +55,7 @@ export default function Navbar({ user }) {
   }
 
   const isActive = (path) => location.pathname === path
-  const isOthersActive = ['/revenue-history', '/sales-analytics', '/reviews'].includes(location.pathname)
+  const isOthersActive = ['/sales-analytics', '/reviews'].includes(location.pathname)
   const isTeamHubActive = ['/team-analytics', '/team-management', '/team-dis-report'].includes(location.pathname)
 
   const navLinks = [
@@ -75,12 +75,8 @@ export default function Navbar({ user }) {
     { to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' },
   ]
   
-  if (profile?.has_revenue_logging !== false) {
-    othersLinks.unshift({ to: '/revenue-history', label: 'Revenue History', desc: 'Full contribution history & filters' })
-  }
-  
   othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
-  othersLinks.push({ to: '/meetings', label: 'Meetings', desc: 'Meeting transcripts and summaries' })
+  othersLinks.push({ to: '/meetings', label: 'Call Transcripts', desc: 'Call transcripts and summaries' })
   
   if (profile?.is_sales_executive) {
     othersLinks.push({ to: '/sales-analytics', label: 'Sales Executive', desc: 'Call activity & analytics' })

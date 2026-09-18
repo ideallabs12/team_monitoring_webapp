@@ -163,10 +163,10 @@ export default function Meetings({ user }) {
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)', paddingBottom: '40px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '8px', letterSpacing: '-0.02em', color: 'var(--apple-text-primary)' }}>
-          Meeting Recordings
+          Call Transcripts
         </h1>
         <p style={{ color: 'var(--apple-text-secondary)', fontSize: '1.1rem' }}>
-          Access transcripts, summaries, and action items from Fathom meetings.
+          Access transcripts, summaries, and action items from recorded calls.
         </p>
       </div>
 

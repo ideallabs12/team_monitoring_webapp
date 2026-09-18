@@ -1,31 +1,74 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
-import { RefreshCw, CheckCircle, XCircle, Edit, Star, AlertCircle, Image as ImageIcon, Users, Clock, Calendar, Trash2 } from 'lucide-react'
+import {
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Edit,
+  Image as ImageIcon,
+  Clock,
+  Calendar,
+  Trash2,
+  Plus,
+  Power,
+  Search,
+  BarChart3,
+  RotateCcw,
+  X
+} from 'lucide-react'
 
 export default function AdminReviews() {
   const { user, featureAccess } = useOutletContext() || {}
-  const canManage = user?.email === 'signatureglobalconferences@gmail.com' || !!featureAccess?.reviews
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const canManageReviews = user?.email === 'signatureglobalconferences@gmail.com' || featureAccess === null || !!featureAccess?.reviews
+  const canManageWriteUps = user?.email === 'signatureglobalconferences@gmail.com' || featureAccess === null || !!featureAccess?.writeUps
+
+  // Determine active tab from URL query param, defaulting gracefully based on permissions
+  const tabParam = searchParams.get('tab')
+  const defaultTab = canManageReviews ? 'approvals' : (canManageWriteUps ? 'write-ups' : 'approvals')
+  const activeTab = tabParam ? (tabParam === 'write-ups' ? 'write-ups' : 'approvals') : defaultTab
+
+  const handleTabChange = (tab) => {
+    setSearchParams({ tab })
+  }
+
+  // ── Shared / General State ──
+  const [loading, setLoading] = useState(true)
+  const [teams, setTeams] = useState([])
+
+  // ── Approvals State (Reviews) ──
   const [reviews, setReviews] = useState([])
   const [writeUps, setWriteUps] = useState([])
-  const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('pending')
   const [selectedWriteUpId, setSelectedWriteUpId] = useState('all')
-  
-  // Temporary Filters
   const [filterTeam, setFilterTeam] = useState('all')
   const [filterUser, setFilterUser] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  
-  // Modals for Actions
   const [selectedReview, setSelectedReview] = useState(null)
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, reviewId: null, feedback: '' })
 
-  const loadReviews = async () => {
-    setLoading(true)
+  // ── Campaigns State (Events / Write-Ups) ──
+  const [events, setEvents] = useState([])
+  const [showCreate, setShowCreate] = useState(false)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [targetTeamId, setTargetTeamId] = useState('all')
+  const [socialPlatform, setSocialPlatform] = useState('')
+  const [socialUrl, setSocialUrl] = useState('')
+  const [collectEmail, setCollectEmail] = useState(false)
+  const [allowMultiple, setAllowMultiple] = useState(false)
+  const [editingEventId, setEditingEventId] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState({ type: '', text: '' })
+
+  // ── Load All Data ──
+  const loadAllData = async (showLoading = false) => {
+    if (showLoading) setLoading(true)
     try {
-      const [reviewsRes, eventsRes] = await Promise.all([
+      const [reviewsRes, eventsRes, teamsRes] = await Promise.all([
         supabase
           .from('reviews')
           .select(`
@@ -37,33 +80,94 @@ export default function AdminReviews() {
           .order('created_at', { ascending: false }),
         supabase
           .from('events')
-          .select('id, title')
-          .order('created_at', { ascending: false })
+          .select('*, teams(name)')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('teams')
+          .select('id, name')
+          .order('name')
       ])
-      
+
       if (reviewsRes.error) throw reviewsRes.error
       setReviews(reviewsRes.data || [])
 
       if (eventsRes.error) throw eventsRes.error
-      setWriteUps(eventsRes.data || [])
+      const eventsData = eventsRes.data || []
+      setEvents(eventsData)
+      setWriteUps(eventsData)
+
+      if (!teamsRes.error) {
+        setTeams(teamsRes.data || [])
+      }
     } catch (err) {
-      console.error('Error loading reviews:', err)
+      console.error('Error loading reviews and events:', err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadReviews()
+    let ignore = false
+
+    async function fetchInitialData() {
+      try {
+        const [reviewsRes, eventsRes, teamsRes] = await Promise.all([
+          supabase
+            .from('reviews')
+            .select(`
+              *,
+              events ( title, is_active ),
+              profiles ( first_name, last_name, email ),
+              teams ( name )
+            `)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('events')
+            .select('*, teams(name)')
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('teams')
+            .select('id, name')
+            .order('name')
+        ])
+
+        if (ignore) return
+
+        if (reviewsRes.error) throw reviewsRes.error
+        setReviews(reviewsRes.data || [])
+
+        if (eventsRes.error) throw eventsRes.error
+        const eventsData = eventsRes.data || []
+        setEvents(eventsData)
+        setWriteUps(eventsData)
+
+        if (!teamsRes.error) {
+          setTeams(teamsRes.data || [])
+        }
+      } catch (err) {
+        console.error('Error loading reviews and events:', err)
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchInitialData()
+
+    return () => {
+      ignore = true
+    }
   }, [])
 
+  // ── Approvals Actions ──
   const handleApprove = async (id) => {
     try {
       const { error } = await supabase
         .from('reviews')
         .update({ status: 'approved', admin_feedback: null, updated_at: new Date().toISOString() })
         .eq('id', id)
-        
+
       if (error) throw error
       setReviews(reviews.map(r => r.id === id ? { ...r, status: 'approved', admin_feedback: null } : r))
     } catch (err) {
@@ -79,7 +183,7 @@ export default function AdminReviews() {
         .from('reviews')
         .update({ status: 'rejected', admin_feedback: null, updated_at: new Date().toISOString() })
         .eq('id', id)
-        
+
       if (error) throw error
       setReviews(reviews.map(r => r.id === id ? { ...r, status: 'rejected', admin_feedback: null } : r))
     } catch (err) {
@@ -95,7 +199,7 @@ export default function AdminReviews() {
         .from('reviews')
         .delete()
         .eq('id', id)
-        
+
       if (error) throw error
       setReviews(reviews.filter(r => r.id !== id))
     } catch (err) {
@@ -109,15 +213,15 @@ export default function AdminReviews() {
     try {
       const { error } = await supabase
         .from('reviews')
-        .update({ 
-          status: 'feedback', 
-          admin_feedback: feedbackModal.feedback, 
-          updated_at: new Date().toISOString() 
+        .update({
+          status: 'feedback',
+          admin_feedback: feedbackModal.feedback,
+          updated_at: new Date().toISOString()
         })
         .eq('id', feedbackModal.reviewId)
-        
+
       if (error) throw error
-      
+
       setReviews(reviews.map(r => r.id === feedbackModal.reviewId ? { ...r, status: 'feedback', admin_feedback: feedbackModal.feedback } : r))
       setFeedbackModal({ isOpen: false, reviewId: null, feedback: '' })
     } catch (err) {
@@ -126,8 +230,179 @@ export default function AdminReviews() {
     }
   }
 
+  // ── Campaigns Actions ──
+  const handleSubmitEvent = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setMessage({ type: '', text: '' })
 
+    try {
+      const eventData = {
+        title,
+        description,
+        target_team_id: targetTeamId === 'all' ? null : targetTeamId,
+        social_platform: socialPlatform || null,
+        social_url: socialPlatform ? socialUrl : null,
+        collect_email: collectEmail,
+        allow_multiple_submissions: allowMultiple
+      }
 
+      if (editingEventId) {
+        // Update existing
+        const { data, error } = await supabase
+          .from('events')
+          .update(eventData)
+          .eq('id', editingEventId)
+          .select('*, teams(name)')
+          .single()
+
+        if (error) throw error
+
+        setEvents(events.map(ev => ev.id === editingEventId ? data : ev))
+        setWriteUps(writeUps.map(ev => ev.id === editingEventId ? data : ev))
+        setMessage({ type: 'success', text: 'Write-Up updated successfully!' })
+      } else {
+        // Insert new
+        eventData.is_active = true
+
+        const { data, error } = await supabase
+          .from('events')
+          .insert([eventData])
+          .select('*, teams(name)')
+          .single()
+
+        if (error) throw error
+
+        setEvents([data, ...events])
+        setWriteUps([data, ...writeUps])
+        setMessage({ type: 'success', text: 'Write-Up created successfully!' })
+      }
+
+      handleCancelEdit()
+    } catch (err) {
+      console.error('Error saving event:', err)
+      setMessage({ type: 'error', text: 'Failed to save write-up.' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleEditClick = (ev) => {
+    setEditingEventId(ev.id)
+    setTitle(ev.title)
+    setDescription(ev.description || '')
+    setTargetTeamId(ev.target_team_id || 'all')
+    setSocialPlatform(ev.social_platform || '')
+    setSocialUrl(ev.social_url || '')
+    setCollectEmail(ev.collect_email || false)
+    setAllowMultiple(ev.allow_multiple_submissions || false)
+    setShowCreate(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancelEdit = () => {
+    setTitle('')
+    setDescription('')
+    setTargetTeamId('all')
+    setSocialPlatform('')
+    setSocialUrl('')
+    setCollectEmail(false)
+    setAllowMultiple(false)
+    setEditingEventId(null)
+    setShowCreate(false)
+  }
+
+  const toggleEventStatus = async (id, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ is_active: !currentStatus })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setEvents(events.map(ev => ev.id === id ? { ...ev, is_active: !currentStatus } : ev))
+      setWriteUps(writeUps.map(ev => ev.id === id ? { ...ev, is_active: !currentStatus } : ev))
+    } catch (err) {
+      console.error('Error toggling status:', err)
+      alert('Failed to update event status.')
+    }
+  }
+
+  const handleDeleteEvent = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this event? This will also delete all associated reviews.')) return
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setEvents(events.filter(ev => ev.id !== id))
+      setWriteUps(writeUps.filter(ev => ev.id !== id))
+    } catch (err) {
+      console.error('Error deleting event:', err)
+      alert('Failed to delete event.')
+    }
+  }
+
+  const handleDownloadCSV = async (eventId, eventTitle) => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          created_at,
+          title,
+          speaker_name,
+          speaker_email,
+          photo_url,
+          status,
+          profiles(first_name, last_name, email),
+          teams(name)
+        `)
+        .eq('event_id', eventId)
+
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        alert('No reviews found for this write-up.')
+        return
+      }
+
+      // Convert to CSV
+      const headers = ['Date', 'User First Name', 'User Last Name', 'User Email', 'Team', 'Speaker Name', 'Speaker Email', 'Review Title', 'Photo Link', 'Status']
+      const rows = data.map(r => [
+        new Date(r.created_at).toLocaleDateString(),
+        r.profiles?.first_name || '',
+        r.profiles?.last_name || '',
+        r.profiles?.email || '',
+        r.teams?.name || 'No Team',
+        r.speaker_name || '',
+        r.speaker_email || '',
+        `"${(r.title || '').replace(/"/g, '""')}"`,
+        r.photo_url || 'No Photo',
+        r.status || ''
+      ])
+
+      const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_reviews.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      console.error('Error downloading CSV:', err)
+      alert('Failed to download data.')
+    }
+  }
+
+  // ── Approvals Derived Filters ──
   const availableTeams = useMemo(() => {
     const teamsSet = new Set()
     reviews.forEach(r => {
@@ -139,7 +414,7 @@ export default function AdminReviews() {
   const availableUsers = useMemo(() => {
     const usersMap = new Map()
     reviews.forEach(r => {
-      if (filterTeam !== 'all' && r.teams?.name !== filterTeam) return;
+      if (filterTeam !== 'all' && r.teams?.name !== filterTeam) return
       const userName = `${r.profiles?.first_name || ''} ${r.profiles?.last_name || ''}`.trim()
       if (userName && r.user_id) {
         usersMap.set(r.user_id, userName)
@@ -148,17 +423,31 @@ export default function AdminReviews() {
     return Array.from(usersMap.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
   }, [reviews, filterTeam])
 
-  useEffect(() => {
-    setFilterUser('all')
-  }, [filterTeam])
+  const pendingReviewsCount = useMemo(() => {
+    return reviews.filter(r => r.status === 'pending').length
+  }, [reviews])
+
+  const statusCounts = useMemo(() => {
+    const counts = { pending: 0, feedback: 0, approved: 0, rejected: 0, all: 0 }
+    reviews.forEach(r => {
+      if (selectedWriteUpId !== 'all' && String(r.event_id) !== String(selectedWriteUpId)) return
+      if (filterTeam !== 'all' && r.teams?.name !== filterTeam) return
+      if (filterUser !== 'all' && String(r.user_id) !== filterUser) return
+      counts.all++
+      if (r.status in counts) {
+        counts[r.status]++
+      }
+    })
+    return counts
+  }, [reviews, selectedWriteUpId, filterTeam, filterUser])
 
   const filteredReviews = useMemo(() => {
     let result = reviews
-    
+
     if (selectedWriteUpId !== 'all') {
       result = result.filter(r => String(r.event_id) === String(selectedWriteUpId))
     }
-    
+
     if (filterStatus !== 'all' && filterStatus !== 'analysis') {
       result = result.filter(r => r.status === filterStatus)
     }
@@ -179,22 +468,22 @@ export default function AdminReviews() {
         return userName.includes(q) || speakerName.includes(q)
       })
     }
-    
+
     return result
   }, [reviews, filterStatus, selectedWriteUpId, filterTeam, filterUser, searchQuery])
 
   const analyticsData = useMemo(() => {
-    if (filterStatus !== 'analysis') return null;
+    if (filterStatus !== 'analysis') return null
 
-    const totalReviews = filteredReviews.length;
-    const approvedReviews = filteredReviews.filter(r => r.status === 'approved').length;
-    const rejectedReviews = filteredReviews.filter(r => r.status === 'rejected').length;
-    const pendingReviews = filteredReviews.filter(r => r.status === 'pending').length;
-    const feedbackReviews = filteredReviews.filter(r => r.status === 'feedback').length;
+    const totalReviews = filteredReviews.length
+    const approvedReviews = filteredReviews.filter(r => r.status === 'approved').length
+    const rejectedReviews = filteredReviews.filter(r => r.status === 'rejected').length
+    const pendingReviews = filteredReviews.filter(r => r.status === 'pending').length
+    const feedbackReviews = filteredReviews.filter(r => r.status === 'feedback').length
 
-    const userMap = {};
+    const userMap = {}
     filteredReviews.forEach(r => {
-      const userId = r.user_id || (r.profiles?.email) || 'Unknown';
+      const userId = r.user_id || (r.profiles?.email) || 'Unknown'
       if (!userMap[userId]) {
         userMap[userId] = {
           name: `${r.profiles?.first_name || 'Unknown'} ${r.profiles?.last_name || ''}`.trim(),
@@ -205,16 +494,16 @@ export default function AdminReviews() {
           pending: 0,
           feedback: 0,
           team: r.teams?.name || 'No Team'
-        };
+        }
       }
-      userMap[userId].count++;
-      if (r.status === 'approved') userMap[userId].approved++;
-      if (r.status === 'rejected') userMap[userId].rejected++;
-      if (r.status === 'pending') userMap[userId].pending++;
-      if (r.status === 'feedback') userMap[userId].feedback++;
-    });
+      userMap[userId].count++
+      if (r.status === 'approved') userMap[userId].approved++
+      if (r.status === 'rejected') userMap[userId].rejected++
+      if (r.status === 'pending') userMap[userId].pending++
+      if (r.status === 'feedback') userMap[userId].feedback++
+    })
 
-    const userStats = Object.values(userMap).sort((a, b) => b.count - a.count);
+    const userStats = Object.values(userMap).sort((a, b) => b.count - a.count)
 
     return {
       totalReviews,
@@ -223,369 +512,822 @@ export default function AdminReviews() {
       pendingReviews,
       feedbackReviews,
       userStats
-    };
-  }, [filteredReviews, filterStatus]);
+    }
+  }, [filteredReviews, filterStatus])
 
-  if (loading && reviews.length === 0) {
+  if (loading && reviews.length === 0 && events.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', gap: '16px' }}>
         <RefreshCw size={36} className="spin-anim" style={{ color: 'var(--apple-accent-blue)' }} />
-        <div style={{ color: 'var(--apple-text-secondary)', fontSize: '1.05rem', fontWeight: '500' }}>Loading Reviews...</div>
+        <div style={{ color: 'var(--apple-text-secondary)', fontSize: '1.05rem', fontWeight: '500' }}>Loading Reviews & Campaigns...</div>
       </div>
     )
   }
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
-      {/* ===== HEADER ===== */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(24px, 5vw, 40px)', flexWrap: 'wrap', gap: '16px' }}>
+      {/* ===== HEADER SECTION ===== */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div className="apple-kicker">Review System</div>
-          <h1 className="apple-title-large">Review Approvals</h1>
-          <p className="apple-lead">
-            Moderate, edit, and approve review write-ups submitted by your team.
+          <h1 className="apple-title-large">Reviews &amp; Write-Ups</h1>
+          <p className="apple-lead" style={{ margin: 0 }}>
+            Manage review campaigns, moderate submissions, and approve team write-ups.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button onClick={loadReviews} disabled={loading} className="apple-btn apple-btn-secondary" style={{ padding: '8px 18px', fontSize: '0.85rem' }}>
-            <RefreshCw size={14} className={loading ? 'spin-anim' : ''} style={{ marginRight: '6px' }} />
-            {loading ? 'Refreshing...' : 'Refresh'}
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={loadAllData}
+            disabled={loading}
+            className="apple-btn apple-btn-secondary"
+            style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-anim' : ''} />
+            <span>Refresh</span>
           </button>
+
+          {activeTab === 'write-ups' && canManageWriteUps && (
+            <button
+              onClick={() => {
+                if (showCreate) {
+                  handleCancelEdit()
+                } else {
+                  setShowCreate(true)
+                }
+              }}
+              className="apple-btn apple-btn-primary"
+              style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              {showCreate ? 'Cancel' : <><Plus size={16} /> Create Write-Up</>}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ===== WRITEUP FILTER ===== */}
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <label className="apple-form-label" style={{ margin: 0, whiteSpace: 'nowrap' }}>Filter by Write-Up:</label>
-        <select 
-          className="apple-form-control" 
-          style={{ maxWidth: '400px' }}
-          value={selectedWriteUpId}
-          onChange={(e) => setSelectedWriteUpId(e.target.value)}
+      {/* ===== IN-PAGE SEGMENTED TABS ===== */}
+      <div style={{
+        display: 'inline-flex',
+        padding: '4px',
+        background: 'var(--apple-input-bg, rgba(0,0,0,0.04))',
+        borderRadius: '12px',
+        border: '1px solid var(--apple-border)',
+        marginBottom: '20px',
+        maxWidth: '100%',
+        gap: '4px',
+        overflowX: 'auto'
+      }}>
+        <button
+          onClick={() => handleTabChange('approvals')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.88rem',
+            fontWeight: activeTab === 'approvals' ? '600' : '500',
+            background: activeTab === 'approvals' ? 'var(--apple-card, #ffffff)' : 'transparent',
+            color: activeTab === 'approvals' ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
+            boxShadow: activeTab === 'approvals' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease'
+          }}
         >
-          <option value="all">All Write-Ups</option>
-          {writeUps.map(w => (
-            <option key={w.id} value={w.id}>{w.title}</option>
-          ))}
-        </select>
-      </div>
+          <CheckCircle size={16} style={{ color: activeTab === 'approvals' ? 'var(--apple-accent-blue)' : 'inherit' }} />
+          <span>Review Approvals</span>
+          {pendingReviewsCount > 0 && (
+            <span style={{
+              background: 'var(--apple-accent-orange)',
+              color: '#ffffff',
+              fontSize: '0.72rem',
+              fontWeight: '700',
+              padding: '1px 7px',
+              borderRadius: '999px'
+            }}>
+              {pendingReviewsCount}
+            </span>
+          )}
+        </button>
 
-      {/* ===== TEMPORARY ADVANCED FILTERS ===== */}
-      <div style={{ marginBottom: '24px', padding: '16px', background: 'var(--apple-bg, rgba(255,255,255,0.02))', borderRadius: '12px', border: '1px dashed var(--apple-border)', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <label className="apple-form-label">Search Name/Speaker</label>
-          <input 
-            type="text" 
-            className="apple-form-control" 
-            placeholder="Search..." 
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <label className="apple-form-label">Team</label>
-          <select 
-            className="apple-form-control" 
-            value={filterTeam}
-            onChange={e => setFilterTeam(e.target.value)}
-          >
-            <option value="all">All Teams</option>
-            {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <label className="apple-form-label">User</label>
-          <select 
-            className="apple-form-control" 
-            value={filterUser}
-            onChange={e => setFilterUser(e.target.value)}
-          >
-            <option value="all">All Users</option>
-            {availableUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* ===== STATUS FILTERS ===== */}
-      <div className="apple-pill-tabs" style={{ marginBottom: '24px' }}>
-        <button className={`apple-pill-tab ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>
-          All Reviews
-        </button>
-        <button className={`apple-pill-tab ${filterStatus === 'pending' ? 'active' : ''}`} onClick={() => setFilterStatus('pending')}>
-          Pending
-        </button>
-        <button className={`apple-pill-tab ${filterStatus === 'approved' ? 'active' : ''}`} onClick={() => setFilterStatus('approved')}>
-          Approved
-        </button>
-        <button className={`apple-pill-tab ${filterStatus === 'rejected' ? 'active' : ''}`} onClick={() => setFilterStatus('rejected')}>
-          Rejected
-        </button>
-        <button className={`apple-pill-tab ${filterStatus === 'feedback' ? 'active' : ''}`} onClick={() => setFilterStatus('feedback')}>
-          Needs Revision
-        </button>
-        <button className={`apple-pill-tab ${filterStatus === 'analysis' ? 'active' : ''}`} onClick={() => setFilterStatus('analysis')}>
-          Analysis
+        <button
+          onClick={() => handleTabChange('write-ups')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.88rem',
+            fontWeight: activeTab === 'write-ups' ? '600' : '500',
+            background: activeTab === 'write-ups' ? 'var(--apple-card, #ffffff)' : 'transparent',
+            color: activeTab === 'write-ups' ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
+            boxShadow: activeTab === 'write-ups' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Calendar size={16} style={{ color: activeTab === 'write-ups' ? 'var(--apple-accent-blue)' : 'inherit' }} />
+          <span>Write-Up Campaigns</span>
+          <span style={{
+            background: 'rgba(0,0,0,0.06)',
+            color: 'var(--apple-text-secondary)',
+            fontSize: '0.72rem',
+            fontWeight: '600',
+            padding: '1px 7px',
+            borderRadius: '999px'
+          }}>
+            {events.length}
+          </span>
         </button>
       </div>
 
-      {/* ===== REVIEWS LIST ===== */}
-      {filterStatus === 'analysis' && analyticsData ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
-            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(0,113,227,0.1)', border: '1px solid rgba(0,113,227,0.2)' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--apple-accent-blue)' }}>{analyticsData.totalReviews}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Total Reviews</div>
-            </div>
-            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#34d399' }}>{analyticsData.approvedReviews}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Approved</div>
-            </div>
-            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#fbbf24' }}>{analyticsData.pendingReviews}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Pending</div>
-            </div>
-            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.2)' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>{analyticsData.feedbackReviews}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Needs Revision</div>
-            </div>
-            <div className="apple-card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#f87171' }}>{analyticsData.rejectedReviews}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--apple-text-secondary)', marginTop: '4px', fontWeight: '600' }}>Rejected</div>
-            </div>
-          </div>
-
-          <div className="apple-card" style={{ padding: '24px' }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '1.3rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Users size={20} color="var(--apple-accent-blue)" /> Submissions by Person
-            </h3>
-            {analyticsData.userStats.length > 0 ? (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--apple-border)', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      <th style={{ padding: '16px 12px', fontWeight: '600' }}>Name</th>
-                      <th style={{ padding: '16px 12px', fontWeight: '600' }}>Team</th>
-                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Total</th>
-                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Approved</th>
-                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Pending</th>
-                      <th style={{ padding: '16px 12px', fontWeight: '600', textAlign: 'center' }}>Needs Rev.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyticsData.userStats.map((user, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid var(--apple-border)', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '16px 12px', color: '#fff' }}>
-                          <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{user.name}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '2px' }}>{user.email || 'No Email'}</div>
-                        </td>
-                        <td style={{ padding: '16px 12px' }}>
-                          <span className="apple-badge apple-badge-blue">{user.team}</span>
-                        </td>
-                        <td style={{ padding: '16px 12px', textAlign: 'center', fontWeight: '700', color: 'var(--apple-accent-blue)', fontSize: '1.1rem' }}>{user.count}</td>
-                        <td style={{ padding: '16px 12px', textAlign: 'center', color: '#34d399', fontWeight: '600' }}>{user.approved}</td>
-                        <td style={{ padding: '16px 12px', textAlign: 'center', color: '#fbbf24', fontWeight: '600' }}>{user.pending}</td>
-                        <td style={{ padding: '16px 12px', textAlign: 'center', color: 'var(--apple-accent-orange)', fontWeight: '600' }}>{user.feedback}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {/* ========================================================
+          TAB 1: REVIEW APPROVALS & SUBMISSIONS
+         ======================================================== */}
+      {activeTab === 'approvals' && (
+        <div>
+          {/* Unified Approvals Control & Filter Card */}
+          <div className="reviews-toolbar-card">
+            {/* ROW 1: Status Tabs + Analytics Toggle in ONE cohesive bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}>
+              {/* Status Segmented Control */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'var(--apple-input-bg, rgba(0,0,0,0.04))',
+                borderRadius: '10px',
+                padding: '3px',
+                gap: '2px',
+                overflowX: 'auto',
+                maxWidth: '100%'
+              }}>
+                {[
+                  { id: 'pending', label: 'Pending', count: statusCounts.pending, dotColor: '#ff9500' },
+                  { id: 'feedback', label: 'Needs Revision', count: statusCounts.feedback, dotColor: '#bf5af2' },
+                  { id: 'approved', label: 'Approved', count: statusCounts.approved, dotColor: '#34c759' },
+                  { id: 'rejected', label: 'Rejected', count: statusCounts.rejected, dotColor: '#ff3b30' },
+                  { id: 'all', label: 'All Reviews', count: statusCounts.all, dotColor: '#0071e3' },
+                ].map(st => {
+                  const isActive = filterStatus === st.id
+                  return (
+                    <button
+                      key={st.id}
+                      onClick={() => setFilterStatus(st.id)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        borderRadius: '7px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.83rem',
+                        fontWeight: isActive ? '600' : '500',
+                        background: isActive ? 'var(--apple-card, #ffffff)' : 'transparent',
+                        color: isActive ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',
+                        boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        background: st.dotColor,
+                        display: 'inline-block'
+                      }} />
+                      <span>{st.label}</span>
+                      <span style={{
+                        fontSize: '0.73rem',
+                        fontWeight: '700',
+                        padding: '1px 6px',
+                        borderRadius: '999px',
+                        background: isActive ? `${st.dotColor}18` : 'rgba(0,0,0,0.05)',
+                        color: isActive ? st.dotColor : 'var(--apple-text-secondary)'
+                      }}>
+                        {st.count}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
-            ) : (
-              <div style={{ color: 'var(--apple-text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '40px 20px' }}>
-                No submissions found.
+
+              {/* View Switcher: Analytics Toggle */}
+              <button
+                onClick={() => setFilterStatus(filterStatus === 'analysis' ? 'pending' : 'analysis')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  border: filterStatus === 'analysis' ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
+                  cursor: 'pointer',
+                  fontSize: '0.84rem',
+                  fontWeight: '600',
+                  background: filterStatus === 'analysis' ? 'var(--apple-accent-blue)' : 'transparent',
+                  color: filterStatus === 'analysis' ? '#ffffff' : 'var(--apple-text-primary)',
+                  boxShadow: filterStatus === 'analysis' ? '0 2px 6px rgba(0, 113, 227, 0.25)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <BarChart3 size={15} />
+                <span>{filterStatus === 'analysis' ? 'Back to Submissions' : 'Analytics Overview'}</span>
+              </button>
+            </div>
+
+            {/* ROW 2: Filter Toolbar (Campaign, Team, User, Search) */}
+            {filterStatus !== 'analysis' && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                paddingTop: '14px',
+                borderTop: '1px solid var(--apple-border)'
+              }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative', flex: '2 1 240px', minWidth: '220px' }}>
+                  <Search size={15} style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--apple-text-secondary)',
+                    pointerEvents: 'none'
+                  }} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search applicant, reviewer, speaker..."
+                    className="reviews-filter-input has-icon"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        color: 'var(--apple-text-secondary)',
+                        display: 'flex',
+                        padding: '4px'
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Campaign Dropdown */}
+                <div style={{ flex: '1 1 180px', minWidth: '160px' }}>
+                  <select
+                    value={selectedWriteUpId}
+                    onChange={(e) => setSelectedWriteUpId(e.target.value)}
+                    className="reviews-filter-select"
+                  >
+                    <option value="all">All Campaigns</option>
+                    {writeUps.map(wu => (
+                      <option key={wu.id} value={wu.id}>{wu.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Team Dropdown */}
+                <div style={{ flex: '1 1 140px', minWidth: '130px' }}>
+                  <select
+                    value={filterTeam}
+                    onChange={(e) => {
+                      setFilterTeam(e.target.value)
+                      setFilterUser('all')
+                    }}
+                    className="reviews-filter-select"
+                  >
+                    <option value="all">All Teams</option>
+                    {availableTeams.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* User Dropdown */}
+                <div style={{ flex: '1 1 140px', minWidth: '130px' }}>
+                  <select
+                    value={filterUser}
+                    onChange={(e) => setFilterUser(e.target.value)}
+                    className="reviews-filter-select"
+                  >
+                    <option value="all">All Users</option>
+                    {availableUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Reset Filters button */}
+                {(selectedWriteUpId !== 'all' || filterTeam !== 'all' || filterUser !== 'all' || searchQuery.trim() !== '') && (
+                  <button
+                    onClick={() => {
+                      setSelectedWriteUpId('all')
+                      setFilterTeam('all')
+                      setFilterUser('all')
+                      setSearchQuery('')
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      height: '42px',
+                      padding: '0 14px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--apple-border)',
+                      background: 'transparent',
+                      color: 'var(--apple-accent-blue)',
+                      fontSize: '0.84rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <RotateCcw size={13} />
+                    <span>Reset</span>
+                  </button>
+                )}
               </div>
             )}
-          </div>
-        </div>
-      ) : filteredReviews.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
-          {filteredReviews.map(review => (
-            <div key={review.id} onClick={() => setSelectedReview(review)} style={{ 
-              background: 'var(--apple-card, rgba(30,41,59,0.8))', 
-              border: '1px solid var(--apple-border, rgba(255,255,255,0.08))',
-              borderRadius: '16px', 
-              padding: '24px', 
-              display: 'flex', flexDirection: 'column', 
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)', 
-              cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s'
-            }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.35)'; e.currentTarget.style.borderColor = 'rgba(0,113,227,0.3)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'var(--apple-border, rgba(255,255,255,0.08))' }}
-            >
-              
-              {/* Top Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
-                {/* Avatar and Name/Team */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: '1 1 auto' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #1a73e8, #30d5c8)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '700', flexShrink: 0 }}>
-                    {review.profiles?.first_name ? review.profiles.first_name.charAt(0).toUpperCase() : 'U'}
-                    {review.profiles?.last_name ? review.profiles.last_name.charAt(0).toUpperCase() : ''}
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: '700', color: 'var(--apple-text-primary, #f8fafc)', fontSize: '1rem', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {review.profiles?.first_name} {review.profiles?.last_name}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem' }}>
-                      <span style={{ border: '1px solid rgba(0,113,227,0.3)', background: 'rgba(0,113,227,0.1)', color: 'var(--apple-accent-blue, #0071e3)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700' }}>
-                        {review.teams?.name || 'No Team'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Status Badge */}
-                <div style={{ 
-                  border: review.status === 'approved' ? '1px solid rgba(52,211,153,0.3)' : review.status === 'rejected' ? '1px solid rgba(248,113,113,0.3)' : review.status === 'pending' ? '1px solid rgba(251,191,36,0.3)' : '1px solid rgba(0,113,227,0.3)', 
-                  background: review.status === 'approved' ? 'rgba(52,211,153,0.1)' : review.status === 'rejected' ? 'rgba(248,113,113,0.1)' : review.status === 'pending' ? 'rgba(251,191,36,0.1)' : 'rgba(0,113,227,0.1)', 
-                  color: review.status === 'approved' ? '#34d399' : review.status === 'rejected' ? '#f87171' : review.status === 'pending' ? '#fbbf24' : 'var(--apple-accent-blue, #0071e3)', 
-                  padding: '5px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0
-                }}>
-                  {review.status === 'pending' ? <Clock size={14} /> : review.status === 'approved' ? <CheckCircle size={14} /> : review.status === 'rejected' ? <XCircle size={14} /> : <AlertCircle size={14} />}
-                  {review.status === 'feedback' ? 'Needs Revision' : review.status.charAt(0).toUpperCase() + review.status.slice(1)}
+            {/* Results count & status summary */}
+            {filterStatus !== 'analysis' && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.8rem',
+                color: 'var(--apple-text-secondary)',
+                paddingTop: '2px'
+              }}>
+                <div>
+                  Showing <strong style={{ color: 'var(--apple-text-primary)' }}>{filteredReviews.length}</strong> {filteredReviews.length === 1 ? 'review' : 'reviews'}
+                  {(selectedWriteUpId !== 'all' || filterTeam !== 'all' || filterUser !== 'all' || searchQuery.trim() !== '') && ' (filtered)'}
                 </div>
-              </div>
-
-              {/* Separator Line */}
-              <div style={{ height: '1px', background: 'var(--apple-border, rgba(255,255,255,0.08))', margin: '16px 0' }} />
-
-              {/* Bottom Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: 0 }}>
-                  <Calendar size={22} color="var(--apple-accent-blue, #0071e3)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: '600', color: 'var(--apple-text-primary, #f8fafc)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                      {review.events?.title || 'General Review'}
-                    </div>
-                    <p style={{ margin: 0, color: 'var(--apple-text-secondary, #94a3b8)', fontSize: '0.84rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      Review Submission
-                      {review.speaker_name && <><br />Speaker: {review.speaker_name}</>}
-                    </p>
-                  </div>
-                </div>
-                
-                {review.photo_url && (
-                  <div style={{ background: 'rgba(0,113,227,0.1)', border: '1px solid rgba(0,113,227,0.2)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ImageIcon size={16} color="var(--apple-accent-blue, #0071e3)" />
+                {selectedWriteUpId !== 'all' && (
+                  <div style={{ fontSize: '0.78rem' }}>
+                    Campaign: <span style={{ color: 'var(--apple-accent-blue)', fontWeight: '600' }}>
+                      {writeUps.find(w => String(w.id) === String(selectedWriteUpId))?.title || 'Selected'}
+                    </span>
                   </div>
                 )}
               </div>
+            )}
+          </div>
+
+          {/* Analytics View */}
+          {filterStatus === 'analysis' && analyticsData && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div className="apple-card" style={{ padding: '20px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>Total Reviews</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--apple-text-primary)' }}>{analyticsData.totalReviews}</div>
+                </div>
+                <div className="apple-card" style={{ padding: '20px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-accent-green)' }}>Approved</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>{analyticsData.approvedReviews}</div>
+                </div>
+                <div className="apple-card" style={{ padding: '20px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-accent-orange)' }}>Needs Revision</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--apple-accent-orange)' }}>{analyticsData.feedbackReviews}</div>
+                </div>
+                <div className="apple-card" style={{ padding: '20px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-accent-red)' }}>Rejected</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--apple-accent-red)' }}>{analyticsData.rejectedReviews}</div>
+                </div>
+              </div>
+
+              <div className="apple-card" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>Submissions by User</h3>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--apple-border)', textAlign: 'left', color: 'var(--apple-text-secondary)' }}>
+                        <th style={{ padding: '10px 12px' }}>User</th>
+                        <th style={{ padding: '10px 12px' }}>Team</th>
+                        <th style={{ padding: '10px 12px' }}>Total</th>
+                        <th style={{ padding: '10px 12px' }}>Approved</th>
+                        <th style={{ padding: '10px 12px' }}>Pending</th>
+                        <th style={{ padding: '10px 12px' }}>Needs Revision</th>
+                        <th style={{ padding: '10px 12px' }}>Rejected</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analyticsData.userStats.map((st, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--apple-border)' }}>
+                          <td style={{ padding: '12px' }}><strong>{st.name}</strong> <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)' }}>{st.email}</div></td>
+                          <td style={{ padding: '12px' }}>{st.team}</td>
+                          <td style={{ padding: '12px', fontWeight: '700' }}>{st.count}</td>
+                          <td style={{ padding: '12px', color: 'var(--apple-accent-green)' }}>{st.approved}</td>
+                          <td style={{ padding: '12px' }}>{st.pending}</td>
+                          <td style={{ padding: '12px', color: 'var(--apple-accent-orange)' }}>{st.feedback}</td>
+                          <td style={{ padding: '12px', color: 'var(--apple-accent-red)' }}>{st.rejected}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="apple-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontStyle: 'italic' }}>
-          No {filterStatus !== 'all' ? filterStatus : ''} reviews found.
+          )}
+
+          {/* Reviews List */}
+          {filterStatus !== 'analysis' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', gap: '20px' }}>
+              {filteredReviews.map((rev) => (
+                <div key={rev.id} className="apple-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {rev.events?.title || 'Unknown Campaign'}
+                      </div>
+                      <h3 style={{ margin: '4px 0 0', fontSize: '1rem', fontWeight: '600' }}>{rev.title || 'Untitled Submission'}</h3>
+                    </div>
+                    <span className={`apple-badge ${
+                      rev.status === 'approved' ? 'apple-badge-green' :
+                      rev.status === 'rejected' ? 'apple-badge-red' :
+                      rev.status === 'feedback' ? 'apple-badge-orange' : 'apple-badge-blue'
+                    }`} style={{ fontSize: '0.65rem' }}>
+                      {rev.status === 'feedback' ? 'Needs Revision' : rev.status}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div><strong>Submitted by:</strong> {rev.profiles?.first_name || ''} {rev.profiles?.last_name || ''} ({rev.teams?.name || 'No Team'})</div>
+                    {rev.speaker_name && <div><strong>Speaker:</strong> {rev.speaker_name} {rev.speaker_email && `(${rev.speaker_email})`}</div>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <Clock size={12} /> {new Date(rev.created_at).toLocaleString()}
+                    </div>
+                  </div>
+
+                  {rev.photo_url && (
+                    <div
+                      onClick={() => setSelectedReview(rev)}
+                      style={{
+                        position: 'relative', height: '140px', borderRadius: '8px', overflow: 'hidden',
+                        background: 'rgba(0,0,0,0.2)', cursor: 'pointer', border: '1px solid var(--apple-border)'
+                      }}
+                      title="Click to view full photo"
+                    >
+                      <img src={rev.photo_url} alt="Review Screenshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{
+                        position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.6)',
+                        color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'
+                      }}>
+                        <ImageIcon size={12} /> View Photo
+                      </div>
+                    </div>
+                  )}
+
+                  {rev.admin_feedback && (
+                    <div style={{ padding: '10px 12px', background: 'rgba(255, 159, 10, 0.08)', border: '1px solid rgba(255, 159, 10, 0.2)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--apple-accent-orange)' }}>
+                      <strong>Feedback Sent:</strong> {rev.admin_feedback}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {canManageReviews && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid var(--apple-border)', flexWrap: 'wrap' }}>
+                      {rev.status !== 'approved' && (
+                        <button
+                          onClick={() => handleApprove(rev.id)}
+                          className="apple-btn apple-btn-primary"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                        >
+                          <CheckCircle size={14} /> Approve
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setFeedbackModal({ isOpen: true, reviewId: rev.id, feedback: rev.admin_feedback || '' })}
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                      >
+                        <Edit size={14} /> Request Revision
+                      </button>
+
+                      {rev.status !== 'rejected' && (
+                        <button
+                          onClick={() => handleReject(rev.id)}
+                          className="apple-btn apple-btn-secondary"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: 'var(--apple-accent-red)' }}
+                        >
+                          <XCircle size={14} /> Reject
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleDelete(rev.id)}
+                        className="apple-btn apple-btn-danger"
+                        style={{ padding: '6px 10px', fontSize: '0.75rem', background: 'transparent', border: '1px solid var(--apple-accent-red)' }}
+                        title="Delete Review"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {filteredReviews.length === 0 && (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '50px 20px', color: 'var(--apple-text-secondary)', background: 'var(--apple-card)', borderRadius: '16px', border: '1px solid var(--apple-border)' }}>
+                  No reviews found for the selected criteria.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ===== FULL REVIEW MODAL ===== */}
-      {selectedReview && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px'
-        }} onClick={() => setSelectedReview(null)}>
-          <div className="apple-card" style={{ width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }} onClick={e => e.stopPropagation()}>
-            
-            <button onClick={() => setSelectedReview(null)} style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
-              <XCircle size={20} />
-            </button>
-
-            {/* Header Info */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', paddingRight: '40px' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: '700', color: '#fff', fontSize: '1.2rem' }}>
-                    {selectedReview.profiles?.first_name} {selectedReview.profiles?.last_name}
-                  </span>
-                  <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
-                    ({selectedReview.profiles?.email})
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.8rem' }}>
-                  <span className="apple-badge apple-badge-blue">{selectedReview.teams?.name || 'No Team'}</span>
-                  <span className="apple-badge apple-badge-gray" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    <Star size={10} /> {selectedReview.events?.title || 'Unknown Event'}
-                  </span>
-                </div>
-              </div>
-              
-              <span className={`apple-badge ${
-                selectedReview.status === 'approved' ? 'apple-badge-green' : 
-                selectedReview.status === 'rejected' ? 'apple-badge-red' : 
-                selectedReview.status === 'feedback' ? 'apple-badge-orange' : 'apple-badge-blue'
-              }`}>
-                {selectedReview.status === 'feedback' ? 'Needs Revision' : selectedReview.status.charAt(0).toUpperCase() + selectedReview.status.slice(1)}
-              </span>
+      {/* ========================================================
+          TAB 2: WRITE-UP CAMPAIGNS (EVENTS)
+         ======================================================== */}
+      {activeTab === 'write-ups' && (
+        <div>
+          {message.text && (
+            <div style={{
+              padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
+              background: message.type === 'success' ? 'rgba(48,213,200,0.08)' : 'rgba(255,69,58,0.08)',
+              border: `1px solid ${message.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)'}`,
+              color: message.type === 'success' ? 'var(--apple-accent-green)' : 'var(--apple-accent-red)',
+              fontSize: '0.88rem', fontWeight: '500'
+            }}>
+              {message.text}
             </div>
+          )}
 
-            {/* Review Content */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
-              <h4 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '1.1rem', fontWeight: '600' }}>Review Submission</h4>
-              
-              {(selectedReview.speaker_name || selectedReview.speaker_email) && (
-                <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.85rem' }}>
-                  <div style={{ color: 'var(--apple-text-secondary)', marginBottom: '4px' }}>Speaker Information</div>
-                  {selectedReview.speaker_name && <div style={{ color: '#fff', marginBottom: '2px' }}><strong>Name:</strong> {selectedReview.speaker_name}</div>}
-                  {selectedReview.speaker_email && <div style={{ color: '#fff', marginBottom: '2px' }}><strong>Email:</strong> {selectedReview.speaker_email}</div>}
-                </div>
-              )}
-
-              {selectedReview.photo_url && (
-                <div style={{ marginTop: '20px' }}>
-                  <a href={selectedReview.photo_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', cursor: 'zoom-in' }} title="Click to view full image">
-                    <img src={selectedReview.photo_url} alt="Review attachment" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', border: '1px solid var(--apple-border)', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'} />
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Admin Feedback Display */}
-            {selectedReview.status === 'feedback' && selectedReview.admin_feedback && (
-              <div style={{ display: 'flex', gap: '10px', padding: '16px', borderRadius: '10px', background: 'rgba(255,159,10,0.05)', border: '1px solid rgba(255,159,10,0.2)', color: 'var(--apple-accent-orange)', fontSize: '0.9rem' }}>
-                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          {/* Create/Edit Campaign Form */}
+          {showCreate && canManageWriteUps && (
+            <div className="apple-card" style={{ padding: '24px', marginBottom: '30px', borderTop: '3px solid var(--apple-accent-blue)' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={18} style={{ color: 'var(--apple-accent-blue)' }} />
+                {editingEventId ? 'Edit Write-Up Campaign' : 'New Write-Up Campaign'}
+              </h3>
+              <form onSubmit={handleSubmitEvent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <strong style={{ display: 'block', marginBottom: '4px' }}>Requested Changes / Feedback:</strong>
-                  {selectedReview.admin_feedback}
+                  <label className="apple-form-label">Write-Up Title</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Q3 Global Conference Feedback"
+                    required
+                    className="apple-form-control"
+                  />
                 </div>
-              </div>
-            )}
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px', borderTop: '1px solid var(--apple-border)', paddingTop: '20px', flexWrap: 'wrap' }}>
-              {canManage && (
-                <>
-                  <button 
-                    onClick={() => { handleDelete(selectedReview.id); setSelectedReview(null); }}
-                    className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', marginRight: 'auto' }}
+                <div>
+                  <label className="apple-form-label">Target Team</label>
+                  <select
+                    className="apple-form-control"
+                    value={targetTeamId}
+                    onChange={(e) => setTargetTeamId(e.target.value)}
                   >
-                    <Trash2 size={18} /> Delete Review
-                  </button>
+                    <option value="all">All Teams</option>
+                    {teams.map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-                  {selectedReview.status === 'pending' && (
+                <div>
+                  <label className="apple-form-label">Description (Optional)</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Provide context and guidelines for users submitting reviews..."
+                    rows={3}
+                    className="apple-form-control"
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="checkbox"
+                      id="collectEmail"
+                      checked={collectEmail}
+                      onChange={(e) => setCollectEmail(e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', appearance: 'auto', display: 'block' }}
+                    />
+                    <label htmlFor="collectEmail" className="apple-form-label" style={{ margin: 0, cursor: 'pointer' }}>
+                      Collect Speaker Info (Name &amp; Email)
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="checkbox"
+                      id="allowMultiple"
+                      checked={allowMultiple}
+                      onChange={(e) => setAllowMultiple(e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', appearance: 'auto', display: 'block' }}
+                    />
+                    <label htmlFor="allowMultiple" className="apple-form-label" style={{ margin: 0, cursor: 'pointer' }}>
+                      Allow Multiple Submissions (Users can submit multiple reviews)
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <label className="apple-form-label">Social Media Platform (Optional)</label>
+                    <select
+                      className="apple-form-control"
+                      value={socialPlatform}
+                      onChange={(e) => {
+                        const platform = e.target.value
+                        setSocialPlatform(platform)
+                        if (platform === 'Facebook') setSocialUrl('https://facebook.com')
+                        else if (platform === 'Instagram') setSocialUrl('https://instagram.com')
+                        else if (platform === 'LinkedIn') setSocialUrl('https://linkedin.com')
+                        else if (platform === 'Reddit') setSocialUrl('https://reddit.com')
+                        else if (platform === 'Twitter') setSocialUrl('https://twitter.com')
+                        else if (platform === 'Website') setSocialUrl('https://')
+                        else setSocialUrl('')
+                      }}
+                    >
+                      <option value="">None</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="LinkedIn">LinkedIn</option>
+                      <option value="Reddit">Reddit</option>
+                      <option value="Twitter">Twitter</option>
+                      <option value="Website">Website URL</option>
+                    </select>
+                  </div>
+
+                  {socialPlatform && (
+                    <div>
+                      <label className="apple-form-label">{socialPlatform} URL</label>
+                      <input
+                        type="url"
+                        value={socialUrl}
+                        onChange={(e) => setSocialUrl(e.target.value)}
+                        placeholder="https://..."
+                        required
+                        className="apple-form-control"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="apple-btn apple-btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || !title.trim()}
+                    className="apple-btn apple-btn-primary"
+                  >
+                    {submitting ? 'Saving...' : editingEventId ? 'Update Write-Up' : 'Save Write-Up'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Campaigns Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
+            {events.map((ev) => (
+              <div key={ev.id} className="apple-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: ev.is_active ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)' }} />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700' }}>{ev.title}</h3>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span>Created {new Date(ev.created_at).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span style={{ color: ev.teams?.name ? 'var(--apple-accent-blue)' : 'var(--apple-text-primary)' }}>
+                        {ev.teams?.name ? `Target: ${ev.teams.name}` : 'Target: All Teams'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`apple-badge ${ev.is_active ? 'apple-badge-green' : 'apple-badge-gray'}`} style={{ fontSize: '0.65rem' }}>
+                    {ev.is_active ? 'Active' : 'Closed'}
+                  </span>
+                </div>
+
+                {ev.social_platform && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--apple-accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.65rem' }}>
+                      Target: {ev.social_platform}
+                    </span>
+                    <a href={ev.social_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--apple-accent-blue)', textDecoration: 'underline' }}>
+                      {ev.social_url.length > 30 ? ev.social_url.substring(0, 30) + '...' : ev.social_url}
+                    </a>
+                  </div>
+                )}
+
+                {ev.description && (
+                  <p style={{ margin: 0, color: 'var(--apple-text-secondary)', fontSize: '0.85rem', lineHeight: '1.5', flexGrow: 1 }}>
+                    {ev.description}
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--apple-border)' }}>
+                  {canManageWriteUps && (
                     <>
-                      <button 
-                        onClick={() => { handleReject(selectedReview.id); setSelectedReview(null); }}
-                        className="apple-btn apple-btn-danger" style={{ background: 'transparent', border: '1px solid var(--apple-accent-red)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      <button
+                        onClick={() => handleEditClick(ev)}
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
                       >
-                        <XCircle size={18} /> Reject
+                        <Edit size={14} /> Edit
                       </button>
-                      <button 
-                        onClick={() => setFeedbackModal({ isOpen: true, reviewId: selectedReview.id, feedback: '' })}
-                        className="apple-btn apple-btn-secondary" style={{ padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apple-accent-orange)' }}
+
+                      <button
+                        onClick={() => toggleEventStatus(ev.id, ev.is_active)}
+                        className={`apple-btn ${ev.is_active ? 'apple-btn-secondary' : 'apple-btn-primary'}`}
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 auto', justifyContent: 'center' }}
                       >
-                        <AlertCircle size={18} /> Give Feedback
+                        <Power size={14} /> {ev.is_active ? 'Turn Off' : 'Turn On'}
                       </button>
-                      <button 
-                        onClick={() => { handleApprove(selectedReview.id); setSelectedReview(null); }}
-                        className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-green)', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+
+                      <button
+                        onClick={() => handleDeleteEvent(ev.id)}
+                        className="apple-btn apple-btn-danger"
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--apple-accent-red)', flex: '1 1 auto', justifyContent: 'center' }}
                       >
-                        <CheckCircle size={18} /> Approve
+                        <Trash2 size={14} /> Delete
                       </button>
                     </>
                   )}
-                </>
-              )}
+
+                  <button
+                    onClick={() => handleDownloadCSV(ev.id, ev.title)}
+                    className="apple-btn apple-btn-primary"
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 100%', justifyContent: 'center', marginTop: '4px' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download Excel (CSV)
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {events.length === 0 && !loading && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--apple-text-secondary)', fontStyle: 'italic', background: 'var(--apple-card)', borderRadius: '16px', border: '1px solid var(--apple-border)' }}>
+                No review write-up campaigns created yet. Click &ldquo;Create Write-Up&rdquo; to launch your first one.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== PHOTO PREVIEW MODAL ===== */}
+      {selectedReview && createPortal(
+        <div
+          onClick={() => setSelectedReview(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="apple-card"
+            style={{ maxWidth: '800px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Submission Photo</h3>
+              <button onClick={() => setSelectedReview(null)} className="apple-btn apple-btn-secondary" style={{ padding: '4px 10px' }}>
+                Close
+              </button>
+            </div>
+            <img src={selectedReview.photo_url} alt="Review Full" style={{ width: '100%', borderRadius: '8px', objectFit: 'contain', maxHeight: '60vh' }} />
+            <div style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>
+              <div><strong>User:</strong> {selectedReview.profiles?.first_name} {selectedReview.profiles?.last_name}</div>
+              <div><strong>Campaign:</strong> {selectedReview.events?.title}</div>
             </div>
           </div>
         </div>,
@@ -594,33 +1336,41 @@ export default function AdminReviews() {
 
       {/* ===== FEEDBACK MODAL ===== */}
       {feedbackModal.isOpen && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px'
-        }}>
-          <div className="apple-card" style={{ width: '100%', maxWidth: '500px', padding: '24px', borderTop: '4px solid var(--apple-accent-orange)' }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={20} style={{ color: 'var(--apple-accent-orange)' }} /> Provide Feedback
-            </h3>
+        <div
+          onClick={() => setFeedbackModal({ isOpen: false, reviewId: null, feedback: '' })}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="apple-card"
+            style={{ maxWidth: '500px', width: '100%', padding: '24px' }}
+          >
+            <h3 style={{ margin: '0 0 12px', fontSize: '1.15rem' }}>Request Revision</h3>
+            <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.85rem', marginBottom: '16px' }}>
+              Explain what the user needs to correct. The status will be marked as &ldquo;Needs Revision&rdquo;.
+            </p>
             <form onSubmit={handleFeedbackSubmit}>
-              <div style={{ marginBottom: '20px' }}>
-                <label className="apple-form-label">Suggested Changes / Feedback</label>
-                <textarea
-                  className="apple-form-control"
-                  rows={4}
-                  required
-                  placeholder="Explain what needs to be changed..."
-                  value={feedbackModal.feedback}
-                  onChange={(e) => setFeedbackModal({ ...feedbackModal, feedback: e.target.value })}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" onClick={() => setFeedbackModal({ isOpen: false, reviewId: null, feedback: '' })} className="apple-btn apple-btn-secondary">
+              <textarea
+                value={feedbackModal.feedback}
+                onChange={e => setFeedbackModal({ ...feedbackModal, feedback: e.target.value })}
+                placeholder="e.g. Please provide a clear screenshot of the published review showing your name and rating."
+                required
+                rows={4}
+                className="apple-form-control"
+                style={{ resize: 'vertical', marginBottom: '16px' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setFeedbackModal({ isOpen: false, reviewId: null, feedback: '' })}
+                  className="apple-btn apple-btn-secondary"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="apple-btn apple-btn-primary" style={{ background: 'var(--apple-accent-orange)' }}>
+                <button type="submit" className="apple-btn apple-btn-primary">
                   Send Feedback
                 </button>
               </div>
@@ -629,8 +1379,6 @@ export default function AdminReviews() {
         </div>,
         document.body
       )}
-
-
     </div>
   )
 }

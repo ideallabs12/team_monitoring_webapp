@@ -12,12 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json()
+    const { prompt, systemPrompt, max_tokens } = await req.json()
     const apiKey = Deno.env.get('open_router_api')
 
     if (!apiKey) {
       throw new Error('Missing open_router_api secret')
     }
+
+    const defaultSystem = 'You are an expert Data Analyst and Business Strategist. Ground all insights in real numbers. Stick strictly to what is necessary, avoid fluff, and format in clean Markdown with headings and bold metrics.'
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -29,9 +31,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'openai/gpt-4o',
-        max_tokens: 1000,
+        max_tokens: typeof max_tokens === 'number' ? max_tokens : 1000,
         messages: [
-          { role: 'system', content: 'You are an expert Data Analyst and Business Strategist. You are analyzing data for a company. Your goal is to provide clear, actionable, and beautiful insights. Use Markdown to format your response with headings, bullet points, and bold text to make it easy to read.' },
+          { role: 'system', content: systemPrompt || defaultSystem },
           { role: 'user', content: prompt }
         ]
       })

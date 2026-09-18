@@ -19,6 +19,7 @@ export default function PageTracker({ user }) {
       if (pathname === '/historical-revenue') return 'Historical Revenue';
       if (pathname === '/revenue-history') return 'Revenue History';
       if (pathname === '/dis') return 'Daily Information System';
+      if (pathname === '/ai-copilot') return 'AI Copilot';
       if (pathname === '/team-analytics') return 'Team Analytics';
       if (pathname === '/team-management') return 'Team Management';
       if (pathname === '/team-dis-report') return 'Team DIS Report';

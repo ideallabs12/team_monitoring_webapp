@@ -5,9 +5,7 @@ import { Search, TrendingUp, Filter, ChevronDown, X, Edit2, Trash2 } from 'lucid
 
 const SOURCE_OPTIONS = ['All', 'Instagram', 'Facebook', 'TikTok', 'Twitter', 'LinkedIn', 'Email Marketing', 'Organic Search', 'Referral', 'Website', 'Other', 'Unknown']
 
-export default function RevenueHistory({ user }) {
-  const [revenues, setRevenues] = useState([])
-  const [loading, setLoading] = useState(true)
+export default function RevenueHistoryTab({ revenues, setRevenues, isAdminView }) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -28,31 +26,8 @@ export default function RevenueHistory({ user }) {
   const [accessDenied, setAccessDenied] = useState(false)
 
   useEffect(() => {
-    async function fetchAll() {
-      try {
-        const { data: prof } = await supabase.from('profiles').select('has_revenue_logging').eq('id', user.id).single()
-        if (prof?.has_revenue_logging === false) {
-          setAccessDenied(true)
-          setLoading(false)
-          return
-        }
-
-        const { data, error } = await supabase
-          .from('monthly_revenues')
-          .select('*, teams(name)')
-          .eq('user_id', user.id)
-          .order('revenue_month', { ascending: false })
-          .order('created_at', { ascending: false })
-        if (error) throw error
-        setRevenues(data || [])
-      } catch (err) {
-        console.error('Error fetching revenue history:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchAll()
-  }, [user])
+    // If we need to scroll to top when tab mounts
+  }, [])
 
   // Derive filter option lists from data
   const availableYears = useMemo(() => {
@@ -178,49 +153,10 @@ export default function RevenueHistory({ user }) {
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--apple-text-secondary)', gap: '12px' }}>
-        <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--apple-accent-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        Loading revenue history...
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
-  }
-
-  if (accessDenied) {
-    return (
-      <div className="apple-page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', animation: 'fadeIn 0.4s var(--apple-ease)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
-          <h2 className="apple-title-medium">Access Restricted</h2>
-          <p style={{ color: 'var(--apple-text-secondary)' }}>Revenue logging is not enabled for your account.</p>
-        </div>
-      </div>
-    )
-  }
-
-
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div className="apple-kicker">Complete Record</div>
-        <h1 className="apple-title-large">Revenue History</h1>
-        <p className="apple-lead">Every revenue contribution you've ever logged, across all teams and time periods.</p>
-      </div>
-
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <div className="apple-card" style={{ padding: '20px !important', textAlign: 'center', background: 'linear-gradient(135deg, rgba(48,213,200,0.08), rgba(0,113,227,0.08)) !important', border: '1px solid rgba(48,213,200,0.2) !important' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700', marginBottom: '6px' }}>All-Time Total</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700', color: 'var(--apple-accent-green)', letterSpacing: '-0.02em' }}>
-            ${allTimeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>{revenues.length} entries</div>
-        </div>
-
         <div className="apple-card" style={{ padding: '20px !important', textAlign: 'center' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700', marginBottom: '6px' }}>Filtered Total</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '700', color: hasActiveFilters ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', letterSpacing: '-0.02em' }}>
@@ -539,7 +475,18 @@ export default function RevenueHistory({ user }) {
             
             <div style={{ marginBottom: '16px' }}>
               <label className="apple-form-label">Amount (USD)</label>
-              <input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="apple-input" style={{ width: '100%' }} />
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
+                value={editAmount}
+                onChange={e => {
+                  const val = e.target.value
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) setEditAmount(val)
+                }}
+                className="apple-input"
+                style={{ width: '100%' }}
+              />
             </div>
 
             <div style={{ marginBottom: '16px' }}>

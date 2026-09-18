@@ -30,6 +30,7 @@
     "@capacitor/core": "^8.4.1",
     "@supabase/supabase-js": "^2.106.1",
     "@vercel/speed-insights": "^2.0.0",
+    "canvas-confetti": "^1.9.4",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
     "jodit": "^4.12.35",

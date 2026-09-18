@@ -2,8 +2,7 @@
    GLOBAL OVERFLOW FIX — prevents horizontal page shaking
    ===================================================== */
 html {
-  /* overflow-x: hidden on html breaks position: sticky globally. 
-     Horizontal overflow protection is applied at the .admin-main level. */
+  overflow-x: hidden;
 }
 
 :root {
@@ -22,6 +21,16 @@ html {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Hide cursor-based spinner/stepper arrows on number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
 }
 
 /* Prevent flex/grid children from overflowing their containers */
@@ -620,39 +629,41 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* ── Sidebar wrapper (desktop) ── */
 .admin-sidebar-wrapper {
-  width: 220px;
+  width: 256px;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   height: 100vh;
   z-index: 40;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.25s cubic-bezier(0.2, 0, 0, 1);
+  will-change: width;
 }
 
 .admin-sidebar-wrapper.collapsed {
-  width: 72px;
+  width: 70px;
 }
 
 /* ── The sidebar itself ── */
 .admin-sidebar {
-  width: 220px;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 256px;
   height: 100vh;
-  background: var(--apple-card);
+  transition: width 0.25s cubic-bezier(0.2, 0, 0, 1);
+  background: var(--apple-card, #161617);
   border-right: 1px solid var(--apple-border);
   display: flex;
   flex-direction: column;
   padding: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  position: relative;
+  will-change: width;
 }
 
 .admin-sidebar.collapsed {
-  width: 72px;
+  width: 70px;
 }
 
 /* Scrollbar styling for sidebar */
-.admin-sidebar::-webkit-scrollbar { display: none; }
+.admin-sidebar::-webkit-scrollbar,
 .admin-sidebar-nav::-webkit-scrollbar { display: none; }
 .admin-sidebar-nav { scrollbar-width: none; }
 
@@ -665,85 +676,319 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 22px 20px 20px;
-  margin-bottom: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--apple-border);
+  min-height: 56px;
+  box-sizing: border-box;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-brand {
+  padding: 16px 8px;
+  justify-content: center;
 }
 
 .admin-sidebar-brand-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: transparent;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
   flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.admin-sidebar-brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.admin-sidebar-brand-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .admin-sidebar-brand-name {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--apple-text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ── Navigation ── */
+.admin-sidebar-brand-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--apple-accent-blue);
+  background: rgba(0, 113, 227, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.admin-menu-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--apple-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.admin-menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--apple-text-primary);
+}
+
+/* ── Sidebar Quick Search ── */
+.sidebar-search-container {
+  padding: 10px 12px 4px;
+  box-sizing: border-box;
+}
+
+.sidebar-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--apple-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: all 0.15s var(--apple-ease);
+}
+
+.sidebar-search-box:focus-within {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--apple-accent-blue);
+  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
+}
+
+.sidebar-search-input {
+  background: transparent;
+  border: none;
+  color: var(--apple-text-primary);
+  font-size: 0.8rem;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+}
+
+.sidebar-search-input::placeholder {
+  color: var(--apple-text-secondary);
+  opacity: 0.7;
+}
+
+/* ── Navigation List & Sections ── */
 .admin-sidebar-nav {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0 10px;
+  padding: 8px 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+.admin-sidebar.collapsed .admin-sidebar-nav {
+  padding: 8px 6px;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.sidebar-section-header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--apple-text-secondary);
+  opacity: 0.6;
+  padding: 10px 10px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.sidebar-section-divider {
+  height: 1px;
+  background: var(--apple-border);
+  margin: 6px 10px;
+  opacity: 0.6;
+}
+
+.admin-sidebar.collapsed .sidebar-section-divider {
+  margin: 6px 6px;
+}
+
+/* ── Sidebar Nav Links ── */
 .admin-sidebar-link {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   color: var(--apple-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.15s var(--apple-ease), color 0.15s var(--apple-ease);
+  transition: background 0.15s var(--apple-ease), color 0.15s var(--apple-ease), transform 0.15s var(--apple-ease);
   cursor: pointer;
   white-space: nowrap;
+  position: relative;
+  user-select: none;
 }
 
 .admin-sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--apple-text-primary);
 }
 
 .admin-sidebar-link.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 113, 227, 0.12);
   color: var(--apple-text-primary);
   font-weight: 600;
 }
 
-.admin-sidebar-link.active svg {
+.admin-sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: var(--apple-accent-blue);
+}
+
+.admin-sidebar-link svg {
+  flex-shrink: 0;
+  color: var(--apple-text-secondary);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.admin-sidebar-link:hover svg {
   color: var(--apple-text-primary);
 }
 
-/* ── Bottom: Profile + Sign Out ── */
+.admin-sidebar-link.active svg {
+  color: var(--apple-accent-blue);
+}
+
+.admin-sidebar.collapsed .admin-sidebar-link {
+  justify-content: center;
+  padding: 10px 0;
+  border-radius: 8px;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-link.active::before {
+  top: 8px;
+  bottom: 8px;
+}
+
+/* ── Collapsed Mode Floating Tooltip ── */
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: #1c1c1e;
+  border: 1px solid var(--apple-border);
+  color: #f5f5f7;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  z-index: 200;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.admin-sidebar.collapsed .admin-sidebar-link:hover .sidebar-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ── Badges ── */
+.sidebar-pill-badge {
+  margin-left: auto;
+  background: var(--apple-accent-red);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-dot-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  background: var(--apple-accent-red);
+  border-radius: 50%;
+  border: 2px solid var(--apple-card);
+}
+
+/* ── Bottom: Profile + Actions ── */
 .admin-sidebar-bottom {
-  padding: 16px 10px 20px;
+  padding: 12px 10px 14px;
   border-top: 1px solid var(--apple-border);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.admin-sidebar.collapsed .admin-sidebar-bottom {
+  padding: 12px 6px 14px;
 }
 
 .admin-sidebar-profile {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--apple-border);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.admin-sidebar-profile:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .admin-sidebar-avatar {
@@ -758,17 +1003,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .admin-sidebar-profile-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   overflow: hidden;
+  flex: 1;
 }
 
 .admin-sidebar-profile-name {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--apple-text-primary);
   white-space: nowrap;
@@ -777,29 +1024,76 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .admin-sidebar-role-badge {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: var(--apple-accent-red);
   background: rgba(255, 69, 58, 0.12);
   border: 1px solid rgba(255, 69, 58, 0.25);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 1px 5px;
   display: inline-block;
   width: fit-content;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
+.admin-sidebar-role-badge.user {
+  color: var(--apple-accent-green);
+  background: rgba(48, 213, 200, 0.12);
+  border-color: rgba(48, 213, 200, 0.25);
+}
+
+.admin-sidebar-role-badge.teamlead {
+  color: var(--apple-accent-orange);
+  background: rgba(255, 159, 10, 0.12);
+  border-color: rgba(255, 159, 10, 0.25);
+}
+
+.admin-sidebar-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-sidebar-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--apple-border);
+  color: var(--apple-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.admin-sidebar-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--apple-text-primary);
+}
+
+.admin-sidebar-action-btn.signout:hover {
+  background: rgba(255, 69, 58, 0.12);
+  border-color: rgba(255, 69, 58, 0.3);
+  color: var(--apple-accent-red);
+}
+
 .admin-sidebar-signout {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   background: transparent;
   border: none;
   color: var(--apple-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -858,23 +1152,24 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .admin-mobile-menu-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--apple-text-secondary);
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
 }
 
-/* ── Mobile sidebar (hidden by default) ── */
+/* ── Mobile sidebar ── */
 .admin-sidebar-mobile {
   display: none;
   position: fixed;
   top: 0;
-  left: -240px;
-  width: 240px;
+  left: -270px;
+  width: 270px;
   height: 100vh;
-  z-index: 50;
-  transition: left 0.25s ease;
+  z-index: 200;
+  transition: left 0.25s cubic-bezier(0.2, 0, 0, 1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
 .admin-sidebar-mobile.open {
@@ -886,210 +1181,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 45;
-  backdrop-filter: blur(2px);
-}
-
-/* ── Responsive: mobile breakpoint ── */
-@media (max-width: 1024px) {
-  .admin-sidebar-wrapper { display: none; }
-  .admin-mobile-topbar { display: flex !important; }
-  .admin-sidebar-mobile { display: block; }
-}
-
-.admin-sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  color: var(--apple-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: background 0.15s var(--apple-ease), color 0.15s var(--apple-ease);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.admin-sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--apple-text-primary);
-}
-
-.admin-sidebar-link.active {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--apple-text-primary);
-  font-weight: 600;
-}
-
-.admin-sidebar-link.active svg {
-  color: var(--apple-text-primary);
-}
-
-/* ── Bottom: Profile + Sign Out ── */
-.admin-sidebar-bottom {
-  padding: 16px 10px 20px;
-  border-top: 1px solid var(--apple-border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.admin-sidebar-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--apple-border);
-}
-
-.admin-sidebar-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--apple-accent-blue), #8b5cf6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.admin-sidebar-profile-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  overflow: hidden;
-}
-
-.admin-sidebar-profile-name {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--apple-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.admin-sidebar-role-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--apple-accent-red);
-  background: rgba(255, 69, 58, 0.12);
-  border: 1px solid rgba(255, 69, 58, 0.25);
-  border-radius: 4px;
-  padding: 1px 6px;
-  display: inline-block;
-  width: fit-content;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.admin-sidebar-signout {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  background: transparent;
-  border: none;
-  color: var(--apple-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  width: 100%;
-  text-align: left;
-}
-
-.admin-sidebar-signout:hover {
-  background: rgba(255, 69, 58, 0.08);
-  color: var(--apple-accent-red);
-}
-
-/* ── Main content area ── */
-.admin-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: var(--apple-bg);
-}
-
-.admin-content {
-  flex: 1;
-  padding: 36px 40px;
-  max-width: 1300px;
-  width: 100%;
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-/* Override the old admin-content-area class */
-.admin-content-area {
-  flex: 1;
-  padding: 36px 40px;
-  max-width: 1300px;
-  width: 100%;
-  margin: 0;
-}
-
-/* ── Mobile top bar ── */
-.admin-mobile-topbar {
-  display: none !important;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 14px;
-  padding: 14px 20px;
-  background: var(--apple-card);
-  border-bottom: 1px solid var(--apple-border);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-}
-
-.admin-mobile-menu-btn {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}
-
-/* ── Mobile sidebar (hidden by default) ── */
-.admin-sidebar-mobile {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: -240px;
-  width: 240px;
-  height: 100vh;
-  z-index: 50;
-  transition: left 0.25s ease;
-}
-
-.admin-sidebar-mobile.open {
-  left: 0;
-}
-
-/* ── Mobile overlay ── */
-.admin-sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 45;
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 150;
+  backdrop-filter: blur(4px);
 }
 
 /* ── Responsive: mobile breakpoint ── */
@@ -1256,14 +1350,102 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 [data-theme="light"] .apple-mobile-menu-drawer {
   background: var(--apple-bg);
 }
+/* ── Sidebar Light Theme Optimizations ── */
+[data-theme="light"] .admin-sidebar {
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .admin-sidebar-brand {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .admin-sidebar-brand-name {
+  color: #1d1d1f;
+}
+[data-theme="light"] .admin-menu-toggle-btn {
+  color: #636366;
+}
+[data-theme="light"] .admin-menu-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1d1d1f;
+}
+[data-theme="light"] .sidebar-search-box {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .sidebar-search-box:focus-within {
+  background: #ffffff;
+  border-color: var(--apple-accent-blue);
+  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15);
+}
+[data-theme="light"] .sidebar-search-input {
+  color: #1d1d1f;
+}
+[data-theme="light"] .sidebar-search-input::placeholder {
+  color: #8e8e93;
+}
+[data-theme="light"] .sidebar-section-header {
+  color: #636366;
+  opacity: 1;
+  font-weight: 700;
+}
+[data-theme="light"] .sidebar-section-divider {
+  background: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .admin-sidebar-link {
+  color: #48484a;
+}
 [data-theme="light"] .admin-sidebar-link:hover {
   background: rgba(0, 0, 0, 0.04);
+  color: #1d1d1f;
+}
+[data-theme="light"] .admin-sidebar-link svg {
+  color: #636366;
+}
+[data-theme="light"] .admin-sidebar-link:hover svg {
+  color: #1d1d1f;
 }
 [data-theme="light"] .admin-sidebar-link.active {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 113, 227, 0.10);
+  color: var(--apple-accent-blue);
+  font-weight: 600;
+}
+[data-theme="light"] .admin-sidebar-link.active svg {
+  color: var(--apple-accent-blue);
+}
+[data-theme="light"] .admin-sidebar-bottom {
+  background: #fbfbfd;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 [data-theme="light"] .admin-sidebar-profile {
-  background: rgba(0, 0, 0, 0.02);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+[data-theme="light"] .admin-sidebar-profile:hover {
+  background: #f5f5f7;
+}
+[data-theme="light"] .admin-sidebar-profile-name {
+  color: #1d1d1f;
+}
+[data-theme="light"] .admin-sidebar-action-btn {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #48484a;
+}
+[data-theme="light"] .admin-sidebar-action-btn:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+[data-theme="light"] .admin-sidebar-action-btn.signout:hover {
+  background: rgba(255, 59, 48, 0.08);
+  border-color: rgba(255, 59, 48, 0.25);
+  color: #ff3b30;
+}
+[data-theme="light"] .sidebar-tooltip {
+  background: #1d1d1f;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 [data-theme="light"] .admin-sidebar::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.08);
@@ -1655,6 +1837,81 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .apple-form-control option {
   background-color: #161617;
   color: #f5f5f7;
+}
+
+[data-theme="light"] .apple-form-control option {
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+/* Dedicated Reviews & Approvals Toolbar Elements */
+.reviews-toolbar-card {
+  background: var(--apple-card);
+  border: 1px solid var(--apple-border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .reviews-toolbar-card {
+  background: #ffffff;
+  border-color: #e5e5ea;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.reviews-filter-select,
+.reviews-filter-input {
+  width: 100%;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--apple-border) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--apple-text-primary) !important;
+  font-size: 0.88rem !important;
+  font-family: inherit !important;
+  line-height: 40px !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+}
+
+select.reviews-filter-select {
+  appearance: auto !important;
+  cursor: pointer;
+}
+
+[data-theme="light"] .reviews-filter-select,
+[data-theme="light"] .reviews-filter-input {
+  background: #fbfbfd !important;
+  border-color: #d1d1d6 !important;
+  color: #1d1d1f !important;
+}
+
+[data-theme="light"] .reviews-filter-select option {
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+.reviews-filter-select:focus,
+.reviews-filter-input:focus {
+  border-color: var(--apple-accent-blue) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15) !important;
+}
+
+[data-theme="dark"] .reviews-filter-select:focus,
+[data-theme="dark"] .reviews-filter-input:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.reviews-filter-input.has-icon {
+  padding-left: 38px !important;
 }
 
 .admin-profile-grid-layout {
@@ -3249,4 +3506,24 @@ select.apple-input {
 .crm-page div[style*="background: #ffffff"][style*="borderRadius: '20px'"],
 .crm-page div[style*="background: #ffffff"][style*="border-radius: 20px"] {
   background: var(--crm-card) !important;
+}
+
+/* Hide scrollbars globally for macOS feel */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+/* Active Feature Tabs Overrides */
+.feature-tab-active-blue {
+  background: linear-gradient(135deg, #0071e3, #439cfb) !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(0, 113, 227, 0.4) !important;
+}
+.feature-tab-active-green {
+  background: linear-gradient(135deg, #30d5c8, #0071e3) !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(48, 213, 200, 0.3) !important;
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import {
@@ -15,14 +15,15 @@ import {
   History,
   PhoneCall,
   Star,
-  User as UserIcon,
-  MapPin,
   Megaphone,
   LayoutTemplate,
   Flag,
   CheckSquare,
   Video,
-  Calendar
+  Sparkles,
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
@@ -32,13 +33,11 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    // Automatically close sidebar on mobile when navigating to a new route
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false)
-    }
-  }, [location.pathname])
+  const handleNavClick = () => {
+    if (sidebarOpen) setSidebarOpen(false)
+  }
 
   useEffect(() => {
     if (!user?.id) return
@@ -108,183 +107,294 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim()
     : 'User'
 
-  // Build nav links based on profile
-  const navLinks = [
-    { path: '/home', label: 'Home', icon: Home },
-    { path: '/crm/speakers', label: 'Speakers CRM', icon: Users },
-  ]
-  
-  navLinks.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
-  
-  navLinks.push({ path: '/team', label: 'Team', icon: Users })
-  
-  if (profile?.has_revenue_logging !== false) {
-    navLinks.push({ path: '/revenue', label: 'Revenue', icon: DollarSign })
-  }
-  if (profile?.has_dis_reporting !== false) {
-    navLinks.push({ path: '/dis', label: 'My DIS', icon: FileText })
-  }
-  navLinks.push({ path: '/profile', label: 'Profile', icon: UserIcon })
-  navLinks.push({ path: '/settings', label: 'Settings', icon: SettingsIcon })
+  const isTeamLead = profile?.platform_role?.toLowerCase() === 'teamlead'
+  const isAdmin = profile?.platform_role?.toLowerCase() === 'admin'
 
-  const isAdmin = profile?.platform_role?.toLowerCase() === 'admin';
-  if (isAdmin) {
-    navLinks.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
-  }
-  
+  // Build categorized navigation sections
+  const userNavSections = useMemo(() => {
+    const sections = []
 
+    // 1. Workspace
+    sections.push({
+      title: 'Workspace',
+      items: [
+        { path: '/home', label: 'Home', icon: Home },
+        { path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount },
+        { path: '/ai-copilot', label: 'AI Copilot', icon: Sparkles },
+      ]
+    })
 
+    // 2. Daily Operations & Logs (if enabled)
+    const operationsItems = []
+    if (profile?.has_dis_reporting !== false) {
+      operationsItems.push({ path: '/dis', label: 'My DIS', icon: FileText })
+    }
+    if (operationsItems.length > 0) {
+      sections.push({
+        title: 'Operations',
+        items: operationsItems
+      })
+    }
 
-  const othersLinks = [
-    { path: '/milestones', label: 'Milestones', icon: Flag },
-    { path: '/reviews', label: 'Reviews', icon: Star },
-    { path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
-    { path: '/meetings', label: 'Meetings', icon: Video },
-  ]
-  
-  if (profile?.has_revenue_logging !== false) {
-    othersLinks.unshift({ path: '/revenue-history', label: 'Revenue History', icon: History })
-  }
-  
-  const isTechProfile = profile?.has_revenue_logging === false && profile?.has_dis_reporting === false;
-  
-  othersLinks.push({ path: '/leaderboard', label: 'Leaderboard', icon: Trophy })
-  if (profile?.is_sales_executive) {
-    othersLinks.push({ path: '/sales-analytics', label: 'Sales Exec', icon: PhoneCall })
-  }
+    // 3. Team & Collaboration
+    const collabItems = [
+      { path: '/team', label: 'Team', icon: Users },
+      { path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
+    ]
+    sections.push({
+      title: 'Collaboration',
+      items: collabItems
+    })
 
-  navLinks.push(...othersLinks)
+    // 4. Team Hub (For Team Leads only)
+    if (isTeamLead) {
+      sections.push({
+        title: 'Team Hub',
+        items: [
+          { path: '/team-analytics', label: 'Team Analytics', icon: TrendingUp },
+          { path: '/team-management', label: 'Team Mgmt', icon: Users },
+          { path: '/team-dis-report', label: 'Team DIS', icon: FileText },
+        ]
+      })
+    }
 
-  const teamHubLinks = profile?.platform_role?.toLowerCase() === 'teamlead' ? [
-    { path: '/team-analytics', label: 'Team Analytics', icon: TrendingUp },
-    { path: '/team-management', label: 'Team Mgmt', icon: Users },
-    { path: '/team-dis-report', label: 'Team DIS', icon: FileText },
-  ] : []
+    // 5. Growth & Recognition
+    const growthItems = []
+    if (profile?.has_revenue_logging !== false) {
+      growthItems.push({ path: '/revenue', label: 'Revenue', icon: DollarSign })
+      growthItems.push({ path: '/revenue-history', label: 'Revenue History', icon: History })
+    }
+    growthItems.push(
+      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+      { path: '/milestones', label: 'Milestones', icon: Flag },
+      { path: '/reviews', label: 'Reviews', icon: Star }
+    )
+    if (profile?.is_sales_executive) {
+      growthItems.push({ path: '/sales-analytics', label: 'Sales Exec', icon: PhoneCall })
+    }
+    sections.push({
+      title: 'Recognition & Growth',
+      items: growthItems
+    })
+
+    // 6. Discontinued
+    const discontinuedItems = [
+      { path: '/crm/speakers', label: 'Speakers CRM', icon: Users },
+      { path: '/meetings', label: 'Call Transcripts', icon: Video },
+    ]
+    if (isAdmin) {
+      discontinuedItems.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
+    }
+    sections.push({
+      title: 'Discontinued',
+      items: discontinuedItems
+    })
+
+    return sections
+  }, [profile, unreadCount, isTeamLead, isAdmin])
+
+  // Filter sections by search query
+  const filteredSections = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return userNavSections
+
+    return userNavSections.map(section => ({
+      ...section,
+      items: section.items.filter(item => item.label.toLowerCase().includes(query))
+    })).filter(section => section.items.length > 0)
+  }, [userNavSections, searchQuery])
+
+  const totalMatchingItems = useMemo(() => {
+    return filteredSections.reduce((acc, sec) => acc + sec.items.length, 0)
+  }, [filteredSections])
 
   const renderSidebarContent = (isMobileView) => {
     const collapsed = isMobileView ? false : isCollapsed
 
     return (
       <div className={`admin-sidebar ${collapsed ? 'collapsed' : ''}`}>
-        {/* ── Brand ── */}
-        <div className="admin-sidebar-brand" style={{
-          display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-          padding: collapsed ? '18px 0' : '18px 16px',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          borderBottom: '1px solid var(--apple-border)',
-          marginBottom: '8px', minHeight: '62px'
-        }}>
+        {/* ── Brand Header ── */}
+        <div className="admin-sidebar-brand">
+          {!collapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+              <div className="admin-sidebar-brand-icon" title="All-Hands Platform">
+                <img src="/allhands_logo_cropped.png" alt="All-Hands Logo" />
+              </div>
+
+              <div className="admin-sidebar-brand-info">
+                <span className="admin-sidebar-brand-name">All-Hands</span>
+                <div 
+                  style={{ 
+                    marginTop: '2px'
+                  }}
+                >
+                  <span style={{ 
+                    fontSize: '0.8rem', 
+                    color: 'var(--apple-text-secondary)', 
+                    fontWeight: '500', 
+                    whiteSpace: 'nowrap', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    maxWidth: '140px', 
+                    display: 'block' 
+                  }}>
+                    {fullName}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             className="admin-menu-toggle-btn"
             onClick={() => {
               if (isMobileView) setSidebarOpen(false)
               else setIsCollapsed(!isCollapsed)
             }}
-            style={{
-              background: 'transparent', border: 'none', color: 'var(--apple-text-secondary)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '6px', borderRadius: '8px', flexShrink: 0,
-              transition: 'background 0.15s, color 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--apple-text-primary)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            style={collapsed ? { margin: '0 auto', width: '40px', height: '40px' } : {}}
           >
-            {isMobileView ? <X size={20} /> : <Menu size={20} />}
+            {isMobileView ? (
+              <X size={19} />
+            ) : (
+              <Menu size={collapsed ? 24 : 18} />
+            )}
           </button>
-
-          {!collapsed && (
-            <>
-              <span className="admin-sidebar-brand-name" style={{ flex: 1, fontSize: '1.05rem', letterSpacing: '-0.02em' }}>All-Hands</span>
-              <div className="admin-sidebar-brand-icon" style={{ marginLeft: 'auto', flexShrink: 0, width: '44px', height: '44px', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden' }}>
-                <img src="/allhands_logo_cropped.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </div>
-            </>
-          )}
         </div>
 
-        {/* ── Navigation ── */}
-        <nav className="admin-sidebar-nav" style={{ padding: collapsed ? '0 8px' : '0 10px', overflowY: 'auto', flex: 1 }}>
-          <div style={{ marginBottom: '16px' }}>
-            {navLinks.map(({ path, label, icon: Icon }) => {
-              const active = isActive(path)
-              return (
-                <Link
-                  key={path} to={path}
-                  className={`admin-sidebar-link${active ? ' active' : ''}`}
-                  title={collapsed ? label : ''}
-                  style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }}
+        {/* ── Quick Search (Expanded Only) ── */}
+        {!collapsed && (
+          <div className="sidebar-search-container">
+            <div className="sidebar-search-box">
+              <Search size={14} style={{ color: 'var(--apple-text-secondary)', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Jump to page..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="sidebar-search-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    background: 'transparent', border: 'none', color: 'var(--apple-text-secondary)',
+                    cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center'
+                  }}
+                  title="Clear search"
                 >
-                  <div style={{ position: 'relative' }}>
-                    <Icon size={collapsed ? 22 : 18} strokeWidth={active ? 2.5 : 2} />
-                    {navLinks.find(n => n.path === path)?.badge > 0 && (
-                      <span style={{
-                        position: 'absolute', top: '-4px', right: '-4px',
-                        background: 'var(--apple-accent-red)', color: '#fff',
-                        fontSize: '0.6rem', fontWeight: 'bold', width: '14px', height: '14px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        borderRadius: '50%', border: '2px solid var(--apple-bg)'
-                      }}>
-                        {navLinks.find(n => n.path === path)?.badge}
-                      </span>
-                    )}
-                  </div>
-                  {!collapsed && <span>{label}</span>}
-                  {!collapsed && navLinks.find(n => n.path === path)?.badge > 0 && (
-                    <span style={{
-                      marginLeft: 'auto', background: 'var(--apple-accent-red)', color: '#fff',
-                      fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '10px'
-                    }}>
-                      {navLinks.find(n => n.path === path)?.badge} New
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-          </div>
-
-          {teamHubLinks.length > 0 && (
-            <div style={{ marginBottom: '16px', borderTop: '1px solid var(--apple-border)', paddingTop: '16px' }}>
-              {!collapsed && <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--apple-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', paddingLeft: '12px' }}>Team Hub</div>}
-              {teamHubLinks.map(({ path, label, icon: Icon }) => {
-                const active = isActive(path)
-                return (
-                  <Link
-                    key={path} to={path}
-                    className={`admin-sidebar-link${active ? ' active' : ''}`}
-                    title={collapsed ? label : ''}
-                    style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }}
-                  >
-                    <Icon size={collapsed ? 22 : 18} strokeWidth={active ? 2.5 : 2} />
-                    {!collapsed && <span>{label}</span>}
-                  </Link>
-                )
-              })}
+                  <X size={14} />
+                </button>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-
-        </nav>
-
-        {/* ── Bottom: Profile + Sign Out ── */}
-        <div className="admin-sidebar-bottom" style={{ padding: collapsed ? '16px 8px 20px' : '16px 10px 20px', borderTop: '1px solid var(--apple-border)' }}>
-          {!collapsed ? (
-            <div className="admin-sidebar-profile">
-              <div className="admin-sidebar-avatar">{initials}</div>
-              <div className="admin-sidebar-profile-info">
-                <span className="admin-sidebar-profile-name">{fullName}</span>
-                <span className="admin-sidebar-role-badge">{profile?.platform_role === 'teamlead' ? 'Team Lead' : 'User'}</span>
-              </div>
+        {/* ── Categorized Navigation ── */}
+        <nav className="admin-sidebar-nav">
+          {totalMatchingItems === 0 ? (
+            <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--apple-text-secondary)', fontSize: '0.8rem' }}>
+              No pages match &ldquo;{searchQuery}&rdquo;
             </div>
           ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }} title={fullName}>
-              <div className="admin-sidebar-avatar" style={{ width: '36px', height: '36px' }}>{initials}</div>
+            filteredSections.map((section, sIdx) => (
+              <div key={section.title} className="sidebar-section">
+                {!collapsed && (
+                  <div className="sidebar-section-header">
+                    <span>{section.title}</span>
+                  </div>
+                )}
+                {collapsed && sIdx > 0 && <div className="sidebar-section-divider" />}
+
+                {section.items.map(({ path, label, icon: Icon, badge }) => {
+                  const active = isActive(path)
+                  return (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={handleNavClick}
+                      className={`admin-sidebar-link${active ? ' active' : ''}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <div style={{ position: 'relative', display: 'inline-flex' }}>
+                        <Icon size={collapsed ? 20 : 17} strokeWidth={active ? 2.3 : 1.9} />
+                        {collapsed && badge > 0 && (
+                          <span className="sidebar-dot-badge" />
+                        )}
+                      </div>
+
+                      {!collapsed && <span>{label}</span>}
+
+                      {!collapsed && badge > 0 && (
+                        <span className="sidebar-pill-badge">
+                          {badge}
+                        </span>
+                      )}
+
+                      {collapsed && (
+                        <span className="sidebar-tooltip">
+                          {label} {badge > 0 ? `(${badge} new)` : ''}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
+            ))
+          )}
+        </nav>
+
+        {/* ── Bottom: Profile + Account Drawer ── */}
+        <div className="admin-sidebar-bottom">
+          {!collapsed ? (
+            <div className="admin-sidebar-actions-row">
+              <Link
+                to="/settings"
+                onClick={handleNavClick}
+                className="admin-sidebar-action-btn"
+                title="App Settings"
+              >
+                <SettingsIcon size={14} />
+                <span>Settings</span>
+              </Link>
+
+              <button
+                className="admin-sidebar-action-btn signout"
+                onClick={handleLogout}
+                title="Sign out of your account"
+              >
+                <LogOut size={14} />
+                <span>Sign out</span>
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <Link to="/profile" onClick={handleNavClick} className="admin-sidebar-link" style={{ padding: '8px 0', width: '100%', justifyContent: 'center' }}>
+                <div className="admin-sidebar-avatar" style={{ width: '32px', height: '32px', fontSize: '0.7rem' }}>
+                  {initials}
+                </div>
+                <span className="sidebar-tooltip">{fullName} (Profile)</span>
+              </Link>
+
+              <Link to="/settings" onClick={handleNavClick} className="admin-sidebar-link" style={{ padding: '8px 0', width: '100%', justifyContent: 'center' }}>
+                <SettingsIcon size={18} />
+                <span className="sidebar-tooltip">Settings</span>
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="admin-sidebar-link"
+                style={{
+                  background: 'transparent', border: 'none', padding: '8px 0',
+                  width: '100%', justifyContent: 'center', color: 'var(--apple-accent-red)'
+                }}
+              >
+                <LogOut size={18} />
+                <span className="sidebar-tooltip">Sign out</span>
+              </button>
             </div>
           )}
-
-          <button className="admin-sidebar-signout" onClick={handleLogout} style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '9px 12px' }} title={collapsed ? "Sign out" : ""}>
-            <LogOut size={collapsed ? 20 : 16} />
-            {!collapsed && <span>Sign out</span>}
-          </button>
         </div>
       </div>
     )
@@ -292,37 +402,45 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
 
   return (
     <div className="admin-shell">
+      {/* ── Mobile overlay ── */}
       {sidebarOpen && (
         <div
           className="admin-sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
-          style={{ zIndex: 150 }}
         />
       )}
 
+      {/* ── Desktop Sidebar ── */}
       <div className={`admin-sidebar-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
         {renderSidebarContent(false)}
       </div>
 
+      {/* ── Mobile Sidebar Drawer ── */}
       <div
         className={`admin-sidebar-mobile${sidebarOpen ? ' open' : ''}`}
-        style={{ zIndex: 200 }}
       >
         {renderSidebarContent(true)}
       </div>
 
+      {/* ── Main Content ── */}
       <div className="admin-main">
+        {/* Mobile top bar */}
         <div className="admin-mobile-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               className="admin-mobile-menu-btn"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Toggle sidebar"
+              aria-label="Toggle navigation menu"
             >
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-            <div className="admin-sidebar-brand-name" style={{ fontSize: '1rem' }}>
-              All-Hands
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+                <img src="/allhands_logo_cropped.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <span className="admin-sidebar-brand-name" style={{ fontSize: '0.95rem' }}>
+                All-Hands
+              </span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

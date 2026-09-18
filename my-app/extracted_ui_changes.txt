@@ -1,0 +1,1265 @@
+
+==================== STEP 34 ====================
+Instruction: Import canvas-confetti and trigger it when a new revenue contribution is successfully logged.
+
+--- Chunk 0 ---
+TARGET:
+import { Link } from 'react-router-dom'
+REPLACEMENT:
+import { Link } from 'react-router-dom'
+import confetti from 'canvas-confetti'
+
+--- Chunk 1 ---
+TARGET:
+      const successText = editingRecord
+        ? `Revenue updated to $${numAmount.toFixed(2)} for ${monthLabel}!`
+        : `Revenue of $${numAmount.toFixed(2)} logged for ${monthLabel} (Week ${selectedWeek})!`
+
+      setMessage({ type: 'success', text: successText })
+      setAmount('')
+      setEditingRecord(null)
+REPLACEMENT:
+      const successText = editingRecord
+        ? `Revenue updated to $${numAmount.toFixed(2)} for ${monthLabel}!`
+        : `Revenue of $${numAmount.toFixed(2)} logged for ${monthLabel} (Week ${selectedWeek})!`
+
+      setMessage({ type: 'success', text: successText })
+      
+      // Trigger confetti celebration for new revenue logs
+      if (!editingRecord) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#30D5C8', '#0071e3', '#ffffff'] // using app theme colors
+        });
+      }
+
+      setAmount('')
+      setEditingRecord(null)
+
+==================== STEP 45 ====================
+Instruction: Simplify the form structure, remove the big week selection grid, make meta info compact, and enlarge the amount input.
+
+--- Chunk 0 ---
+TARGET:
+  const [clientName, setClientName] = useState('')
+  const [noClientInfo, setNoClientInfo] = useState(false)
+  const [source, setSource] = useState('Instagram')
+REPLACEMENT:
+  const [clientName, setClientName] = useState('')
+  const [noClientInfo, setNoClientInfo] = useState(false)
+  const [source, setSource] = useState('Instagram')
+
+  useEffect(() => {
+    if (!editingRecord) {
+      const now = new Date()
+      const day = now.getDate()
+      if (day <= 7) setSelectedWeek(1)
+      else if (day <= 14) setSelectedWeek(2)
+      else if (day <= 21) setSelectedWeek(3)
+      else setSelectedWeek(4)
+    }
+  }, [editingRecord, selectedMonth, selectedYear])
+
+--- Chunk 1 ---
+TARGET:
+              {/* Row 1: Team, Year, Month */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
+                {/* Team (read-only if one, dropdown if multiple) */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
+                  <div style={{ position: 'relative' }}>
+                    <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1 }} />
+                    {teams.length > 1 ? (
+                      <>
+                        <select
+                          value={selectedTeam}
+                          onChange={e => setSelectedTeam(e.target.value)}
+                          className="form-control"
+                          style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                        >
+                          {teams.map(t => (
+                            <option key={t.id} value={t.id}>{t.name} ({t.label})</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                      </>
+                    ) : (
+                      <div
+                        className="form-control"
+                        style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
+                      >
+                        {teams[0]?.name || 'No Team'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Year Picker */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Year</label>
+                  <div style={{ position: 'relative' }}>
+                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={selectedYear}
+                      onChange={e => setSelectedYear(Number(e.target.value))}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                    >
+                      {getAvailableYears().map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
+                </div>
+
+                {/* Month Picker */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Month</label>
+                  <div style={{ position: 'relative' }}>
+                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={selectedMonth}
+                      onChange={e => setSelectedMonth(Number(e.target.value))}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                    >
+                      {MONTH_NAMES.map((name, idx) => (
+                        <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)}>
+                          {name}{isFutureMonth(selectedYear, idx) ? ' (future)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Select Week */}
+              {!isPastMonthCheck && (
+                <div style={{ marginBottom: '24px' }}>
+                  <label className="apple-form-label" style={{ marginBottom: '12px' }}>Select Week</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px' }}>
+                    {getWeekRanges(selectedYear, selectedMonth).map((w) => {
+                      const isActive = selectedWeek === w.value;
+                      return (
+                        <div
+                          key={w.value}
+                          onClick={() => setSelectedWeek(w.value)}
+                          style={{
+                            position: 'relative',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'rgba(255,255,255,0.02)',
+                            border: isActive ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '16px',
+                            transition: 'all 0.2s',
+                            boxShadow: isActive ? '0 0 12px rgba(0, 113, 227, 0.2)' : 'none'
+                          }}
+                        >
+                          <div style={{
+                            width: '40px', height: '40px',
+                            borderRadius: '50%',
+                            background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: isActive ? 'none' : '1px solid var(--apple-border)'
+                          }}>
+                            <Calendar size={18} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
+                          </div>
+                          <div>
+                            <div style={{ color: isActive ? '#fff' : 'var(--apple-text-primary)', fontWeight: '600', fontSize: '1rem' }}>{w.label}</div>
+                            <div style={{ color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>{w.range}</div>
+                          </div>
+                          {isActive && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0, 113, 227, 0.2)', borderRadius: '50%', padding: '2px' }}><Check size={14} color="var(--apple-accent-blue)" /></div>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 3: Client Name, Source, Amount */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
+                {/* Client Name */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <input
+                      type="text"
+                      value={clientName}
+                      onChange={e => setClientName(e.target.value)}
+                      placeholder="Enter client name"
+                      disabled={noClientInfo}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '16px', opacity: noClientInfo ? 0.5 : 1 }}
+                    />
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={noClientInfo}
+                      onChange={e => setNoClientInfo(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
+                    />
+                    No Client Info
+                  </label>
+                </div>
+
+                {/* Source Dropdown */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Source</label>
+                  <div style={{ position: 'relative' }}>
+                    <LinkIcon size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <select
+                      value={source}
+                      onChange={e => setSource(e.target.value)}
+                      className="form-control"
+                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                    >
+                      <option value="Linkedin">Linkedin</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Website">Website</option>
+                      <option value="Other">Other</option>
+                      <option value="Unknown">Unknown</option>
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Amount (USD)</label>
+                  <div style={{ position: 'relative', display: 'flex', height: '46px' }}>
+                    <div style={{ width: '40px', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRight: 'none', borderRadius: '8px 0 0 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <DollarSign size={16} color="var(--apple-text-secondary)" />
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                      className="form-control"
+                      style={{ flex: 1, minWidth: 0, paddingLeft: '12px', paddingRight: '36px', borderRadius: '0 8px 8px 0' }}
+                    />
+                    <ChevronsUpDown size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  </div>
+                </div>
+              </div>
+REPLACEMENT:
+              {/* Compact Meta Info (Team, Year, Month) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '24px', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--apple-border)' }}>
+                {/* Team */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={16} color="var(--apple-text-secondary)" />
+                  {teams.length > 1 ? (
+                    <select
+                      value={selectedTeam}
+                      onChange={e => setSelectedTeam(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+                    >
+                      {teams.map(t => <option key={t.id} value={t.id} style={{background: '#1a1a1a'}}>{t.name}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{ color: '#fff', fontSize: '0.95rem' }}>{teams[0]?.name || 'No Team'}</span>
+                  )}
+                </div>
+
+                <div style={{ width: '1px', background: 'var(--apple-border)' }}></div>
+
+                {/* Period */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={16} color="var(--apple-text-secondary)" />
+                  <select
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(Number(e.target.value))}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+                  >
+                    {MONTH_NAMES.map((name, idx) => (
+                      <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)} style={{background: '#1a1a1a'}}>{name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedYear}
+                    onChange={e => setSelectedYear(Number(e.target.value))}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none', marginLeft: '-4px' }}
+                  >
+                    {getAvailableYears().map(y => <option key={y} value={y} style={{background: '#1a1a1a'}}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Main Inputs: Amount is central */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+                
+                {/* AMOUNT - BIG AND BOLD */}
+                <div>
+                  <label className="apple-form-label" style={{ marginBottom: '8px', fontSize: '1rem', color: '#fff' }}>Revenue Amount (USD) <span style={{color: 'var(--apple-accent-red)'}}>*</span></label>
+                  <div style={{ position: 'relative', display: 'flex', height: '64px' }}>
+                    <div style={{ width: '60px', background: 'rgba(48, 213, 200, 0.1)', border: '1px solid var(--apple-accent-green)', borderRight: 'none', borderRadius: '12px 0 0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <DollarSign size={28} color="var(--apple-accent-green)" />
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                      className="form-control"
+                      style={{ flex: 1, minWidth: 0, paddingLeft: '16px', borderRadius: '0 12px 12px 0', fontSize: '2rem', fontWeight: '700', color: 'var(--apple-accent-green)', borderColor: 'var(--apple-accent-green)', background: 'rgba(0,0,0,0.2)' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Client & Source - Secondary */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
+                  {/* Client Name */}
+                  <div>
+                    <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name <span style={{color: 'var(--apple-text-secondary)', fontSize: '0.8rem', fontWeight: 'normal'}}>(or check "No Client")</span></label>
+                    <div style={{ position: 'relative' }}>
+                      <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                      <input
+                        type="text"
+                        value={clientName}
+                        onChange={e => setClientName(e.target.value)}
+                        placeholder="Enter client name"
+                        disabled={noClientInfo}
+                        className="form-control"
+                        style={{ paddingLeft: '40px', paddingRight: '16px', opacity: noClientInfo ? 0.5 : 1 }}
+                      />
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={noClientInfo}
+                        onChange={e => {
+                           setNoClientInfo(e.target.checked)
+                           if(e.target.checked) setClientName('')
+                        }}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
+                      />
+                      No Client Info
+                    </label>
+                  </div>
+
+                  {/* Source Dropdown */}
+                  <div>
+                    <label className="apple-form-label" style={{ marginBottom: '8px' }}>Source <span style={{color: 'var(--apple-text-secondary)', fontSize: '0.8rem', fontWeight: 'normal'}}>(Optional)</span></label>
+                    <div style={{ position: 'relative' }}>
+                      <LinkIcon size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                      <select
+                        value={source}
+                        onChange={e => setSource(e.target.value)}
+                        className="form-control"
+                        style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                      >
+                        <option value="Linkedin">Linkedin</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Website">Website</option>
+                        <option value="Other">Other</option>
+                        <option value="Unknown">Unknown</option>
+                      </select>
+                      <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+==================== STEP 115 ====================
+Instruction: Replace year/month dropdowns with calendar input picker and auto-calculated week badge
+
+--- Chunk 0 ---
+TARGET:
+  // Form state
+  const [selectedTeam, setSelectedTeam] = useState('')
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()) // 0-indexed
+  const [amount, setAmount] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState({ type: '', text: '' })
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null) // track if we're editing
+
+  const [selectedWeek, setSelectedWeek] = useState(1)
+  const [clientName, setClientName] = useState('')
+  const [noClientInfo, setNoClientInfo] = useState(false)
+  const [source, setSource] = useState('Instagram')
+
+  useEffect(() => {
+    if (!editingRecord) {
+      const now = new Date()
+      const day = now.getDate()
+      if (day <= 7) setSelectedWeek(1)
+      else if (day <= 14) setSelectedWeek(2)
+      else if (day <= 21) setSelectedWeek(3)
+      else setSelectedWeek(4)
+    }
+  }, [editingRecord, selectedMonth, selectedYear])
+REPLACEMENT:
+  const getTodayDateStr = () => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, '0')
+    const d = String(now.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  const calculateWeekFromDay = (day) => {
+    if (day <= 7) return 1
+    if (day <= 14) return 2
+    if (day <= 21) return 3
+    return 4
+  }
+
+  // Form state
+  const [selectedTeam, setSelectedTeam] = useState('')
+  const [entryDate, setEntryDate] = useState(getTodayDateStr)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()) // 0-indexed
+  const [selectedWeek, setSelectedWeek] = useState(() => calculateWeekFromDay(new Date().getDate()))
+  const [amount, setAmount] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState({ type: '', text: '' })
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null) // track if we're editing
+
+  const [clientName, setClientName] = useState('')
+  const [noClientInfo, setNoClientInfo] = useState(false)
+  const [source, setSource] = useState('Instagram')
+
+  const handleDateChange = (newDateStr) => {
+    if (!newDateStr) return
+    setEntryDate(newDateStr)
+    const [yStr, mStr, dStr] = newDateStr.split('-')
+    const y = Number(yStr)
+    const m = Number(mStr) - 1
+    const d = Number(dStr)
+
+    setSelectedYear(y)
+    setSelectedMonth(m)
+    setSelectedWeek(calculateWeekFromDay(d))
+  }
+
+--- Chunk 1 ---
+TARGET:
+      setAmount('')
+      setEditingRecord(null)
+      setClientName('')
+      setNoClientInfo(false)
+      setSource('Instagram')
+      setSelectedWeek(1)
+      await loadData() // refresh
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleEdit(record) {
+    const d = new Date(record.revenue_month)
+    setSelectedYear(d.getFullYear())
+    setSelectedMonth(d.getMonth())
+    setSelectedTeam(record.team_id)
+    setSelectedWeek(record.week_number || 1)
+    setClientName(record.client_name === 'NONAME' ? '' : (record.client_name || ''))
+    setNoClientInfo(record.client_name === 'NONAME')
+    setSource(record.source || 'Instagram')
+    setAmount(String(Number(record.amount)))
+    setEditingRecord(record)
+    setMessage({ type: '', text: '' })
+    // Scroll to form
+    document.getElementById('revenue-form')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function handleCancelEdit() {
+    setEditingRecord(null)
+    setAmount('')
+    setClientName('')
+    setNoClientInfo(false)
+    setSource('Instagram')
+    setSelectedWeek(1)
+    setMessage({ type: '', text: '' })
+  }
+REPLACEMENT:
+      setAmount('')
+      setEditingRecord(null)
+      setClientName('')
+      setNoClientInfo(false)
+      setSource('Instagram')
+      handleDateChange(getTodayDateStr())
+      await loadData() // refresh
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleEdit(record) {
+    const d = new Date(record.revenue_month)
+    const y = d.getFullYear()
+    const m = d.getMonth()
+    setSelectedYear(y)
+    setSelectedMonth(m)
+    setSelectedTeam(record.team_id)
+    const w = record.week_number || 1
+    setSelectedWeek(w)
+
+    let day = '01'
+    if (w === 2) day = '08'
+    else if (w === 3) day = '15'
+    else if (w === 4) day = '22'
+
+    if (record.created_at) {
+      const createdDate = new Date(record.created_at)
+      if (createdDate.getFullYear() === y && createdDate.getMonth() === m) {
+        day = String(createdDate.getDate()).padStart(2, '0')
+      }
+    }
+
+    setEntryDate(`${y}-${String(m + 1).padStart(2, '0')}-${day}`)
+    setClientName(record.client_name === 'NONAME' ? '' : (record.client_name || ''))
+    setNoClientInfo(record.client_name === 'NONAME')
+    setSource(record.source || 'Instagram')
+    setAmount(String(Number(record.amount)))
+    setEditingRecord(record)
+    setMessage({ type: '', text: '' })
+    // Scroll to form
+    document.getElementById('revenue-form')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function handleCancelEdit() {
+    setEditingRecord(null)
+    setAmount('')
+    setClientName('')
+    setNoClientInfo(false)
+    setSource('Instagram')
+    handleDateChange(getTodayDateStr())
+    setMessage({ type: '', text: '' })
+  }
+
+--- Chunk 2 ---
+TARGET:
+              {/* Compact Meta Info (Team, Year, Month) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '24px', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--apple-border)' }}>
+                {/* Team */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={16} color="var(--apple-text-secondary)" />
+                  {teams.length > 1 ? (
+                    <select
+                      value={selectedTeam}
+                      onChange={e => setSelectedTeam(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+                    >
+                      {teams.map(t => <option key={t.id} value={t.id} style={{background: '#1a1a1a'}}>{t.name}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{ color: '#fff', fontSize: '0.95rem' }}>{teams[0]?.name || 'No Team'}</span>
+                  )}
+                </div>
+
+                <div style={{ width: '1px', background: 'var(--apple-border)' }}></div>
+
+                {/* Period */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={16} color="var(--apple-text-secondary)" />
+                  <select
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(Number(e.target.value))}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none' }}
+                  >
+                    {MONTH_NAMES.map((name, idx) => (
+                      <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)} style={{background: '#1a1a1a'}}>{name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedYear}
+                    onChange={e => setSelectedYear(Number(e.target.value))}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none', marginLeft: '-4px' }}
+                  >
+                    {getAvailableYears().map(y => <option key={y} value={y} style={{background: '#1a1a1a'}}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+REPLACEMENT:
+              {/* Compact Meta Info (Team, Calendar Date Picker, Auto-Selected Week) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px', marginBottom: '24px', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--apple-border)' }}>
+                {/* Team */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={16} color="var(--apple-text-secondary)" />
+                  {teams.length > 1 ? (
+                    <select
+                      value={selectedTeam}
+                      onChange={e => setSelectedTeam(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none', fontWeight: '500' }}
+                    >
+                      {teams.map(t => <option key={t.id} value={t.id} style={{background: '#1a1a1a'}}>{t.name}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{ color: '#fff', fontSize: '0.95rem', fontWeight: '500' }}>{teams[0]?.name || 'No Team'}</span>
+                  )}
+                </div>
+
+                <div style={{ width: '1px', height: '20px', background: 'var(--apple-border)' }}></div>
+
+                {/* Calendar Date Picker */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar size={16} color="var(--apple-accent-blue)" />
+                    <input
+                      type="date"
+                      value={entryDate}
+                      max={getTodayDateStr()}
+                      min={!systemSettings?.revenue_allow_past ? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01` : '2023-01-01'}
+                      onChange={e => handleDateChange(e.target.value)}
+                      onClick={e => {
+                        try { e.target.showPicker?.() } catch (err) {}
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--apple-border)',
+                        color: '#fff',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        colorScheme: 'dark'
+                      }}
+                    />
+                  </div>
+
+                  {/* Auto-selected Week Badge */}
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    background: 'rgba(0, 113, 227, 0.12)',
+                    border: '1px solid rgba(0, 113, 227, 0.25)',
+                    color: 'var(--apple-accent-blue)',
+                    fontSize: '0.78rem',
+                    fontWeight: '600'
+                  }}>
+                    Week {selectedWeek} (Auto)
+                  </span>
+                </div>
+              </div>
+
+--- Chunk 3 ---
+TARGET:
+            <select
+              value={historyMonth}
+              onChange={e => setHistoryMonth(Number(e.target.value))}
+              disabled={isAllTime}
+              className="apple-form-control"
+              style={{
+                width: 'auto',
+                padding: '8px 14px !important',
+                fontSize: '0.88rem !important',
+                fontWeight: '600',
+                opacity: isAllTime ? 0.4 : 1,
+                cursor: isAllTime ? 'not-allowed' : 'pointer',
+                borderRadius: '12px !important'
+              }}
+            >
+              {MONTH_NAMES.map((name, idx) => (
+                <option key={idx} value={idx}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={historyYear}
+              onChange={e => setHistoryYear(Number(e.target.value))}
+              disabled={isAllTime}
+              className="apple-form-control"
+              style={{
+                width: 'auto',
+                padding: '8px 14px !important',
+                fontSize: '0.88rem !important',
+                fontWeight: '600',
+                opacity: isAllTime ? 0.4 : 1,
+                cursor: isAllTime ? 'not-allowed' : 'pointer',
+                borderRadius: '12px !important'
+              }}
+            >
+              {getAvailableYears().map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+REPLACEMENT:
+            {!isAllTime && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={16} color="var(--apple-text-secondary)" />
+                <input
+                  type="month"
+                  value={`${historyYear}-${String(historyMonth + 1).padStart(2, '0')}`}
+                  max={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`}
+                  min="2023-01"
+                  onChange={e => {
+                    if (!e.target.value) return
+                    const [y, m] = e.target.value.split('-').map(Number)
+                    setHistoryYear(y)
+                    setHistoryMonth(m - 1)
+                  }}
+                  onClick={e => {
+                    try { e.target.showPicker?.() } catch (err) {}
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid var(--apple-border)',
+                    color: '#fff',
+                    borderRadius: '12px',
+                    padding: '7px 12px',
+                    fontSize: '0.88rem',
+                    fontWeight: '600',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
+            )}
+
+--- Chunk 4 ---
+TARGET:
+                onClick={() => {
+                  if (selectedHistoryMonth) {
+                    const [y, m] = selectedHistoryMonth.split('-')
+                    setSelectedYear(Number(y))
+                    setSelectedMonth(Number(m) - 1)
+                    setAmount('')
+                    document.getElementById('revenue-form')?.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
+REPLACEMENT:
+                onClick={() => {
+                  if (selectedHistoryMonth) {
+                    const [y, m] = selectedHistoryMonth.split('-')
+                    handleDateChange(`${y}-${m}-01`)
+                    setAmount('')
+                    document.getElementById('revenue-form')?.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
+
+==================== STEP 132 ====================
+Instruction: Increase particle count to 1000 with multi-cannon spread and all colors
+
+--- Chunk 0 ---
+TARGET:
+      // Trigger confetti celebration for new revenue logs
+      if (!editingRecord) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#30D5C8', '#0071e3', '#ffffff'] // using app theme colors
+        });
+      }
+REPLACEMENT:
+      // Trigger confetti celebration for new revenue logs (10x particles & full rainbow spectrum)
+      if (!editingRecord) {
+        const allColors = [
+          '#ff0055', '#ff3b30', '#ff9500', '#ffcc00', '#34c759', 
+          '#30d5c8', '#0071e3', '#5856d6', '#af52de', '#ff2d55', 
+          '#00f5d4', '#7b2cbf', '#fee440', '#f15bb5', '#4cc9f0',
+          '#06d6a0', '#118ab2', '#ffd166', '#ef476f'
+        ];
+
+        // Center massive explosion (600 particles)
+        confetti({
+          particleCount: 600,
+          spread: 120,
+          origin: { y: 0.6 },
+          colors: allColors
+        });
+
+        // Left cannon burst (200 particles)
+        confetti({
+          particleCount: 200,
+          angle: 60,
+          spread: 75,
+          origin: { x: 0, y: 0.7 },
+          colors: allColors
+        });
+
+        // Right cannon burst (200 particles)
+        confetti({
+          particleCount: 200,
+          angle: 120,
+          spread: 75,
+          origin: { x: 1, y: 0.7 },
+          colors: allColors
+        });
+      }
+
+==================== STEP 157 ====================
+Instruction: Replace type=number input with type=text inputMode=decimal and regex filtering to remove cursor-based spin buttons
+
+--- Chunk 0 ---
+TARGET:
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                      className="form-control"
+                      style={{ flex: 1, minWidth: 0, paddingLeft: '16px', borderRadius: '0 12px 12px 0', fontSize: '2rem', fontWeight: '700', color: 'var(--apple-accent-green)', borderColor: 'var(--apple-accent-green)', background: 'rgba(0,0,0,0.2)' }}
+                    />
+REPLACEMENT:
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      value={amount}
+                      onChange={e => {
+                        const val = e.target.value
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) setAmount(val)
+                      }}
+                      placeholder="0.00"
+                      required
+                      className="form-control"
+                      style={{ flex: 1, minWidth: 0, paddingLeft: '16px', borderRadius: '0 12px 12px 0', fontSize: '2rem', fontWeight: '700', color: 'var(--apple-accent-green)', borderColor: 'var(--apple-accent-green)', background: 'rgba(0,0,0,0.2)' }}
+                    />
+
+==================== STEP 179 ====================
+Instruction: Remove the Link to /historical-revenue ('Log Past Team Revenue') button and only show Cancel Edit button when editingRecord is true
+
+--- Chunk 0 ---
+TARGET:
+            {editingRecord ? (
+              <button
+                onClick={handleCancelEdit}
+                className="apple-btn apple-btn-secondary"
+                style={{ marginLeft: 'auto', padding: '8px 16px !important', fontSize: '0.85rem', borderRadius: '8px !important' }}
+              >
+                Cancel Edit
+              </button>
+            ) : (
+              <Link
+                to="/historical-revenue"
+                className="apple-btn"
+                style={{
+                  marginLeft: 'auto',
+                  padding: '8px 16px',
+                  fontSize: '0.85rem',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'var(--apple-text-secondary)',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.color = '#fff'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                  e.currentTarget.style.color = 'var(--apple-text-secondary)'
+                }}
+              >
+                <Clock size={14} /> Log Past Team Revenue
+              </Link>
+            )}
+          </div>
+REPLACEMENT:
+            {editingRecord && (
+              <button
+                onClick={handleCancelEdit}
+                className="apple-btn apple-btn-secondary"
+                style={{ marginLeft: 'auto', padding: '8px 16px !important', fontSize: '0.85rem', borderRadius: '8px !important' }}
+              >
+                Cancel Edit
+              </button>
+            )}
+          </div>
+
+==================== STEP 189 ====================
+Instruction: Replace compact inline meta info with full row grid containing Team, Date, and Week columns
+
+--- Chunk 0 ---
+TARGET:
+              {/* Compact Meta Info (Team, Calendar Date Picker, Auto-Selected Week) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px', marginBottom: '24px', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--apple-border)' }}>
+                {/* Team */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={16} color="var(--apple-text-secondary)" />
+                  {teams.length > 1 ? (
+                    <select
+                      value={selectedTeam}
+                      onChange={e => setSelectedTeam(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.95rem', cursor: 'pointer', outline: 'none', fontWeight: '500' }}
+                    >
+                      {teams.map(t => <option key={t.id} value={t.id} style={{background: '#1a1a1a'}}>{t.name}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{ color: '#fff', fontSize: '0.95rem', fontWeight: '500' }}>{teams[0]?.name || 'No Team'}</span>
+                  )}
+                </div>
+
+                <div style={{ width: '1px', height: '20px', background: 'var(--apple-border)' }}></div>
+
+                {/* Calendar Date Picker */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar size={16} color="var(--apple-accent-blue)" />
+                    <input
+                      type="date"
+                      value={entryDate}
+                      max={getTodayDateStr()}
+                      min={!systemSettings?.revenue_allow_past ? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01` : '2023-01-01'}
+                      onChange={e => handleDateChange(e.target.value)}
+                      onClick={e => {
+                        try { e.target.showPicker?.() } catch (err) {}
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--apple-border)',
+                        color: '#fff',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        colorScheme: 'dark'
+                      }}
+                    />
+                  </div>
+
+                  {/* Auto-selected Week Badge */}
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    background: 'rgba(0, 113, 227, 0.12)',
+                    border: '1px solid rgba(0, 113, 227, 0.25)',
+                    color: 'var(--apple-accent-blue)',
+                    fontSize: '0.78rem',
+                    fontWeight: '600'
+                  }}>
+                    Week {selectedWeek} (Auto)
+                  </span>
+                </div>
+              </div>
+REPLACEMENT:
+              {/* Full Row Meta Info: Team, Date, Week */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+                gap: '16px',
+                marginBottom: '24px',
+                padding: '16px',
+                background: 'rgba(255, 255, 255, 0.025)',
+                borderRadius: '12px',
+                border: '1px solid var(--apple-border)',
+                width: '100%'
+              }}>
+                {/* 1. Team */}
+                <div>
+                  <label className="apple-form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '0.82rem', color: 'var(--apple-text-secondary)' }}>
+                    <Users size={14} color="var(--apple-accent-blue)" /> Active Team
+                  </label>
+                  {teams.length > 1 ? (
+                    <select
+                      value={selectedTeam}
+                      onChange={e => setSelectedTeam(e.target.value)}
+                      className="form-control"
+                      style={{
+                        width: '100%',
+                        height: '42px',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid var(--apple-border)',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '0.92rem',
+                        padding: '0 12px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {teams.map(t => <option key={t.id} value={t.id} style={{ background: '#1a1a1a' }}>{t.name}</option>)}
+                    </select>
+                  ) : (
+                    <div style={{
+                      height: '42px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 12px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid var(--apple-border)',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontSize: '0.92rem',
+                      fontWeight: '500'
+                    }}>
+                      {teams[0]?.name || 'No Team'}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Date (Calendar) */}
+                <div>
+                  <label className="apple-form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '0.82rem', color: 'var(--apple-text-secondary)' }}>
+                    <Calendar size={14} color="var(--apple-accent-blue)" /> Entry Date
+                  </label>
+                  <input
+                    type="date"
+                    value={entryDate}
+                    max={getTodayDateStr()}
+                    min={!systemSettings?.revenue_allow_past ? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01` : '2023-01-01'}
+                    onChange={e => handleDateChange(e.target.value)}
+                    onClick={e => {
+                      try { e.target.showPicker?.() } catch (err) {}
+                    }}
+                    className="form-control"
+                    style={{
+                      width: '100%',
+                      height: '42px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid var(--apple-border)',
+                      color: '#fff',
+                      borderRadius: '8px',
+                      padding: '0 12px',
+                      fontSize: '0.92rem',
+                      fontWeight: '500',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      colorScheme: 'dark'
+                    }}
+                  />
+                </div>
+
+                {/* 3. Week */}
+                <div>
+                  <label className="apple-form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '0.82rem', color: 'var(--apple-text-secondary)' }}>
+                    <Clock size={14} color="var(--apple-accent-blue)" /> Target Week
+                  </label>
+                  <div style={{
+                    height: '42px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0 12px',
+                    background: 'rgba(0, 113, 227, 0.08)',
+                    border: '1px solid rgba(0, 113, 227, 0.25)',
+                    borderRadius: '8px',
+                    color: 'var(--apple-accent-blue)',
+                    fontSize: '0.92rem',
+                    fontWeight: '600'
+                  }}>
+                    <span>Week {selectedWeek}</span>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      letterSpacing: '0.04em',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      background: 'rgba(0, 113, 227, 0.15)',
+                      color: '#fff',
+                      fontWeight: '600'
+                    }}>
+                      Auto
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+==================== STEP 201 ====================
+Instruction: Update handleSubmit validation and replace checkbox UI with creative segmented toggle and direct sale badge
+
+--- Chunk 0 ---
+TARGET:
+    const finalClientName = noClientInfo ? 'NONAME' : (clientName || null)
+    if (!noClientInfo && (!clientName || !clientName.trim())) {
+      setMessage({ type: 'error', text: 'Please enter a client name or check "No Client Info".' })
+      return
+    }
+REPLACEMENT:
+    const finalClientName = noClientInfo || !clientName?.trim() ? 'NONAME' : clientName.trim()
+
+--- Chunk 1 ---
+TARGET:
+    setClientName(record.client_name === 'NONAME' ? '' : (record.client_name || ''))
+    setNoClientInfo(record.client_name === 'NONAME')
+REPLACEMENT:
+    const isNoClient = !record.client_name || record.client_name === 'NONAME'
+    setClientName(isNoClient ? '' : record.client_name)
+    setNoClientInfo(isNoClient)
+
+--- Chunk 2 ---
+TARGET:
+                {/* Client & Source - Secondary */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
+                  {/* Client Name */}
+                  <div>
+                    <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name <span style={{color: 'var(--apple-text-secondary)', fontSize: '0.8rem', fontWeight: 'normal'}}>(or check "No Client")</span></label>
+                    <div style={{ position: 'relative' }}>
+                      <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                      <input
+                        type="text"
+                        value={clientName}
+                        onChange={e => setClientName(e.target.value)}
+                        placeholder="Enter client name"
+                        disabled={noClientInfo}
+                        className="form-control"
+                        style={{ paddingLeft: '40px', paddingRight: '16px', opacity: noClientInfo ? 0.5 : 1 }}
+                      />
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={noClientInfo}
+                        onChange={e => {
+                           setNoClientInfo(e.target.checked)
+                           if(e.target.checked) setClientName('')
+                        }}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
+                      />
+                      No Client Info
+                    </label>
+                  </div>
+REPLACEMENT:
+                {/* Client & Source - Secondary */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
+                  {/* Client Attribution - Creative Segmented Toggle & Morphing Input */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <label className="apple-form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <User size={14} color="var(--apple-accent-blue)" /> Client Attribution <span style={{ color: 'var(--apple-text-secondary)', fontSize: '0.75rem', fontWeight: 'normal' }}>(Optional)</span>
+                      </label>
+                      <div style={{
+                        display: 'inline-flex',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        padding: '2px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--apple-border)',
+                        fontSize: '0.75rem'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setNoClientInfo(false)}
+                          style={{
+                            padding: '3px 9px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: !noClientInfo ? 'rgba(0, 113, 227, 0.25)' : 'transparent',
+                            color: !noClientInfo ? '#fff' : 'var(--apple-text-secondary)',
+                            fontWeight: !noClientInfo ? '600' : '400',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          Named
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNoClientInfo(true)
+                            setClientName('')
+                          }}
+                          style={{
+                            padding: '3px 9px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: noClientInfo ? 'rgba(48, 213, 200, 0.2)' : 'transparent',
+                            color: noClientInfo ? 'var(--apple-accent-green)' : 'var(--apple-text-secondary)',
+                            fontWeight: noClientInfo ? '600' : '400',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          No Client
+                        </button>
+                      </div>
+                    </div>
+
+                    {!noClientInfo ? (
+                      <div style={{ position: 'relative' }}>
+                        <User size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                        <input
+                          type="text"
+                          value={clientName}
+                          onChange={e => setClientName(e.target.value)}
+                          placeholder="Client or brand name (optional)"
+                          className="form-control"
+                          style={{
+                            height: '46px',
+                            paddingLeft: '40px',
+                            paddingRight: clientName ? '36px' : '14px',
+                            fontSize: '0.92rem'
+                          }}
+                        />
+                        {clientName && (
+                          <button
+                            type="button"
+                            onClick={() => setClientName('')}
+                            style={{
+                              position: 'absolute',
+                              right: '12px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'rgba(255,255,255,0.1)',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--apple-text-secondary)',
+                              cursor: 'pointer',
+                              fontSize: '11px'
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => setNoClientInfo(false)}
+                        style={{
+                          height: '46px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0 14px',
+                          borderRadius: '10px',
+                          background: 'rgba(48, 213, 200, 0.06)',
+                          border: '1px dashed rgba(48, 213, 200, 0.35)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1rem' }}>🛡️</span>
+                          <span style={{ color: 'var(--apple-accent-green)', fontSize: '0.88rem', fontWeight: '600' }}>
+                            Direct Revenue (No Client Info)
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--apple-text-secondary)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Switch to Named
+                        </span>
+                      </div>
+                    )}
+                  </div>

@@ -3,8 +3,10 @@ import { supabase } from '../../supabaseClient'
 import { getLastNMonths, toRevenueMonthString, formatRevenueMonth, formatRevenueMonthShort, normalizeMonth, filterRevenuesByPeriod, sumRevenues, TIME_PERIOD_OPTIONS, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
 import AverageRevenueChart from '../../components/charts/AverageRevenueChart'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
-import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, Check, ChevronDown, ChevronsUpDown, Clock } from 'lucide-react'
+import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, ChevronDown, ChevronsUpDown, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import confetti from 'canvas-confetti'
+import RevenueHistoryTab from './RevenueHistory'
 
 let revenueCache = {
   userId: null,
@@ -21,31 +23,35 @@ export default function UserRevenue({ user, isAdminView }) {
 
   // Form state
   const [selectedTeam, setSelectedTeam] = useState('')
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()) // 0-indexed
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const [entryDate, setEntryDate] = useState(todayStr)
   const [amount, setAmount] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [accessDenied, setAccessDenied] = useState(false)
   const [editingRecord, setEditingRecord] = useState(null) // track if we're editing
+  const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'history'
 
-  const [selectedWeek, setSelectedWeek] = useState(1)
   const [clientName, setClientName] = useState('')
   const [noClientInfo, setNoClientInfo] = useState(false)
   const [source, setSource] = useState('Instagram')
 
-  const getWeekRanges = (year, monthIndex) => {
-    const d = new Date(year, monthIndex, 1)
-    const monthName = d.toLocaleString('default', { month: 'short' })
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate()
-
-    return [
-      { label: 'Week 1', range: `${monthName} 1 – ${monthName} 7`, value: 1 },
-      { label: 'Week 2', range: `${monthName} 8 – ${monthName} 14`, value: 2 },
-      { label: 'Week 3', range: `${monthName} 15 – ${monthName} 21`, value: 3 },
-      { label: 'Week 4', range: `${monthName} 22 – ${monthName} ${lastDay}`, value: 4 },
-    ]
+  // Derive year, month, week from the calendar date
+  const getWeekFromDate = (dateStr) => {
+    const day = new Date(dateStr).getDate()
+    if (day <= 7) return 1
+    if (day <= 14) return 2
+    if (day <= 21) return 3
+    return 4
   }
+
+  const selectedYear = useMemo(() => new Date(entryDate).getFullYear(), [entryDate])
+  const selectedMonth = useMemo(() => new Date(entryDate).getMonth(), [entryDate])
+  const selectedWeek = useMemo(() => getWeekFromDate(entryDate), [entryDate])
+
+  // Max date for the calendar (today)
+  const maxDate = todayStr
 
   // Filter state
   const [periodFilter, setPeriodFilter] = useState(12) // default: last 12 months
@@ -336,12 +342,57 @@ export default function UserRevenue({ user, isAdminView }) {
         : `Revenue of $${numAmount.toFixed(2)} logged for ${monthLabel} (Week ${selectedWeek})!`
 
       setMessage({ type: 'success', text: successText })
+
+      // 🎉 Epic triple-cannon celebration
+      const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6eb4', '#a855f7', '#38bdf8', '#fb923c']
+      const fireConfetti = (angle, originX) => {
+        confetti({
+          particleCount: 240,
+          angle,
+          spread: 70,
+          origin: { x: originX, y: 0.65 },
+          colors,
+          gravity: 0.8,
+          scalar: 1.2,
+          drift: 0,
+          ticks: 300
+        })
+      }
+      // Left cannon
+      fireConfetti(60, 0.08)
+      // Center burst
+      confetti({
+        particleCount: 400,
+        spread: 120,
+        origin: { x: 0.5, y: 0.45 },
+        colors,
+        gravity: 0.7,
+        scalar: 1.4,
+        ticks: 350
+      })
+      // Right cannon
+      fireConfetti(120, 0.92)
+      // Delayed second wave
+      setTimeout(() => {
+        fireConfetti(55, 0.12)
+        fireConfetti(125, 0.88)
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { x: 0.5, y: 0.5 },
+          colors,
+          gravity: 0.9,
+          scalar: 1.1,
+          ticks: 250
+        })
+      }, 400)
+
       setAmount('')
       setEditingRecord(null)
       setClientName('')
+      setEntryDate(todayStr)
       setNoClientInfo(false)
       setSource('Instagram')
-      setSelectedWeek(1)
       await loadData() // refresh
     } catch (err) {
       setMessage({ type: 'error', text: err.message })
@@ -352,10 +403,12 @@ export default function UserRevenue({ user, isAdminView }) {
 
   function handleEdit(record) {
     const d = new Date(record.revenue_month)
-    setSelectedYear(d.getFullYear())
-    setSelectedMonth(d.getMonth())
+    // Reconstruct a date in the correct week
+    const weekNum = record.week_number || 1
+    const day = Math.min((weekNum - 1) * 7 + 1, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())
+    const editDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    setEntryDate(editDateStr)
     setSelectedTeam(record.team_id)
-    setSelectedWeek(record.week_number || 1)
     setClientName(record.client_name === 'NONAME' ? '' : (record.client_name || ''))
     setNoClientInfo(record.client_name === 'NONAME')
     setSource(record.source || 'Instagram')
@@ -369,10 +422,10 @@ export default function UserRevenue({ user, isAdminView }) {
   function handleCancelEdit() {
     setEditingRecord(null)
     setAmount('')
+    setEntryDate(todayStr)
     setClientName('')
     setNoClientInfo(false)
     setSource('Instagram')
-    setSelectedWeek(1)
     setMessage({ type: '', text: '' })
   }
 
@@ -406,26 +459,95 @@ export default function UserRevenue({ user, isAdminView }) {
         )}
       </div>
 
-      {/* ===== ADD / EDIT REVENUE FORM ===== */}
+      {/* Sub-Nav Bar */}
+      {!isAdminView && (() => {
+        const tabs = [
+          { key: 'overview', label: 'Overview & Logging', icon: <PlusCircle size={22} />, color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.35)', glow: 'rgba(59, 130, 246, 0.15)' },
+          { key: 'history', label: 'History & Audit', icon: <Clock size={22} />, color: '#34d399', bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.35)', glow: 'rgba(16, 185, 129, 0.15)' }
+        ]
+        const activeIdx = tabs.findIndex(t => t.key === activeTab)
+        const activeColor = tabs[activeIdx]
+        return (
+          <div style={{
+            display: 'inline-flex',
+            position: 'relative',
+            background: 'var(--apple-bg-secondary)',
+            padding: '5px',
+            borderRadius: '16px',
+            border: '1px solid var(--apple-border)',
+            marginBottom: '28px',
+            width: '100%'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '5px',
+              bottom: '5px',
+              left: '5px',
+              width: `calc((100% - 10px) / ${tabs.length})`,
+              borderRadius: '13px',
+              background: activeColor.bg,
+              border: `1px solid ${activeColor.border}`,
+              boxShadow: `0 0 18px ${activeColor.glow}`,
+              transform: `translateX(${activeIdx * 100}%)`,
+              transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1)'
+            }} />
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  padding: '18px 28px',
+                  fontSize: '1.1rem',
+                  fontWeight: activeTab === tab.key ? '700' : '600',
+                  color: activeTab === tab.key ? tab.color : 'var(--apple-text-secondary)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '13px',
+                  transition: 'color 0.25s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )
+      })()}
+
+      {activeTab === 'history' && (
+        <RevenueHistoryTab revenues={revenues} setRevenues={setRevenues} isAdminView={isAdminView} />
+      )}
+
+      <div style={{ display: activeTab === 'overview' ? 'block' : 'none' }}>
+        {/* ===== ADD / EDIT REVENUE FORM ===== */}
       {!isAdminView && (
         <div id="revenue-form" className="apple-card" style={{
-          marginBottom: '32px',
+          marginBottom: '24px',
           background: editingRecord ? 'rgba(0, 113, 227, 0.04) !important' : 'var(--apple-card) !important',
           borderColor: editingRecord ? 'rgba(0, 113, 227, 0.3) !important' : 'var(--apple-border) !important',
-          padding: '24px',
+          padding: '20px',
           position: 'relative'
         }}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
             <div style={{
-              width: '48px', height: '48px',
+              width: '40px', height: '40px',
               background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-              borderRadius: '12px',
+              borderRadius: '10px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 16px rgba(79, 70, 229, 0.25)',
+              boxShadow: '0 6px 12px rgba(79, 70, 229, 0.25)',
               flexShrink: 0
             }}>
-              <DollarSign color="#fff" size={24} />
+              <DollarSign color="#fff" size={20} />
             </div>
             <div style={{ flex: '1 1 180px', minWidth: 0 }}>
               <h3 className="apple-title-small" style={{ margin: 0, color: editingRecord ? 'var(--apple-accent-blue)' : '#fff' }}>
@@ -494,9 +616,9 @@ export default function UserRevenue({ user, isAdminView }) {
           ) : (
             <form onSubmit={handleSubmit}>
 
-              {/* Row 1: Team, Year, Month */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
-                {/* Team (read-only if one, dropdown if multiple) */}
+              {/* Row 1: Team, Date (Calendar), Week (Auto) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '16px', alignItems: 'end' }}>
+                {/* Team */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
                   <div style={{ position: 'relative' }}>
@@ -526,117 +648,116 @@ export default function UserRevenue({ user, isAdminView }) {
                   </div>
                 </div>
 
-                {/* Year Picker */}
+                {/* Date (Calendar Picker) */}
                 <div>
-                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Year</label>
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Date</label>
                   <div style={{ position: 'relative' }}>
-                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
-                    <select
-                      value={selectedYear}
-                      onChange={e => setSelectedYear(Number(e.target.value))}
+                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1 }} />
+                    <input
+                      type="date"
+                      value={entryDate}
+                      max={maxDate}
+                      onChange={e => setEntryDate(e.target.value)}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
-                    >
-                      {getAvailableYears().map(y => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                      style={{ paddingLeft: '40px', paddingRight: '12px', cursor: 'pointer', colorScheme: 'dark' }}
+                    />
                   </div>
                 </div>
 
-                {/* Month Picker */}
+                {/* Week (Auto-calculated, read-only) */}
                 <div>
-                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Month</label>
-                  <div style={{ position: 'relative' }}>
-                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
-                    <select
-                      value={selectedMonth}
-                      onChange={e => setSelectedMonth(Number(e.target.value))}
-                      className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
-                    >
-                      {MONTH_NAMES.map((name, idx) => (
-                        <option key={idx} value={idx} disabled={isFutureMonth(selectedYear, idx)}>
-                          {name}{isFutureMonth(selectedYear, idx) ? ' (future)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Week</label>
+                  <div style={{
+                    height: '46px',
+                    minWidth: '100px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '0 16px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.10))',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    color: '#a5b4fc',
+                    fontWeight: '700',
+                    fontSize: '0.95rem',
+                    letterSpacing: '0.02em'
+                  }}>
+                    <Calendar size={16} color="#818cf8" />
+                    Week {selectedWeek}
                   </div>
                 </div>
               </div>
 
-              {/* Select Week */}
-              {!isPastMonthCheck && (
-                <div style={{ marginBottom: '24px' }}>
-                  <label className="apple-form-label" style={{ marginBottom: '12px' }}>Select Week</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px' }}>
-                    {getWeekRanges(selectedYear, selectedMonth).map((w) => {
-                      const isActive = selectedWeek === w.value;
-                      return (
-                        <div
-                          key={w.value}
-                          onClick={() => setSelectedWeek(w.value)}
-                          style={{
-                            position: 'relative',
-                            padding: '16px',
-                            borderRadius: '12px',
-                            background: isActive ? 'rgba(0, 113, 227, 0.12)' : 'rgba(255,255,255,0.02)',
-                            border: isActive ? '1px solid var(--apple-accent-blue)' : '1px solid var(--apple-border)',
-                            cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: '16px',
-                            transition: 'all 0.2s',
-                            boxShadow: isActive ? '0 0 12px rgba(0, 113, 227, 0.2)' : 'none'
-                          }}
-                        >
-                          <div style={{
-                            width: '40px', height: '40px',
-                            borderRadius: '50%',
-                            background: isActive ? 'rgba(0, 113, 227, 0.2)' : 'transparent',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            border: isActive ? 'none' : '1px solid var(--apple-border)'
-                          }}>
-                            <Calendar size={18} color={isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)'} />
-                          </div>
-                          <div>
-                            <div style={{ color: isActive ? '#fff' : 'var(--apple-text-primary)', fontWeight: '600', fontSize: '1rem' }}>{w.label}</div>
-                            <div style={{ color: isActive ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>{w.range}</div>
-                          </div>
-                          {isActive && <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0, 113, 227, 0.2)', borderRadius: '50%', padding: '2px' }}><Check size={14} color="var(--apple-accent-blue)" /></div>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Row 3: Client Name, Source, Amount */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
+              {/* Row 2: Client Name + Source */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                 {/* Client Name */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name</label>
                   <div style={{ position: 'relative' }}>
-                    <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: noClientInfo ? 'rgba(255,149,0,0.5)' : 'var(--apple-text-secondary)', transition: 'color 0.25s', zIndex: 1 }} />
                     <input
                       type="text"
-                      value={clientName}
+                      value={noClientInfo ? '' : clientName}
                       onChange={e => setClientName(e.target.value)}
-                      placeholder="Enter client name"
+                      placeholder={noClientInfo ? 'No client info' : 'Enter client name'}
                       disabled={noClientInfo}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '16px', opacity: noClientInfo ? 0.5 : 1 }}
+                      style={{
+                        paddingLeft: '40px',
+                        paddingRight: '80px',
+                        opacity: noClientInfo ? 0.45 : 1,
+                        background: noClientInfo ? 'rgba(255, 149, 0, 0.04)' : undefined,
+                        borderColor: noClientInfo ? 'rgba(255, 149, 0, 0.2)' : undefined,
+                        transition: 'all 0.25s ease'
+                      }}
                     />
+                    {/* Inline N/A toggle pill */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNoClientInfo(!noClientInfo)
+                        if (!noClientInfo) setClientName('')
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '6px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        padding: '6px 16px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: '700',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        border: noClientInfo ? '1px solid rgba(255, 149, 0, 0.5)' : '1px solid var(--apple-border)',
+                        background: noClientInfo
+                          ? 'linear-gradient(135deg, rgba(255, 149, 0, 0.25), rgba(255, 179, 64, 0.18))'
+                          : 'rgba(255,255,255,0.04)',
+                        color: noClientInfo ? '#ffb340' : 'var(--apple-text-secondary)',
+                        boxShadow: noClientInfo ? '0 0 14px rgba(255, 149, 0, 0.2)' : 'none',
+                        transition: 'all 0.25s ease',
+                        zIndex: 1
+                      }}
+                      onMouseOver={e => {
+                        if (!noClientInfo) {
+                          e.currentTarget.style.background = 'rgba(255, 149, 0, 0.12)'
+                          e.currentTarget.style.borderColor = 'rgba(255, 149, 0, 0.35)'
+                          e.currentTarget.style.color = '#ffb340'
+                        }
+                      }}
+                      onMouseOut={e => {
+                        if (!noClientInfo) {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                          e.currentTarget.style.borderColor = 'var(--apple-border)'
+                          e.currentTarget.style.color = 'var(--apple-text-secondary)'
+                        }
+                      }}
+                    >
+                      N/A
+                    </button>
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: 'var(--apple-text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={noClientInfo}
-                      onChange={e => setNoClientInfo(e.target.checked)}
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--apple-accent-blue)', cursor: 'pointer' }}
-                    />
-                    No Client Info
-                  </label>
                 </div>
 
                 {/* Source Dropdown */}
@@ -660,27 +781,53 @@ export default function UserRevenue({ user, isAdminView }) {
                     <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
                   </div>
                 </div>
+              </div>
 
-                {/* Amount */}
-                <div>
-                  <label className="apple-form-label" style={{ marginBottom: '8px' }}>Amount (USD)</label>
-                  <div style={{ position: 'relative', display: 'flex', height: '46px' }}>
-                    <div style={{ width: '40px', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRight: 'none', borderRadius: '8px 0 0 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <DollarSign size={16} color="var(--apple-text-secondary)" />
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={amount}
-                      onChange={e => setAmount(e.target.value)}
-                      placeholder="0.00"
-                      required
-                      className="form-control"
-                      style={{ flex: 1, minWidth: 0, paddingLeft: '12px', paddingRight: '36px', borderRadius: '0 8px 8px 0' }}
-                    />
-                    <ChevronsUpDown size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
+              {/* Row 3: Amount (Full Width) — Highlighted */}
+              <div style={{
+                marginBottom: '16px',
+                padding: '12px',
+                borderRadius: '12px',
+                background: amount ? 'linear-gradient(135deg, rgba(48, 213, 200, 0.06), rgba(0, 113, 227, 0.06))' : 'rgba(255,255,255,0.015)',
+                border: amount ? '1px solid rgba(48, 213, 200, 0.2)' : '1px solid rgba(255,255,255,0.06)',
+                boxShadow: amount ? '0 0 20px rgba(48, 213, 200, 0.08)' : 'none',
+                transition: 'all 0.3s ease'
+              }}>
+                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>Amount (USD)</span>
+                  {amount && <span style={{ fontSize: '0.75rem', color: 'var(--apple-accent-green)', fontWeight: '600', opacity: 0.8 }}>💰 Ready to log</span>}
+                </label>
+                <div style={{ position: 'relative', display: 'flex', height: '48px' }}>
+                  <div style={{
+                    width: '46px',
+                    background: 'linear-gradient(135deg, rgba(48, 213, 200, 0.18), rgba(0, 113, 227, 0.15))',
+                    border: '1px solid rgba(48, 213, 200, 0.3)',
+                    borderRight: 'none',
+                    borderRadius: '12px 0 0 12px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <DollarSign size={22} color="var(--apple-accent-green)" />
                   </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    required
+                    className="form-control"
+                    style={{
+                      flex: 1, minWidth: 0,
+                      paddingLeft: '18px', paddingRight: '36px',
+                      borderRadius: '0 12px 12px 0',
+                      fontSize: '1.3rem',
+                      fontWeight: '700',
+                      letterSpacing: '0.03em'
+                    }}
+                  />
+                  <ChevronsUpDown size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
                 </div>
               </div>
 
@@ -1193,6 +1340,7 @@ export default function UserRevenue({ user, isAdminView }) {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   )

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { getAvailableYears, MONTH_NAMES, isFutureMonth, toRevenueMonthString } from '../../utils/revenueUtils'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Clock, Save, Building } from 'lucide-react'
+import { ArrowLeft, Clock, Save, Building, Calendar } from 'lucide-react'
 
 export default function UserHistoricalRevenue({ user }) {
   const [loading, setLoading] = useState(true)
@@ -153,23 +153,27 @@ export default function UserHistoricalRevenue({ user }) {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600' }}>Year</label>
-              <select className="apple-input" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
-                {getAvailableYears().map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600' }}>Month</label>
-              <select className="apple-input" value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>
-                {MONTH_NAMES.map((m, idx) => (
-                  <option key={idx} value={idx}>{m}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '8px', fontWeight: '600' }}>
+              <Calendar size={14} /> Revenue Period (Month & Year)
+            </label>
+            <input
+              type="month"
+              className="apple-input"
+              value={`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`}
+              max={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`}
+              min="2023-01"
+              onChange={e => {
+                if (!e.target.value) return
+                const [y, m] = e.target.value.split('-').map(Number)
+                setSelectedYear(y)
+                setSelectedMonth(m - 1)
+              }}
+              onClick={e => {
+                try { e.target.showPicker?.() } catch (err) {}
+              }}
+              style={{ colorScheme: 'dark', cursor: 'pointer' }}
+            />
           </div>
 
 

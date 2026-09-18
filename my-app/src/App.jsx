@@ -31,6 +31,7 @@ import UserSettings from './pages/user/UserSettings'
 import Attendance from './pages/user/Attendance'
 import UserAnnouncements from './pages/user/UserAnnouncements'
 import Meetings from './pages/common/Meetings'
+import UserAiCopilot from './pages/user/UserAiCopilot'
 
 import SpeakersList from './pages/crm/SpeakersList'
 import SpeakerProfile from './pages/crm/SpeakerProfile'
@@ -46,10 +47,10 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminUserControlPanel from './pages/admin/AdminUserControlPanel'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
-import AdminWriteUps from './pages/admin/AdminWriteUps'
 import AdminReviews from './pages/admin/AdminReviews'
 import CopyStats from './pages/admin/CopyStats'
 import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
+import AdminAiCopilot from './pages/admin/AdminAiCopilot'
 import AdminAttendance from './pages/admin/attendance/AdminAttendance'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminExportData from './pages/admin/AdminExportData'
@@ -395,7 +396,6 @@ function App() {
           <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/historical-revenue" element={hasProfile && !isAdmin ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/revenue-history" element={hasProfile && !isAdmin ? <RevenueHistory user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
@@ -407,6 +407,7 @@ function App() {
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/settings" element={hasProfile && !isAdmin ? <UserSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/ai-copilot" element={hasProfile && !isAdmin ? <UserAiCopilot user={user} /> : <Navigate to="/complete-profile" replace />} />
 
           <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
           <Route path="/meetings" element={hasProfile && !isAdmin ? <Meetings user={user} /> : <Navigate to="/complete-profile" replace />} />
@@ -433,13 +434,13 @@ function App() {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="copystats" element={<CopyStats />} />
           <Route path="ai-analytics" element={<AdminAiAnalytics />} />
-          <Route path="audit-logs" element={<AdminAuditLogs />} />
-          <Route path="write-ups" element={<AdminWriteUps />} />
+          <Route path="ai-copilot" element={<AdminAiCopilot user={user} />} />
+          <Route path="write-ups" element={<Navigate to="/admin/reviews?tab=write-ups" replace />} />
           <Route path="reviews" element={<AdminReviews />} />
           <Route path="milestones" element={<Milestones user={user} />} />
           <Route path="leaderboard" element={<Leaderboard user={user} />} />
           <Route path="auditlogs" element={<AdminAuditLogs />} />
-          <Route path="writeups" element={<AdminWriteUps />} />
+          <Route path="writeups" element={<Navigate to="/admin/reviews?tab=write-ups" replace />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
 
           <Route path="virtual-events" element={<VirtualTemplatesHome />} />
