@@ -8,6 +8,7 @@ import {
 } from '../../utils/revenueUtils'
 import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
 import ThemeSwitch from '../../components/ThemeSwitch'
+import { LayoutPanelTop, PanelLeft, CheckCircle2, Loader2 } from 'lucide-react'
 
 let globalProfileCache = {
   userId: null,
@@ -45,6 +46,36 @@ export default function ProfileSettings({ user }) {
   const [teams, setTeams] = useState(globalProfileCache.teams)
   const [revenues, setRevenues] = useState(globalProfileCache.revenues)
   const [theme, setTheme] = useState(getSystemTheme)
+  const [navPreference, setNavPreference] = useState('navbar')
+  const [navSaving, setNavSaving] = useState(false)
+  const [navSuccess, setNavSuccess] = useState(false)
+
+  const handleSelectNavPreference = async (pref) => {
+    if (pref === navPreference) return
+    setNavSaving(true)
+    setNavSuccess(false)
+
+    await new Promise(r => setTimeout(r, 600))
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ nav_preference: pref })
+        .eq('id', user.id)
+
+      if (error) throw error
+      setNavPreference(pref)
+      setNavSuccess(true)
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 900)
+    } catch (err) {
+      console.error(err)
+      alert('Failed to save navigation preference.')
+      setNavSaving(false)
+    }
+  }
 
   useEffect(() => {
     const handleThemeChange = () => {
@@ -80,6 +111,7 @@ export default function ProfileSettings({ user }) {
           const dob = profileRes.data.date_of_birth || ''
           const doj = profileRes.data.date_of_joining || ''
           const au = profileRes.data.avatar_url || null
+          const np = profileRes.data.nav_preference || 'navbar'
 
           setFirstName(fn)
           setLastName(ln)
@@ -88,6 +120,7 @@ export default function ProfileSettings({ user }) {
           setDateOfBirth(dob)
           setDateOfJoining(doj)
           setAvatarUrl(au)
+          setNavPreference(np)
           
           globalProfileCache.firstName = fn
           globalProfileCache.lastName = ln
@@ -351,13 +384,97 @@ export default function ProfileSettings({ user }) {
           </form>
 
           <div className="apple-card">
-            <h3 className="apple-title-small" style={{ marginBottom: '20px' }}>App Preferences</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--apple-border)' }}>
+            <h3 className="apple-title-small" style={{ marginBottom: '8px' }}>App Preferences</h3>
+            <p style={{ color: 'var(--apple-text-secondary)', fontSize: '0.88rem', marginBottom: '20px' }}>
+              Customize your workspace appearance and navigation layout.
+            </p>
+
+            {/* App Theme */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '14px', border: '1px solid var(--apple-border)', marginBottom: '20px' }}>
               <div>
                 <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600' }}>App Theme</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)', marginTop: '4px' }}>Toggle between dark and light modes.</div>
               </div>
               <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+            </div>
+
+            {/* Navigation Layout */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '18px', borderRadius: '14px', border: '1px solid var(--apple-border)' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ fontSize: '0.95rem', color: 'var(--apple-text-primary)', fontWeight: '600', marginBottom: '4px' }}>Navigation Layout</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>Choose your preferred navigation style across all your devices.</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
+                {/* Top Navbar Option */}
+                <div 
+                  onClick={() => !navSaving && handleSelectNavPreference('navbar')}
+                  style={{ 
+                    border: `2px solid ${navPreference === 'navbar' ? 'var(--apple-accent-blue)' : 'var(--apple-border)'}`,
+                    borderRadius: '12px',
+                    padding: '16px',
+                    background: navPreference === 'navbar' ? 'rgba(0,113,227,0.08)' : 'rgba(255,255,255,0.02)',
+                    cursor: navSaving ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.25s ease',
+                    position: 'relative',
+                    opacity: navSaving && navPreference !== 'navbar' ? 0.5 : 1
+                  }}
+                >
+                  {navPreference === 'navbar' && (
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', color: 'var(--apple-accent-blue)' }}>
+                      <CheckCircle2 size={18} />
+                    </div>
+                  )}
+                  <LayoutPanelTop size={28} style={{ color: navPreference === 'navbar' ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', marginBottom: '10px' }} />
+                  <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: '600', marginBottom: '4px' }}>Top Navigation</div>
+                  <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', lineHeight: '1.4' }}>
+                    Horizontal navbar fixed at the top of the screen.
+                  </div>
+                </div>
+
+                {/* Sidebar Option */}
+                <div 
+                  onClick={() => !navSaving && handleSelectNavPreference('sidebar')}
+                  style={{ 
+                    border: `2px solid ${navPreference === 'sidebar' ? 'var(--apple-accent-blue)' : 'var(--apple-border)'}`,
+                    borderRadius: '12px',
+                    padding: '16px',
+                    background: navPreference === 'sidebar' ? 'rgba(0,113,227,0.08)' : 'rgba(255,255,255,0.02)',
+                    cursor: navSaving ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.25s ease',
+                    position: 'relative',
+                    opacity: navSaving && navPreference !== 'sidebar' ? 0.5 : 1
+                  }}
+                >
+                  {navPreference === 'sidebar' && (
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', color: 'var(--apple-accent-blue)' }}>
+                      <CheckCircle2 size={18} />
+                    </div>
+                  )}
+                  <PanelLeft size={28} style={{ color: navPreference === 'sidebar' ? 'var(--apple-accent-blue)' : 'var(--apple-text-secondary)', marginBottom: '10px' }} />
+                  <div style={{ color: '#fff', fontSize: '0.95rem', fontWeight: '600', marginBottom: '4px' }}>Collapsible Sidebar</div>
+                  <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.78rem', lineHeight: '1.4' }}>
+                    Vertical pinned sidebar with expand and collapse.
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Message */}
+              {(navSaving || navSuccess) && (
+                <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  {navSaving && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--apple-text-secondary)' }}>
+                      <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                      Applying layout changes...
+                    </span>
+                  )}
+                  {navSuccess && (
+                    <span style={{ color: 'var(--apple-accent-green)', fontWeight: '500', animation: 'fadeIn 0.3s ease' }}>
+                      ✓ Navigation layout updated! Reloading application...
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -462,62 +462,41 @@ export default function UserRevenue({ user, isAdminView }) {
       {/* Sub-Nav Bar */}
       {!isAdminView && (() => {
         const tabs = [
-          { key: 'overview', label: 'Overview & Logging', icon: <PlusCircle size={22} />, color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.35)', glow: 'rgba(59, 130, 246, 0.15)' },
-          { key: 'history', label: 'History & Audit', icon: <Clock size={22} />, color: '#34d399', bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.35)', glow: 'rgba(16, 185, 129, 0.15)' }
+          { key: 'overview', label: 'Overview & Logging', shortLabel: 'Overview', icon: <PlusCircle size={18} />, color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.35)', glow: 'rgba(59, 130, 246, 0.15)' },
+          { key: 'history', label: 'History & Audit', shortLabel: 'History', icon: <Clock size={18} />, color: '#34d399', bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.35)', glow: 'rgba(16, 185, 129, 0.15)' }
         ]
         const activeIdx = tabs.findIndex(t => t.key === activeTab)
         const activeColor = tabs[activeIdx]
         return (
-          <div style={{
-            display: 'inline-flex',
-            position: 'relative',
-            background: 'var(--apple-bg-secondary)',
-            padding: '5px',
-            borderRadius: '16px',
-            border: '1px solid var(--apple-border)',
-            marginBottom: '28px',
-            width: '100%'
-          }}>
+          <div className="revenue-subnav-bar">
             <div style={{
               position: 'absolute',
-              top: '5px',
-              bottom: '5px',
-              left: '5px',
-              width: `calc((100% - 10px) / ${tabs.length})`,
-              borderRadius: '13px',
+              top: '3px',
+              bottom: '3px',
+              left: '3px',
+              width: `calc((100% - 6px) / ${tabs.length})`,
+              borderRadius: '11px',
               background: activeColor.bg,
               border: `1px solid ${activeColor.border}`,
               boxShadow: `0 0 18px ${activeColor.glow}`,
               transform: `translateX(${activeIdx * 100}%)`,
-              transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1)'
+              transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1)',
+              pointerEvents: 'none'
             }} />
             {tabs.map(tab => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
+                className="revenue-subnav-btn"
                 style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  padding: '18px 28px',
-                  fontSize: '1.1rem',
                   fontWeight: activeTab === tab.key ? '700' : '600',
-                  color: activeTab === tab.key ? tab.color : 'var(--apple-text-secondary)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '13px',
-                  transition: 'color 0.25s ease',
-                  whiteSpace: 'nowrap'
+                  color: activeTab === tab.key ? tab.color : 'var(--apple-text-secondary)'
                 }}
               >
                 {tab.icon}
-                {tab.label}
+                <span className="revenue-subnav-desktop-text">{tab.label}</span>
+                <span className="revenue-subnav-mobile-text">{tab.shortLabel}</span>
               </button>
             ))}
           </div>
@@ -531,78 +510,44 @@ export default function UserRevenue({ user, isAdminView }) {
       <div style={{ display: activeTab === 'overview' ? 'block' : 'none' }}>
         {/* ===== ADD / EDIT REVENUE FORM ===== */}
       {!isAdminView && (
-        <div id="revenue-form" className="apple-card" style={{
-          marginBottom: '24px',
+        <div id="revenue-form" className="apple-card revenue-form-card" style={{
           background: editingRecord ? 'rgba(0, 113, 227, 0.04) !important' : 'var(--apple-card) !important',
-          borderColor: editingRecord ? 'rgba(0, 113, 227, 0.3) !important' : 'var(--apple-border) !important',
-          padding: '20px',
-          position: 'relative'
+          borderColor: editingRecord ? 'rgba(0, 113, 227, 0.3) !important' : 'var(--apple-border) !important'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <div style={{
-              width: '40px', height: '40px',
-              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-              borderRadius: '10px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 6px 12px rgba(79, 70, 229, 0.25)',
-              flexShrink: 0
-            }}>
-              <DollarSign color="#fff" size={20} />
+          <div className="revenue-form-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '36px', height: '36px',
+                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                borderRadius: '10px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 6px 12px rgba(79, 70, 229, 0.25)',
+                flexShrink: 0
+              }}>
+                <DollarSign color="#fff" size={18} />
+              </div>
+              <div>
+                <h3 className="apple-title-small" style={{ margin: 0, fontSize: '1.05rem', color: editingRecord ? 'var(--apple-accent-blue)' : '#fff' }}>
+                  {editingRecord ? 'Edit Contribution' : 'Log New Revenue'}
+                </h3>
+              </div>
             </div>
-            <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-              <h3 className="apple-title-small" style={{ margin: 0, color: editingRecord ? 'var(--apple-accent-blue)' : '#fff' }}>
-                {editingRecord ? 'Edit Revenue Contribution' : 'Log New Revenue'}
-              </h3>
-              <p style={{ margin: '4px 0 0 0', color: 'var(--apple-text-secondary)', fontSize: '0.9rem' }}>
-                {editingRecord ? 'Modify your previously logged contribution.' : 'Track and record your monthly revenue contributions.'}
-              </p>
-            </div>
-            {editingRecord ? (
+            {editingRecord && (
               <button
                 onClick={handleCancelEdit}
                 className="apple-btn apple-btn-secondary"
-                style={{ marginLeft: 'auto', padding: '8px 16px !important', fontSize: '0.85rem', borderRadius: '8px !important' }}
+                style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '8px' }}
               >
                 Cancel Edit
               </button>
-            ) : (
-              <Link
-                to="/historical-revenue"
-                className="apple-btn"
-                style={{
-                  marginLeft: 'auto',
-                  padding: '8px 16px',
-                  fontSize: '0.85rem',
-                  borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'var(--apple-text-secondary)',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-                  e.currentTarget.style.color = '#fff'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                  e.currentTarget.style.color = 'var(--apple-text-secondary)'
-                }}
-              >
-                <Clock size={14} /> Log Past Team Revenue
-              </Link>
             )}
           </div>
 
           {isPastMonthCheck && !systemSettings?.revenue_allow_past && (
             <div style={{
-              padding: '12px 16px', borderRadius: '10px', marginBottom: '20px',
+              padding: '10px 14px', borderRadius: '10px', marginBottom: '14px',
               background: 'rgba(255,69,58,0.08)', border: '1px solid var(--apple-accent-red)',
-              color: 'var(--apple-accent-red)', fontSize: '0.88rem', fontWeight: '500'
+              color: 'var(--apple-accent-red)', fontSize: '0.85rem', fontWeight: '500'
             }}>
               ⏳ Submitting or editing revenue for past months is currently disabled.
             </div>
@@ -616,20 +561,20 @@ export default function UserRevenue({ user, isAdminView }) {
           ) : (
             <form onSubmit={handleSubmit}>
 
-              {/* Row 1: Team, Date (Calendar), Week (Auto) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '16px', alignItems: 'end' }}>
+              {/* Row 1: Team, Date, Week — strictly ONE ROW on desktop */}
+              <div className="revenue-form-grid-row1">
                 {/* Team */}
-                <div>
+                <div className="revenue-col-team">
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Team</label>
                   <div style={{ position: 'relative' }}>
-                    <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1 }} />
+                    <Users size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1, pointerEvents: 'none' }} />
                     {teams.length > 1 ? (
                       <>
                         <select
                           value={selectedTeam}
                           onChange={e => setSelectedTeam(e.target.value)}
                           className="form-control"
-                          style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                          style={{ paddingLeft: '38px', paddingRight: '36px', height: '46px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
                         >
                           {teams.map(t => (
                             <option key={t.id} value={t.id}>{t.name} ({t.label})</option>
@@ -640,7 +585,8 @@ export default function UserRevenue({ user, isAdminView }) {
                     ) : (
                       <div
                         className="form-control"
-                        style={{ paddingLeft: '40px', paddingRight: '16px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.8, cursor: 'default' }}
+                        style={{ paddingLeft: '38px', paddingRight: '16px', height: '46px', display: 'flex', alignItems: 'center', color: '#fff', fontWeight: '500', opacity: 0.9, cursor: 'default', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        title={teams[0]?.name || 'No Team'}
                       >
                         {teams[0]?.name || 'No Team'}
                       </div>
@@ -649,27 +595,26 @@ export default function UserRevenue({ user, isAdminView }) {
                 </div>
 
                 {/* Date (Calendar Picker) */}
-                <div>
+                <div className="revenue-col-date">
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Date</label>
                   <div style={{ position: 'relative' }}>
-                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1 }} />
+                    <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1, pointerEvents: 'none' }} />
                     <input
                       type="date"
                       value={entryDate}
                       max={maxDate}
                       onChange={e => setEntryDate(e.target.value)}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '12px', cursor: 'pointer', colorScheme: 'dark' }}
+                      style={{ paddingLeft: '38px', paddingRight: '12px', height: '46px', cursor: 'pointer', colorScheme: 'dark', width: '100%', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
 
-                {/* Week (Auto-calculated, read-only) */}
-                <div>
+                {/* Week (Auto-calculated) */}
+                <div className="revenue-col-week">
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Week</label>
                   <div style={{
                     height: '46px',
-                    minWidth: '100px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -681,7 +626,9 @@ export default function UserRevenue({ user, isAdminView }) {
                     color: '#a5b4fc',
                     fontWeight: '700',
                     fontSize: '0.95rem',
-                    letterSpacing: '0.02em'
+                    letterSpacing: '0.02em',
+                    boxSizing: 'border-box',
+                    whiteSpace: 'nowrap'
                   }}>
                     <Calendar size={16} color="#818cf8" />
                     Week {selectedWeek}
@@ -690,12 +637,12 @@ export default function UserRevenue({ user, isAdminView }) {
               </div>
 
               {/* Row 2: Client Name + Source */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+              <div className="revenue-form-grid-row2">
                 {/* Client Name */}
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Client Name</label>
                   <div style={{ position: 'relative' }}>
-                    <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: noClientInfo ? 'rgba(255,149,0,0.5)' : 'var(--apple-text-secondary)', transition: 'color 0.25s', zIndex: 1 }} />
+                    <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: noClientInfo ? 'rgba(255,149,0,0.5)' : 'var(--apple-text-secondary)', zIndex: 1, pointerEvents: 'none' }} />
                     <input
                       type="text"
                       value={noClientInfo ? '' : clientName}
@@ -704,12 +651,14 @@ export default function UserRevenue({ user, isAdminView }) {
                       disabled={noClientInfo}
                       className="form-control"
                       style={{
-                        paddingLeft: '40px',
+                        paddingLeft: '38px',
                         paddingRight: '80px',
+                        height: '46px',
                         opacity: noClientInfo ? 0.45 : 1,
                         background: noClientInfo ? 'rgba(255, 149, 0, 0.04)' : undefined,
                         borderColor: noClientInfo ? 'rgba(255, 149, 0, 0.2)' : undefined,
-                        transition: 'all 0.25s ease'
+                        width: '100%',
+                        boxSizing: 'border-box'
                       }}
                     />
                     {/* Inline N/A toggle pill */}
@@ -737,7 +686,6 @@ export default function UserRevenue({ user, isAdminView }) {
                           : 'rgba(255,255,255,0.04)',
                         color: noClientInfo ? '#ffb340' : 'var(--apple-text-secondary)',
                         boxShadow: noClientInfo ? '0 0 14px rgba(255, 149, 0, 0.2)' : 'none',
-                        transition: 'all 0.25s ease',
                         zIndex: 1
                       }}
                       onMouseOver={e => {
@@ -764,12 +712,12 @@ export default function UserRevenue({ user, isAdminView }) {
                 <div>
                   <label className="apple-form-label" style={{ marginBottom: '8px' }}>Source</label>
                   <div style={{ position: 'relative' }}>
-                    <LinkIcon size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)' }} />
+                    <LinkIcon size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', zIndex: 1, pointerEvents: 'none' }} />
                     <select
                       value={source}
                       onChange={e => setSource(e.target.value)}
                       className="form-control"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                      style={{ paddingLeft: '38px', paddingRight: '40px', height: '46px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', width: '100%', boxSizing: 'border-box' }}
                     >
                       <option value="Linkedin">Linkedin</option>
                       <option value="Instagram">Instagram</option>
@@ -783,31 +731,32 @@ export default function UserRevenue({ user, isAdminView }) {
                 </div>
               </div>
 
-              {/* Row 3: Amount (Full Width) — Highlighted */}
-              <div style={{
-                marginBottom: '16px',
-                padding: '12px',
-                borderRadius: '12px',
-                background: amount ? 'linear-gradient(135deg, rgba(48, 213, 200, 0.06), rgba(0, 113, 227, 0.06))' : 'rgba(255,255,255,0.015)',
-                border: amount ? '1px solid rgba(48, 213, 200, 0.2)' : '1px solid rgba(255,255,255,0.06)',
-                boxShadow: amount ? '0 0 20px rgba(48, 213, 200, 0.08)' : 'none',
+              {/* Row 3: Amount (Full Width) — Highlighted Hero */}
+              <div className="revenue-amount-box" style={{
+                background: amount ? 'linear-gradient(135deg, rgba(48, 213, 200, 0.08), rgba(0, 113, 227, 0.08))' : 'rgba(255,255,255,0.02)',
+                border: amount ? '1px solid rgba(48, 213, 200, 0.3)' : '1px solid var(--apple-border)',
+                boxShadow: amount ? '0 0 24px rgba(48, 213, 200, 0.12)' : 'none',
                 transition: 'all 0.3s ease'
               }}>
-                <label className="apple-form-label" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>Amount (USD)</span>
-                  {amount && <span style={{ fontSize: '0.75rem', color: 'var(--apple-accent-green)', fontWeight: '600', opacity: 0.8 }}>💰 Ready to log</span>}
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="revenue-mini-label" style={{ margin: 0 }}>
+                    Amount (USD)
+                  </label>
+                  {amount && <span style={{ fontSize: '0.74rem', color: 'var(--apple-accent-green)', fontWeight: '700' }}>💰 Ready to log</span>}
+                </div>
                 <div style={{ position: 'relative', display: 'flex', height: '48px' }}>
                   <div style={{
-                    width: '46px',
-                    background: 'linear-gradient(135deg, rgba(48, 213, 200, 0.18), rgba(0, 113, 227, 0.15))',
-                    border: '1px solid rgba(48, 213, 200, 0.3)',
+                    width: '44px',
+                    background: 'linear-gradient(135deg, rgba(48, 213, 200, 0.2), rgba(0, 113, 227, 0.15))',
+                    borderTop: '1px solid rgba(48, 213, 200, 0.35)',
+                    borderBottom: '1px solid rgba(48, 213, 200, 0.35)',
+                    borderLeft: '1px solid rgba(48, 213, 200, 0.35)',
                     borderRight: 'none',
-                    borderRadius: '12px 0 0 12px',
+                    borderRadius: '11px 0 0 11px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <DollarSign size={22} color="var(--apple-accent-green)" />
+                    <DollarSign size={20} color="var(--apple-accent-green)" />
                   </div>
                   <input
                     type="number"
@@ -817,17 +766,14 @@ export default function UserRevenue({ user, isAdminView }) {
                     onChange={e => setAmount(e.target.value)}
                     placeholder="0.00"
                     required
-                    className="form-control"
+                    className="form-control revenue-amount-input"
                     style={{
                       flex: 1, minWidth: 0,
-                      paddingLeft: '18px', paddingRight: '36px',
-                      borderRadius: '0 12px 12px 0',
-                      fontSize: '1.3rem',
-                      fontWeight: '700',
-                      letterSpacing: '0.03em'
+                      paddingLeft: '14px', paddingRight: '14px',
+                      borderRadius: '0 11px 11px 0',
+                      height: '48px'
                     }}
                   />
-                  <ChevronsUpDown size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--apple-text-secondary)', pointerEvents: 'none' }} />
                 </div>
               </div>
 

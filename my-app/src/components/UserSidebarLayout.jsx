@@ -350,13 +350,13 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
           {!collapsed ? (
             <div className="admin-sidebar-actions-row">
               <Link
-                to="/settings"
+                to="/profile"
                 onClick={handleNavClick}
                 className="admin-sidebar-action-btn"
-                title="App Settings"
+                title="Profile & Preferences"
               >
                 <SettingsIcon size={14} />
-                <span>Settings</span>
+                <span>Preferences</span>
               </Link>
 
               <button
@@ -377,9 +377,9 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
                 <span className="sidebar-tooltip">{fullName} (Profile)</span>
               </Link>
 
-              <Link to="/settings" onClick={handleNavClick} className="admin-sidebar-link" style={{ padding: '8px 0', width: '100%', justifyContent: 'center' }}>
+              <Link to="/profile" onClick={handleNavClick} className="admin-sidebar-link" style={{ padding: '8px 0', width: '100%', justifyContent: 'center' }}>
                 <SettingsIcon size={18} />
-                <span className="sidebar-tooltip">Settings</span>
+                <span className="sidebar-tooltip">Preferences</span>
               </Link>
 
               <button

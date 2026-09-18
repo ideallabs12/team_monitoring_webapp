@@ -70,8 +70,7 @@ export default function Navbar({ user }) {
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
-    { to: '/profile', label: 'Profile', desc: 'Manage your personal details' },
-    { to: '/settings', label: 'Settings', desc: 'App preferences and alerts' },
+    { to: '/profile', label: 'Profile & Preferences', desc: 'Personal details, theme & navigation layout' },
     { to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' },
   ]
   

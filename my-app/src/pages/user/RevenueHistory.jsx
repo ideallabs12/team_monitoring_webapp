@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { normalizeMonth, formatRevenueMonth, MONTH_NAMES, parseRevenueMonth } from '../../utils/revenueUtils'
-import { Search, TrendingUp, Filter, ChevronDown, X, Edit2, Trash2 } from 'lucide-react'
+import { Search, TrendingUp, Filter, ChevronDown, X, Edit2, Trash2, Clock } from 'lucide-react'
 
 const SOURCE_OPTIONS = ['All', 'Instagram', 'Facebook', 'TikTok', 'Twitter', 'LinkedIn', 'Email Marketing', 'Organic Search', 'Referral', 'Website', 'Other', 'Unknown']
 
