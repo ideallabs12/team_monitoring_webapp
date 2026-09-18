@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { ChevronDown } from 'lucide-react'
 
-export default function Navbar({ user }) {
+export default function Navbar({ user, userPagesAccess = {} }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
@@ -60,32 +60,40 @@ export default function Navbar({ user }) {
 
   const navLinks = [
     { to: '/home', label: 'Home' },
-    { to: '/crm/speakers', label: 'Speakers CRM' },
-    { to: '/announcements', label: 'Announcements' },
-    { to: '/virtual-events', label: 'Virtual Events' },
-    { to: '/team', label: 'Team' }
   ]
-  if (profile?.has_revenue_logging !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
-  if (profile?.has_dis_reporting !== false) navLinks.push({ to: '/dis', label: 'My DIS' })
+  if (userPagesAccess.speakersCRM !== false) navLinks.push({ to: '/crm/speakers', label: 'Speakers CRM' })
+  if (userPagesAccess.announcements !== false) navLinks.push({ to: '/announcements', label: 'Announcements' })
+  if (userPagesAccess.virtualEvents !== false) navLinks.push({ to: '/virtual-events', label: 'Virtual Events' })
+  if (userPagesAccess.team !== false) navLinks.push({ to: '/team', label: 'Team' })
+  
+  if (profile?.has_revenue_logging !== false && userPagesAccess.revenue !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
+  if (profile?.has_dis_reporting !== false && userPagesAccess.dis !== false) navLinks.push({ to: '/dis', label: 'My DIS' })
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
-    { to: '/profile', label: 'Profile & Preferences', desc: 'Personal details, theme & navigation layout' },
-    { to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' },
+    { to: '/profile', label: 'Profile & Preferences', desc: 'Personal details, theme & navigation layout' }
   ]
+  if (userPagesAccess.reviews !== false) {
+    othersLinks.push({ to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' })
+  }
   
-  othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
-  othersLinks.push({ to: '/meetings', label: 'Call Transcripts', desc: 'Call transcripts and summaries' })
+  if (userPagesAccess.leaderboard !== false) {
+    othersLinks.push({ to: '/leaderboard', label: 'Leaderboard', desc: 'Team performance rankings' })
+  }
+  if (userPagesAccess.meetings !== false) {
+    othersLinks.push({ to: '/meetings', label: 'Call Transcripts', desc: 'Call transcripts and summaries' })
+  }
   
-  if (profile?.is_sales_executive) {
+  if (profile?.is_sales_executive && userPagesAccess.salesAnalytics !== false) {
     othersLinks.push({ to: '/sales-analytics', label: 'Sales Executive', desc: 'Call activity & analytics' })
   }
 
-  const teamHubLinks = [
-    { to: '/team-analytics', label: 'Team Analytics', desc: 'Charts & insights' },
-    { to: '/team-management', label: 'Team Management', desc: 'Targets & DIS board' },
-    { to: '/team-dis-report', label: 'Team DIS Report', desc: 'Audit team submissions' },
-  ]
+  const teamHubLinks = []
+  if (userPagesAccess.teamHub !== false) {
+    teamHubLinks.push({ to: '/team-analytics', label: 'Team Analytics', desc: 'Charts & insights' })
+    teamHubLinks.push({ to: '/team-management', label: 'Team Management', desc: 'Targets & DIS board' })
+    teamHubLinks.push({ to: '/team-dis-report', label: 'Team DIS Report', desc: 'Audit team submissions' })
+  }
 
   const linkStyle = (active) => ({
     color: active ? 'var(--apple-text-primary)' : 'var(--apple-text-secondary)',

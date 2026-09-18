@@ -27,6 +27,8 @@ export default function AdminRoleManager() {
   const [savingId, setSavingId] = useState(null)
   
   const [selectedUserId, setSelectedUserId] = useState('')
+  const [activeTab, setActiveTab] = useState('admin') // 'admin' or 'user'
+  const [systemSettings, setSystemSettings] = useState(null)
 
   // STRICT ACCESS CONTROL
   if (user?.email !== 'signatureglobalconferences@gmail.com') {
@@ -39,23 +41,23 @@ export default function AdminRoleManager() {
   }
 
   useEffect(() => {
-    fetchUsers()
+    fetchData()
   }, [])
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      // Fetch users
+      const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, platform_role, feature_access, is_deactivated')
         .in('platform_role', ['admin', 'executive'])
         .neq('email', 'signatureglobalconferences@gmail.com') // Don't show master admin
         .order('first_name')
 
-      if (error) throw error
+      if (usersError) throw usersError
       
-      // Ensure feature_access is an object for all users to prevent null errors
-      const normalizedData = data.map(u => ({
+      const normalizedData = usersData.map(u => ({
         ...u,
         feature_access: u.feature_access || {}
       }))
@@ -64,8 +66,20 @@ export default function AdminRoleManager() {
       if (normalizedData.length > 0) {
         setSelectedUserId(normalizedData[0].id)
       }
+
+      // Fetch system settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('system_settings')
+        .select('user_pages_access')
+        .eq('id', 1)
+        .maybeSingle()
+
+      if (settingsError) throw settingsError
+      if (settingsData) {
+        setSystemSettings(settingsData)
+      }
     } catch (err) {
-      console.error('Error fetching admins/executives:', err)
+      console.error('Error fetching data:', err)
     } finally {
       setLoading(false)
     }
@@ -115,6 +129,30 @@ export default function AdminRoleManager() {
     }
   }
 
+  const handleToggleUserPage = async (pageKey, currentValue) => {
+    setSavingId('systemSettings')
+    try {
+      const newAccess = {
+        ...(systemSettings?.user_pages_access || {}),
+        [pageKey]: !currentValue
+      }
+
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ user_pages_access: newAccess })
+        .eq('id', 1)
+
+      if (error) throw error
+
+      setSystemSettings({ ...systemSettings, user_pages_access: newAccess })
+    } catch (err) {
+      console.error('Error updating global user pages access:', err)
+      alert('Failed to update global access.')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', gap: '16px' }}>
@@ -125,6 +163,22 @@ export default function AdminRoleManager() {
   }
 
   const selectedUser = users.find(u => u.id === selectedUserId)
+  
+  const USER_PAGES = [
+    { key: 'revenue', label: 'Revenue' },
+    { key: 'dis', label: 'My DIS' },
+    { key: 'team', label: 'Team' },
+    { key: 'teamHub', label: 'Team Hub (Analytics/Mgmt/DIS)' },
+    { key: 'virtualEvents', label: 'Virtual Events' },
+    { key: 'leaderboard', label: 'Leaderboard' },
+    { key: 'milestones', label: 'Milestones' },
+    { key: 'reviews', label: 'Reviews' },
+    { key: 'salesAnalytics', label: 'Sales Executive' },
+    { key: 'speakersCRM', label: 'Speakers CRM' },
+    { key: 'meetings', label: 'Call Transcripts' },
+    { key: 'announcements', label: 'Announcements' },
+    { key: 'aiCopilot', label: 'AI Copilot' },
+  ]
 
   return (
     <div style={{ animation: 'fadeIn 0.4s var(--apple-ease)' }}>
@@ -132,15 +186,44 @@ export default function AdminRoleManager() {
         <div className="apple-kicker">Super Admin</div>
         <h1 className="apple-title-large">Role Management</h1>
         <p className="apple-lead">
-          Select an Admin or Executive to dynamically control their feature access on the platform.
+          Control feature access dynamically.
         </p>
       </div>
 
-      {users.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--apple-text-secondary)', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid var(--apple-border)' }}>
-          No admins or executives found (excluding yourself).
-        </div>
-      ) : (
+      {/* Subnavbar */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--apple-border)', marginBottom: '32px' }}>
+        <button
+          onClick={() => setActiveTab('admin')}
+          style={{
+            background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer',
+            fontSize: '0.95rem', fontWeight: '600',
+            color: activeTab === 'admin' ? '#fff' : 'var(--apple-text-secondary)',
+            borderBottom: activeTab === 'admin' ? '2px solid var(--apple-accent-blue)' : '2px solid transparent',
+            transition: 'all 0.2s'
+          }}
+        >
+          Admin Controls
+        </button>
+        <button
+          onClick={() => setActiveTab('user')}
+          style={{
+            background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer',
+            fontSize: '0.95rem', fontWeight: '600',
+            color: activeTab === 'user' ? '#fff' : 'var(--apple-text-secondary)',
+            borderBottom: activeTab === 'user' ? '2px solid var(--apple-accent-blue)' : '2px solid transparent',
+            transition: 'all 0.2s'
+          }}
+        >
+          User Pages Access
+        </button>
+      </div>
+
+      {activeTab === 'admin' && (
+        users.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--apple-text-secondary)', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid var(--apple-border)' }}>
+            No admins or executives found (excluding yourself).
+          </div>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Dropdown Selector */}
@@ -360,6 +443,64 @@ export default function AdminRoleManager() {
             </div>
           )}
 
+        </div>
+        )
+      )}
+
+      {activeTab === 'user' && (
+        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Shield size={24} style={{ color: 'var(--apple-accent-blue)' }} />
+              Global User Page Access
+            </h3>
+            <div style={{ color: 'var(--apple-text-secondary)', fontSize: '0.95rem', marginTop: '6px' }}>
+              Enable or disable pages for all standard users on the platform in real-time.
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+            {USER_PAGES.map(page => {
+              const accessMap = systemSettings?.user_pages_access || {}
+              const isGranted = accessMap[page.key] !== false // Default to true if undefined
+              
+              return (
+                <div key={page.key} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    onClick={() => {
+                      if (savingId) return
+                      handleToggleUserPage(page.key, isGranted)
+                    }}
+                    style={{
+                      width: '44px',
+                      height: '24px',
+                      background: isGranted ? 'var(--apple-accent-green)' : 'rgba(150, 150, 150, 0.25)',
+                      borderRadius: '12px',
+                      position: 'relative',
+                      cursor: savingId ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s var(--apple-ease)',
+                      opacity: savingId === 'systemSettings' ? 0.5 : 1
+                    }}
+                  >
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      background: '#fff',
+                      borderRadius: '50%',
+                      position: 'absolute',
+                      top: '2px',
+                      left: isGranted ? '22px' : '2px',
+                      transition: 'all 0.3s var(--apple-ease)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }} />
+                  </div>
+                  <span style={{ color: isGranted ? '#fff' : 'var(--apple-text-secondary)', fontSize: '0.95rem', transition: 'color 0.3s' }}>
+                    {page.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

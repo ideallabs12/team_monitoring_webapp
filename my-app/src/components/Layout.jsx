@@ -18,7 +18,7 @@ function RestrictedAccessView() {
   )
 }
 
-export default function Layout({ user, isDeactivated, featureAccess }) {
+export default function Layout({ user, isDeactivated, featureAccess, userPagesAccess }) {
   const [navPref, setNavPref] = useState(null) // 'navbar' or 'sidebar'
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
@@ -51,14 +51,14 @@ export default function Layout({ user, isDeactivated, featureAccess }) {
 
   // Sidebar Layout Mode (Force sidebar on mobile)
   if (isMobile || navPref === 'sidebar') {
-    return <UserSidebarLayout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} RestrictedAccessView={RestrictedAccessView} />
+    return <UserSidebarLayout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} userPagesAccess={userPagesAccess} RestrictedAccessView={RestrictedAccessView} />
   }
 
   // Default Top Navbar Layout Mode
 
   return (
     <div className="apple-theme-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Navbar user={user} />
+      <Navbar user={user} userPagesAccess={userPagesAccess} />
       <main style={{ 
         flex: 1, 
         minWidth: 0,

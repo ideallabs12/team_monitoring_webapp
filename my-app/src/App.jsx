@@ -391,7 +391,7 @@ function App() {
         />
 
         {/* Regular User Routes */}
-        <Route element={<Layout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} />}>
+        <Route element={<Layout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} userPagesAccess={systemSettings.user_pages_access || {}} />}>
           <Route path="/home" element={hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />

@@ -112,21 +112,26 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
 
   // Build categorized navigation sections
   const userNavSections = useMemo(() => {
+    const userPagesAccessMap = featureAccess?.userPagesAccess || {} // if passed down via featureAccess? Wait, we passed it as `userPagesAccess` prop
+    // Actually, in Layout.jsx we passed it as userPagesAccess={userPagesAccess} so it's a prop on UserSidebarLayout
+    const access = userPagesAccess || {}
     const sections = []
 
     // 1. Workspace
+    const workspaceItems = [
+      { path: '/home', label: 'Home', icon: Home },
+    ]
+    if (access.announcements !== false) workspaceItems.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
+    if (access.aiCopilot !== false) workspaceItems.push({ path: '/ai-copilot', label: 'AI Copilot', icon: Sparkles })
+    
     sections.push({
       title: 'Workspace',
-      items: [
-        { path: '/home', label: 'Home', icon: Home },
-        { path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount },
-        { path: '/ai-copilot', label: 'AI Copilot', icon: Sparkles },
-      ]
+      items: workspaceItems
     })
 
     // 2. Daily Operations & Logs (if enabled)
     const operationsItems = []
-    if (profile?.has_dis_reporting !== false) {
+    if (profile?.has_dis_reporting !== false && access.dis !== false) {
       operationsItems.push({ path: '/dis', label: 'My DIS', icon: FileText })
     }
     if (operationsItems.length > 0) {
@@ -137,17 +142,19 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     }
 
     // 3. Team & Collaboration
-    const collabItems = [
-      { path: '/team', label: 'Team', icon: Users },
-      { path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
-    ]
-    sections.push({
-      title: 'Collaboration',
-      items: collabItems
-    })
+    const collabItems = []
+    if (access.team !== false) collabItems.push({ path: '/team', label: 'Team', icon: Users })
+    if (access.virtualEvents !== false) collabItems.push({ path: '/virtual-events', label: 'Virtual Events', icon: LayoutTemplate })
+    
+    if (collabItems.length > 0) {
+      sections.push({
+        title: 'Collaboration',
+        items: collabItems
+      })
+    }
 
     // 4. Team Hub (For Team Leads only)
-    if (isTeamLead) {
+    if (isTeamLead && access.teamHub !== false) {
       sections.push({
         title: 'Team Hub',
         items: [
@@ -160,38 +167,43 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
 
     // 5. Growth & Recognition
     const growthItems = []
-    if (profile?.has_revenue_logging !== false) {
+    if (profile?.has_revenue_logging !== false && access.revenue !== false) {
       growthItems.push({ path: '/revenue', label: 'Revenue', icon: DollarSign })
       growthItems.push({ path: '/revenue-history', label: 'Revenue History', icon: History })
     }
-    growthItems.push(
-      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-      { path: '/milestones', label: 'Milestones', icon: Flag },
-      { path: '/reviews', label: 'Reviews', icon: Star }
-    )
-    if (profile?.is_sales_executive) {
+    if (access.leaderboard !== false) growthItems.push({ path: '/leaderboard', label: 'Leaderboard', icon: Trophy })
+    if (access.milestones !== false) growthItems.push({ path: '/milestones', label: 'Milestones', icon: Flag })
+    if (access.reviews !== false) growthItems.push({ path: '/reviews', label: 'Reviews', icon: Star })
+    
+    if (profile?.is_sales_executive && access.salesAnalytics !== false) {
       growthItems.push({ path: '/sales-analytics', label: 'Sales Exec', icon: PhoneCall })
     }
-    sections.push({
-      title: 'Recognition & Growth',
-      items: growthItems
-    })
+    
+    if (growthItems.length > 0) {
+      sections.push({
+        title: 'Recognition & Growth',
+        items: growthItems
+      })
+    }
 
     // 6. Discontinued
-    const discontinuedItems = [
-      { path: '/crm/speakers', label: 'Speakers CRM', icon: Users },
-      { path: '/meetings', label: 'Call Transcripts', icon: Video },
-    ]
+    const discontinuedItems = []
+    if (access.speakersCRM !== false) discontinuedItems.push({ path: '/crm/speakers', label: 'Speakers CRM', icon: Users })
+    if (access.meetings !== false) discontinuedItems.push({ path: '/meetings', label: 'Call Transcripts', icon: Video })
+    
     if (isAdmin) {
       discontinuedItems.push({ path: '/attendance', label: 'Attendance', icon: CheckSquare })
     }
-    sections.push({
-      title: 'Discontinued',
-      items: discontinuedItems
-    })
+    
+    if (discontinuedItems.length > 0) {
+      sections.push({
+        title: 'Discontinued',
+        items: discontinuedItems
+      })
+    }
 
     return sections
-  }, [profile, unreadCount, isTeamLead, isAdmin])
+  }, [profile, unreadCount, isTeamLead, isAdmin, userPagesAccess])
 
   // Filter sections by search query
   const filteredSections = useMemo(() => {
