@@ -50,15 +50,27 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
 
     // Fetch unread announcements count
     const fetchUnread = async () => {
+      let unreadAnn = 0;
       const { data: announcements } = await supabase.from('announcements').select('id').eq('status', 'published')
       if (announcements) {
         const { data: views } = await supabase.from('announcement_views').select('announcement_id').eq('user_id', user.id)
         if (views) {
           const viewedIds = views.map(v => v.announcement_id)
-          const unread = announcements.filter(a => !viewedIds.includes(a.id)).length
-          setUnreadCount(unread)
+          unreadAnn = announcements.filter(a => !viewedIds.includes(a.id)).length
         }
       }
+
+      let unreadNotifs = 0;
+      const { data: notifs } = await supabase.from('notifications').select('id')
+      if (notifs) {
+        const { data: reads } = await supabase.from('notification_reads').select('notification_id').eq('user_id', user.id)
+        if (reads) {
+          const readIds = reads.map(r => r.notification_id)
+          unreadNotifs = notifs.filter(n => !readIds.includes(n.id)).length
+        }
+      }
+
+      setUnreadCount(unreadAnn + unreadNotifs)
     }
     fetchUnread()
 
@@ -70,6 +82,18 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
 
     const viewsChannel = supabase.channel(`sidebar-views-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcement_views', filter: `user_id=eq.${user.id}` }, () => {
+        fetchUnread()
+      })
+      .subscribe()
+
+    const notifChannel = supabase.channel(`sidebar-notifs-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        fetchUnread()
+      })
+      .subscribe()
+
+    const notifReadsChannel = supabase.channel(`sidebar-notif-reads-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notification_reads', filter: `user_id=eq.${user.id}` }, () => {
         fetchUnread()
       })
       .subscribe()
@@ -88,6 +112,8 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     return () => {
       supabase.removeChannel(annChannel)
       supabase.removeChannel(viewsChannel)
+      supabase.removeChannel(notifChannel)
+      supabase.removeChannel(notifReadsChannel)
       supabase.removeChannel(teamsChannel)
     }
   }, [user])

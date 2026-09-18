@@ -22,8 +22,30 @@ export default function AdminAnnouncements() {
   const [editingId, setEditingId] = useState(null)
   const editor = useRef(null)
 
+  // Notification Form State
+  const [showNotifForm, setShowNotifForm] = useState(false)
+  const [notifTitle, setNotifTitle] = useState('')
+  const [notifDesc, setNotifDesc] = useState('')
+  const [notifLink, setNotifLink] = useState('/home')
+
+  const USER_PAGES = [
+    { name: 'Home / Dashboard', path: '/home' },
+    { name: 'Profile', path: '/profile' },
+    { name: 'Announcements', path: '/announcements' },
+    { name: 'Knowledge Center', path: '/knowledge' },
+    { name: 'Deals & Invoices', path: '/deals' },
+    { name: 'Speakers', path: '/speakers' },
+    { name: 'Attendance', path: '/attendance' },
+    { name: 'DIS Report', path: '/dis' },
+    { name: 'Revenue', path: '/revenue' },
+    { name: 'My Milestones', path: '/milestones' },
+    { name: 'Leaderboard', path: '/leaderboard' },
+    { name: 'Team Hub', path: '/team' },
+  ]
+
   // Analytics State
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
+  const [selectedItemType, setSelectedItemType] = useState('announcement')
   const [viewsData, setViewsData] = useState([])
 
   useEffect(() => {
@@ -164,19 +186,41 @@ export default function AdminAnnouncements() {
     }
   }
 
-  const loadAnalytics = async (announcementId) => {
-    setSelectedAnnouncement(announcementId)
+  const loadAnalytics = async (id, type = 'announcement') => {
+    setSelectedAnnouncement(id)
+    setSelectedItemType(type)
     setActiveTab('analytics')
-    const { data, error } = await supabase
-      .from('announcement_views')
-      .select('viewed_at, user_id(id, first_name, last_name, email)')
-      .eq('announcement_id', announcementId)
-      .order('viewed_at', { ascending: false })
+    
+    if (type === 'announcement') {
+      const { data, error } = await supabase
+        .from('announcement_views')
+        .select('viewed_at, user_id(id, first_name, last_name, email)')
+        .eq('announcement_id', id)
+        .order('viewed_at', { ascending: false })
+        
+      if (data) {
+        setViewsData(data)
+      }
+      if (error) console.error("Error fetching views:", error)
+    } else {
+      const { data, error } = await supabase
+        .from('notification_reads')
+        .select('created_at, user_id(id, first_name, last_name, email)')
+        .eq('notification_id', id)
+        .order('created_at', { ascending: false })
       
-    if (data) {
-      setViewsData(data)
+      if (error) {
+        const { data: fallbackData } = await supabase
+          .from('notification_reads')
+          .select('user_id(id, first_name, last_name, email)')
+          .eq('notification_id', id)
+        if (fallbackData) {
+          setViewsData(fallbackData.map(d => ({ ...d, viewed_at: new Date() })))
+        }
+      } else if (data) {
+        setViewsData(data.map(d => ({ ...d, viewed_at: d.created_at })))
+      }
     }
-    if (error) console.error("Error fetching views:", error)
   }
 
   return (
@@ -421,23 +465,35 @@ export default function AdminAnnouncements() {
             <div style={{ minWidth: '250px' }}>
               <select 
                 className="apple-input" 
-                value={selectedAnnouncement || ''} 
-                onChange={(e) => loadAnalytics(e.target.value)}
+                value={selectedAnnouncement ? `${selectedItemType}::${selectedAnnouncement}` : ''} 
+                onChange={(e) => {
+                  const [type, id] = e.target.value.split('::')
+                  loadAnalytics(id, type)
+                }}
                 style={{ padding: '8px 12px' }}
               >
-                <option value="" disabled>Select an announcement...</option>
-                {announcements.map(ann => (
-                  <option key={ann.id} value={ann.id}>
-                    {ann.title} ({new Date(ann.created_at).toLocaleDateString()})
-                  </option>
-                ))}
+                <option value="" disabled>Select an item...</option>
+                <optgroup label="Announcements">
+                  {announcements.map(ann => (
+                    <option key={ann.id} value={`announcement::${ann.id}`}>
+                      {ann.title} ({new Date(ann.created_at).toLocaleDateString()})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Notifications">
+                  {notifications.map(notif => (
+                    <option key={notif.id} value={`notification::${notif.id}`}>
+                      {notif.title} ({new Date(notif.created_at).toLocaleDateString()})
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>
           
           {!selectedAnnouncement ? (
             <div style={{ color: 'var(--apple-text-secondary)', padding: '24px 0' }}>
-              Please select an announcement from the dropdown above to view its analytics.
+              Please select an announcement or notification from the dropdown above to view its analytics.
             </div>
           ) : (
             <div>
@@ -483,20 +539,40 @@ export default function AdminAnnouncements() {
         <div className="apple-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h3 className="apple-title-small">Manage Notifications</h3>
-            <button className="apple-btn apple-btn-primary" onClick={async () => {
-              const title = prompt("Notification Title:");
-              if (!title) return;
-              const desc = prompt("Notification Description:");
-              if (!desc) return;
-              const type = prompt("Type (milestone, action, alert):", "milestone");
-              
-              const { data: { user } } = await supabase.auth.getUser();
-              await supabase.from('notifications').insert([{ title, description: desc, type, created_by: user.id }]);
-              fetchNotifications();
-            }}>
-              <Plus size={18} /> Add Notification
+            <button className="apple-btn apple-btn-primary" onClick={() => setShowNotifForm(!showNotifForm)}>
+              {showNotifForm ? 'Cancel' : <><Plus size={18} /> Add Notification</>}
             </button>
           </div>
+          
+          {showNotifForm && (
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--apple-border)' }}>
+              <input type="text" className="apple-input" placeholder="Notification Title" value={notifTitle} onChange={e => setNotifTitle(e.target.value)} />
+              <input type="text" className="apple-input" placeholder="Short Description" value={notifDesc} onChange={e => setNotifDesc(e.target.value)} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)' }}>Target Page</label>
+                <select className="apple-input" value={notifLink} onChange={e => setNotifLink(e.target.value)}>
+                  {USER_PAGES.map(p => (
+                    <option key={p.path} value={p.path}>{p.name} ({p.path})</option>
+                  ))}
+                </select>
+              </div>
+              <button className="apple-btn apple-btn-primary" style={{ alignSelf: 'flex-start' }} onClick={async () => {
+                if (!notifTitle || !notifDesc) return alert('Title and description are required');
+                setSaving(true);
+                const { data: { user } } = await supabase.auth.getUser();
+                await supabase.from('notifications').insert([{ title: notifTitle, description: notifDesc, type: notifLink, created_by: user.id }]);
+                setNotifTitle('');
+                setNotifDesc('');
+                setNotifLink('/home');
+                setShowNotifForm(false);
+                setSaving(false);
+                fetchNotifications();
+              }}>
+                {saving ? 'Sending...' : 'Send Notification'}
+              </button>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {notifications.map(notif => (
               <div key={notif.id} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px' }}>

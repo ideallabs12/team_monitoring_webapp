@@ -357,6 +357,10 @@ function App() {
     return <MaintenanceScreen />
   }
 
+  const withAccess = (pageKey, element) => {
+    const isGranted = systemSettings?.user_pages_access?.[pageKey] !== false
+    return isGranted ? element : <Navigate to="/home" replace />
+  }
 
   return (
     <PresenceProvider user={user}>
@@ -393,30 +397,30 @@ function App() {
         {/* Regular User Routes */}
         <Route element={<Layout user={user} isDeactivated={isDeactivated} featureAccess={featureAccess} userPagesAccess={systemSettings.user_pages_access || {}} />}>
           <Route path="/home" element={hasProfile && !isAdmin ? <UserHome user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team" element={hasProfile && !isAdmin ? <UserTeam user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/revenue" element={hasProfile && !isAdmin ? <UserRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/historical-revenue" element={hasProfile && !isAdmin ? <UserHistoricalRevenue user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/dis" element={hasProfile && !isAdmin ? <UserDis /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-analytics" element={hasProfile && !isAdmin ? <TeamAnalytics user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-management" element={hasProfile && !isAdmin ? <TeamManagement user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/team-dis-report" element={hasProfile && !isAdmin ? <TeamDisReport user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/leaderboard" element={hasProfile && !isAdmin ? (systemSettings.show_leaderboard ? <Leaderboard user={user} /> : <Navigate to="/home" replace />) : <Navigate to="/complete-profile" replace />} />
-          <Route path="/milestones" element={hasProfile && !isAdmin ? <Milestones user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/sales-analytics" element={hasProfile && !isAdmin ? <SalesExecutive user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/reviews" element={hasProfile && !isAdmin ? <UserReviews user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team" element={hasProfile && !isAdmin ? withAccess('team', <UserTeam user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/revenue" element={hasProfile && !isAdmin ? withAccess('revenue', <UserRevenue user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/historical-revenue" element={hasProfile && !isAdmin ? withAccess('revenue', <UserHistoricalRevenue user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/dis" element={hasProfile && !isAdmin ? withAccess('dis', <UserDis />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-analytics" element={hasProfile && !isAdmin ? withAccess('teamHub', <TeamAnalytics user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-management" element={hasProfile && !isAdmin ? withAccess('teamHub', <TeamManagement user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/team-dis-report" element={hasProfile && !isAdmin ? withAccess('teamHub', <TeamDisReport user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/leaderboard" element={hasProfile && !isAdmin ? (systemSettings.show_leaderboard ? withAccess('leaderboard', <Leaderboard user={user} />) : <Navigate to="/home" replace />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/milestones" element={hasProfile && !isAdmin ? withAccess('milestones', <Milestones user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/sales-analytics" element={hasProfile && !isAdmin ? withAccess('salesAnalytics', <SalesExecutive user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/reviews" element={hasProfile && !isAdmin ? withAccess('reviews', <UserReviews user={user} />) : <Navigate to="/complete-profile" replace />} />
           <Route path="/profile" element={hasProfile && !isAdmin ? <ProfileSettings user={user} /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="/attendance" element={hasProfile && !isAdmin ? <Attendance user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/ai-copilot" element={hasProfile && !isAdmin ? <UserAiCopilot user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/ai-copilot" element={hasProfile && !isAdmin ? withAccess('aiCopilot', <UserAiCopilot user={user} />) : <Navigate to="/complete-profile" replace />} />
 
-          <Route path="/announcements" element={hasProfile && !isAdmin ? <UserAnnouncements user={user} /> : <Navigate to="/home" replace />} />
-          <Route path="/meetings" element={hasProfile && !isAdmin ? <Meetings user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/virtual-events" element={hasProfile && !isAdmin ? <VirtualTemplatesHome /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? <Template3 /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/virtual-events/testing" element={hasProfile && !isAdmin ? <Testing /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/crm/speakers" element={hasProfile ? <SpeakersList user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/crm/speakers/new" element={hasProfile ? <AddSpeaker user={user} /> : <Navigate to="/complete-profile" replace />} />
-          <Route path="/crm/speakers/:id" element={hasProfile ? <SpeakerProfile user={user} /> : <Navigate to="/complete-profile" replace />} />
+          <Route path="/announcements" element={hasProfile && !isAdmin ? withAccess('announcements', <UserAnnouncements user={user} />) : <Navigate to="/home" replace />} />
+          <Route path="/meetings" element={hasProfile && !isAdmin ? withAccess('meetings', <Meetings user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events" element={hasProfile && !isAdmin ? withAccess('virtualEvents', <VirtualTemplatesHome />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? withAccess('virtualEvents', <Template3 />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/virtual-events/testing" element={hasProfile && !isAdmin ? withAccess('virtualEvents', <Testing />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/crm/speakers" element={hasProfile ? withAccess('speakersCRM', <SpeakersList user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/crm/speakers/new" element={hasProfile ? withAccess('speakersCRM', <AddSpeaker user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/crm/speakers/:id" element={hasProfile ? withAccess('speakersCRM', <SpeakerProfile user={user} />) : <Navigate to="/complete-profile" replace />} />
         </Route>
 
 

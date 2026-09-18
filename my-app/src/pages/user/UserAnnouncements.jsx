@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import { Megaphone, Search, Pin, Calendar, FileText, ChevronRight, Download, Bell, Target, AlertCircle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, Pin, Calendar, Bell, Target, AlertCircle, FileText, Download, Megaphone } from 'lucide-react'
 
 export default function UserAnnouncements({ user }) {
   const [announcements, setAnnouncements] = useState([])
@@ -10,6 +11,8 @@ export default function UserAnnouncements({ user }) {
   const [activeTab, setActiveTab] = useState('announcements')
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchAnnouncements()
@@ -269,29 +272,24 @@ export default function UserAnnouncements({ user }) {
           <h2 style={{ fontSize: '1.5rem', color: 'var(--apple-text-primary)', marginBottom: '24px' }}>Your Notifications</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {notifications.map(notification => {
-              let Icon = Bell;
-              let iconColor = 'var(--apple-text-secondary)';
-              let bgColor = 'rgba(255,255,255,0.05)';
+              const Icon = Bell;
+              const iconColor = 'var(--apple-accent-blue)';
+              const bgColor = 'rgba(0,113,227,0.1)';
               
-              if (notification.type === 'milestone') {
-                Icon = Target;
-                iconColor = 'var(--apple-accent-green)';
-                bgColor = 'rgba(48, 209, 88, 0.1)';
-              } else if (notification.type === 'action') {
-                Icon = AlertCircle;
-                iconColor = 'var(--apple-accent-orange)';
-                bgColor = 'rgba(255, 159, 10, 0.1)';
-              }
-
               return (
                 <div key={notification.id} 
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => {
+                    if (!notification.read) markAsRead(notification.id);
+                    if (notification.type && notification.type.startsWith('/')) {
+                      navigate(notification.type);
+                    }
+                  }}
                   style={{ 
                   display: 'flex', gap: '16px', padding: '20px', 
                   background: notification.read ? 'rgba(255,255,255,0.02)' : 'rgba(0,113,227,0.05)',
                   border: `1px solid ${notification.read ? 'var(--apple-border)' : 'rgba(0,113,227,0.2)'}`,
                   borderRadius: '16px', alignItems: 'flex-start',
-                  cursor: notification.read ? 'default' : 'pointer',
+                  cursor: 'pointer',
                   transition: 'background 0.2s ease'
                 }}>
                   <div style={{ 

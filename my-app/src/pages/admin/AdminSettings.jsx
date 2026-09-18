@@ -628,6 +628,10 @@ export default function AdminSettings() {
               </button>
             </div>
 
+            <button onClick={handleLockdown} className="apple-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <Lock size={16} /> Platform Lockdown (Deactivate All)
+            </button>
+
             <button 
               onClick={handleSaveSettings} 
               disabled={saving}
@@ -639,68 +643,32 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Data Exports */}
-        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Download size={18} style={{ color: '#38bdf8' }} /> Data Exports (CSV)
-          </h3>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexGrow: 1, alignContent: 'start' }}>
-            <button onClick={handleExportUsers} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
-              <Users size={24} style={{ color: '#818cf8' }} />
-              <span style={{ fontSize: '0.85rem' }}>Users Directory</span>
-            </button>
-            <button onClick={handleExportRevenue} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
-              <Activity size={24} style={{ color: '#4ade80' }} />
-              <span style={{ fontSize: '0.85rem' }}>Revenue Data</span>
-            </button>
-            <button onClick={handleExportDIS} className="apple-btn apple-btn-secondary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px 10px', height: 'auto' }}>
-              <FileText size={24} style={{ color: '#f59e0b' }} />
-              <span style={{ fontSize: '0.85rem' }}>DIS Reports</span>
-            </button>
-          </div>
-        </div>
 
-        {/* Security & Maintenance */}
-        <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldAlert size={18} style={{ color: '#10b981' }} /> Security & Maintenance
-          </h3>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'flex-start' }}>
-            <button onClick={handleLockdown} className="apple-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-              <Lock size={16} /> Platform Lockdown (Deactivate All)
-            </button>
-            <button onClick={handleCleanupInactiveUsers} className="apple-btn apple-btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-              <Users size={16} /> Deactivate Inactive Users (&gt;90 days)
-            </button>
-            <button onClick={handleCleanupAuditLogs} className="apple-btn apple-btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-              <Activity size={16} /> Delete Old Audit Logs (&gt;30 days)
-            </button>
-          </div>
-        </div>
 
-        {/* Danger Zone */}
-        <div className="apple-card" style={{ padding: '24px', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', flexDirection: 'column' }}>
-          <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
-            <AlertTriangle size={18} /> Danger Zone
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
-            The actions below are irreversible and will permanently delete data from the database. Ensure you have exported backups before proceeding.
-          </p>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'flex-start' }}>
-            <button onClick={handleWipeDIS} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-              <Trash2 size={16} /> Wipe All DIS Reports
-            </button>
-            <button onClick={handleWipeSalesLogs} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-              <Trash2 size={16} /> Wipe All Sales Call Logs
-            </button>
-          </div>
-        </div>
+
 
       </div>
 
+      {/* Danger Zone */}
+      <div className="apple-card" style={{ padding: '24px', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', flexDirection: 'column', marginTop: '28px' }}>
+        <h3 className="apple-title-small" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+          <AlertTriangle size={18} /> Danger Zone
+        </h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--apple-text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+          The actions below are irreversible and will permanently delete data from the database. Ensure you have exported backups before proceeding.
+        </p>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'flex-start' }}>
+          <button onClick={handleWipeDIS} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+            <Trash2 size={16} /> Wipe All DIS Reports
+          </button>
+          <button onClick={handleWipeSalesLogs} className="apple-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+            <Trash2 size={16} /> Wipe All Sales Call Logs
+          </button>
+        </div>
+      </div>
+
     </div>
+
   )
 }
