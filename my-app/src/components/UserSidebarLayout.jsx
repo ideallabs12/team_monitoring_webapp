@@ -26,7 +26,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 
-export default function UserSidebarLayout({ user, isDeactivated, featureAccess, RestrictedAccessView }) {
+export default function UserSidebarLayout({ user, isDeactivated, featureAccess, userPagesAccess, RestrictedAccessView }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
