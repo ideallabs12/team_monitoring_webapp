@@ -412,7 +412,7 @@ export default function UserHome({ user, isAdminView }) {
                   color: 'var(--apple-text-secondary)', fontSize: '0.9rem', lineHeight: '1.5',
                   display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
                 }}
-                dangerouslySetInnerHTML={{ __html: latestAnnouncement.content.replace(/<[^>]+>/g, '') }}
+                dangerouslySetInnerHTML={{ __html: (latestAnnouncement.content || '').replace(/<[^>]+>/g, '') }}
               />
               <Link to="/announcements" className="apple-btn apple-btn-secondary" style={{ marginTop: '16px', width: '100%', padding: '10px !important' }}>
                 Read Full Announcement

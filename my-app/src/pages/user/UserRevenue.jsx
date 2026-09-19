@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveCont
 import { DollarSign, Users, Calendar, User, Link2 as LinkIcon, Info, PlusCircle, ChevronDown, ChevronsUpDown, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import confetti from 'canvas-confetti'
+import { fire3DRevenueCelebration } from '../../utils/celebration'
 import RevenueHistoryTab from './RevenueHistory'
 
 let revenueCache = {
@@ -343,11 +344,14 @@ export default function UserRevenue({ user, isAdminView }) {
 
       setMessage({ type: 'success', text: successText })
 
-      // 🎉 Epic triple-cannon celebration
+      // 🎉 Epic 3D money celebration
+      fire3DRevenueCelebration()
+      
+      // And a mix of colored squares!
       const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6eb4', '#a855f7', '#38bdf8', '#fb923c']
       const fireConfetti = (angle, originX) => {
         confetti({
-          particleCount: 240,
+          particleCount: 150,
           angle,
           spread: 70,
           origin: { x: originX, y: 0.65 },
@@ -358,34 +362,17 @@ export default function UserRevenue({ user, isAdminView }) {
           ticks: 300
         })
       }
-      // Left cannon
-      fireConfetti(60, 0.08)
-      // Center burst
+      fireConfetti(60, 0.08) // Left
+      fireConfetti(120, 0.92) // Right
       confetti({
-        particleCount: 400,
+        particleCount: 250,
         spread: 120,
         origin: { x: 0.5, y: 0.45 },
         colors,
         gravity: 0.7,
         scalar: 1.4,
         ticks: 350
-      })
-      // Right cannon
-      fireConfetti(120, 0.92)
-      // Delayed second wave
-      setTimeout(() => {
-        fireConfetti(55, 0.12)
-        fireConfetti(125, 0.88)
-        confetti({
-          particleCount: 200,
-          spread: 100,
-          origin: { x: 0.5, y: 0.5 },
-          colors,
-          gravity: 0.9,
-          scalar: 1.1,
-          ticks: 250
-        })
-      }, 400)
+      }) // Center
 
       setAmount('')
       setEditingRecord(null)

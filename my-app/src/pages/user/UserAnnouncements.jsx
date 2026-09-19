@@ -250,7 +250,7 @@ export default function UserAnnouncements({ user }) {
               <div 
                 className="announcement-content"
                 style={{ color: 'var(--apple-text-primary)', opacity: 0.85, lineHeight: '1.7', fontSize: '1.05rem' }}
-                dangerouslySetInnerHTML={{ __html: selectedAnnouncement.content }}
+                dangerouslySetInnerHTML={{ __html: selectedAnnouncement.content || '' }}
               />
 
               {renderMedia(selectedAnnouncement.media_urls)}
