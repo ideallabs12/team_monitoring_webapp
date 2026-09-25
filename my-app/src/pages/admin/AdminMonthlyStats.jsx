@@ -25,8 +25,11 @@ export default function AdminMonthlyStats() {
       const tabName = activeTab === 'dis' ? 'DIS' : activeTab.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'page_view',
-        details: { description: `Admin viewed Monthly Stats: ${tabName} tab` }
+        action_type: 'admin_page_view',
+        details: { 
+          page_name: `Monthly Stats - ${tabName}`,
+          path: '/admin/monthly-stats'
+        }
       }]).then(({ error }) => { if (error) console.error(error) });
     }
   }, [user, activeTab])
