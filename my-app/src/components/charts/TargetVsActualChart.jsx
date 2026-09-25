@@ -104,7 +104,10 @@ export default function TargetVsActualChart({
   const [selectedTeamId, setSelectedTeamId] = useState('all')
   const [includeCurrentMonth, setIncludeCurrentMonth] = useState(false)
 
-  const months = useMemo(() => (includeCurrentMonth ? getLastNMonths(period) : getLastNCompletedMonths(period)).reverse(), [period, includeCurrentMonth])
+  const months = useMemo(() => {
+    if (period === 1) return getLastNMonths(1).reverse()
+    return (includeCurrentMonth ? getLastNMonths(period) : getLastNCompletedMonths(period)).reverse()
+  }, [period, includeCurrentMonth])
 
   const data = useMemo(() =>
     calculateTargetVsActual(targets, revenues, months, selectedTeamId, memberships, profiles, teams),
@@ -207,15 +210,17 @@ export default function TargetVsActualChart({
           gap: '6px',
           fontSize: '0.8rem',
           color: 'var(--apple-text-secondary)',
-          cursor: 'pointer'
+          cursor: period === 1 ? 'default' : 'pointer',
+          opacity: period === 1 ? 0.5 : 1
         }}>
           <input 
             type="checkbox" 
-            checked={includeCurrentMonth}
+            checked={period === 1 ? true : includeCurrentMonth}
             onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+            disabled={period === 1}
             style={{
               accentColor: 'rgba(0, 113, 227, 1)',
-              cursor: 'pointer'
+              cursor: period === 1 ? 'default' : 'pointer'
             }}
           />
           Include this month

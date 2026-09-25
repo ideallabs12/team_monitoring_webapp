@@ -14,8 +14,9 @@ import {
   calculatePerformerStatus
 } from '../../utils/analyticsUtils'
 
-import RevenueTrendChart from '../../components/charts/RevenueTrendChart'
+
 import TargetVsActualChart from '../../components/charts/TargetVsActualChart'
+import PerformanceTrendChart from '../../components/charts/PerformanceTrendChart'
 import ComplianceHeatmap from '../../components/charts/ComplianceHeatmap'
 import TeamRadarChart from '../../components/charts/TeamRadarChart'
 import Sparkline from '../../components/charts/Sparkline'
@@ -406,12 +407,7 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
-      {/* ── REVENUE DISTRIBUTION (full-width, own filter inside) ── */}
-      <div style={{ width: '100%' }}>
-        <RevenueTrendChart revenues={nonAdminRevenues} teams={teams} />
-      </div>
-
-      {/* ── TARGET VS ACTUAL + TEAM RADAR ── */}
+      {/* ── TARGET VS ACTUAL + TEAM RADAR + PERFORMANCE TREND ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div style={{ minWidth: 0 }}>
           <TargetVsActualChart
@@ -422,6 +418,11 @@ export default function AdminAnalytics() {
             teams={teams}
           />
         </div>
+
+        <div style={{ minWidth: 0 }}>
+          <PerformanceTrendChart revenues={nonAdminRevenues} profiles={nonAdminProfiles} targets={targets} />
+        </div>
+
         <div style={{ minWidth: 0 }}>
           <TeamRadarChart data={radarData.radarData} rawTeams={radarData.rawTeams} />
         </div>

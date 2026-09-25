@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import AdminRoleManager from './pages/admin/AdminRoleManager'
 import { supabase } from './supabaseClient'
 import { SpeedInsights } from "@vercel/speed-insights/react"
@@ -41,6 +41,7 @@ import AdminLayout from './pages/admin/AdminLayout'
 import AdminHome from './pages/admin/AdminHome'
 import AdminTeams from './pages/admin/AdminTeams'
 import AdminRevenue from './pages/admin/AdminRevenue'
+import AdminMonthlyStats from './pages/admin/AdminMonthlyStats'
 import AdminDis from './pages/admin/AdminDis'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminUsers from './pages/admin/AdminUsers'
@@ -48,8 +49,7 @@ import AdminUserControlPanel from './pages/admin/AdminUserControlPanel'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminReviews from './pages/admin/AdminReviews'
-import CopyStats from './pages/admin/CopyStats'
-import AdminAiAnalytics from './pages/admin/AdminAiAnalytics'
+
 import AdminAiCopilot from './pages/admin/AdminAiCopilot'
 import AdminAttendance from './pages/admin/attendance/AdminAttendance'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
@@ -57,8 +57,52 @@ import AdminExportData from './pages/admin/AdminExportData'
 import VirtualTemplatesHome from './pages/admin/virtualtemplates/VirtualTemplatesHome'
 import Template3 from './pages/admin/virtualtemplates/Template3'
 import Testing from './pages/admin/virtualtemplates/Testing'
+import AdminShortcuts from './pages/admin/AdminShortcuts'
 
 import { PresenceProvider } from './components/PresenceProvider'
+
+function GlobalShortcuts({ isAdmin, user, shortcutsConfig }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Do not trigger shortcuts when typing in inputs/textareas
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) {
+        return;
+      }
+
+      // Check master toggle
+      if (!shortcutsConfig || shortcutsConfig.enabled === false) return;
+
+      // Support both Ctrl on Windows/Linux and Cmd on Mac
+      if (e.ctrlKey || e.metaKey) { 
+        const key = e.key.toLowerCase();
+        const shortcuts = ['l', 'u', 't', 'r', 's', 'd', 'm', 'a'];
+        
+        if (shortcuts.includes(key) && shortcutsConfig[key] !== false) {
+          e.preventDefault();
+          if (user) {
+            switch (key) {
+              case 'l': navigate(isAdmin ? '/admin/leaderboard' : '/leaderboard'); break;
+              case 'u': if (isAdmin) navigate('/admin/users'); break;
+              case 't': navigate(isAdmin ? '/admin/teams' : '/team'); break;
+              case 'r': navigate(isAdmin ? '/admin/revenue' : '/revenue'); break;
+              case 's': navigate(isAdmin ? '/admin/settings' : '/settings'); break;
+              case 'd': navigate(isAdmin ? '/admin/dis' : '/dis'); break;
+              case 'm': navigate(isAdmin ? '/admin/milestones' : '/milestones'); break;
+              case 'a': navigate(isAdmin ? '/admin/analytics' : '/team-analytics'); break;
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate, isAdmin, user, shortcutsConfig]);
+
+  return null;
+}
 
 function App() {
   const [user, setUser] = useState(null)
@@ -366,6 +410,7 @@ function App() {
     <PresenceProvider user={user}>
       <PullToRefresh>
         <Router>
+          <GlobalShortcuts isAdmin={isAdmin} user={user} shortcutsConfig={systemSettings.shortcuts_config || { enabled: true, u: true, t: true, r: true, s: true, d: true, m: true, a: true, l: true }} />
           <PageTracker user={user} />
           <SpeedInsights />
           <Routes>
@@ -434,10 +479,10 @@ function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:id" element={<AdminUserControlPanel />} />
           <Route path="revenue" element={<AdminRevenue />} />
+          <Route path="monthly-stats" element={<AdminMonthlyStats />} />
           <Route path="dis" element={<AdminDis />} />
           <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="copystats" element={<CopyStats />} />
-          <Route path="ai-analytics" element={<AdminAiAnalytics />} />
+          
           <Route path="ai-copilot" element={<AdminAiCopilot user={user} />} />
           <Route path="write-ups" element={<Navigate to="/admin/reviews?tab=write-ups" replace />} />
           <Route path="reviews" element={<AdminReviews />} />
@@ -461,6 +506,7 @@ function App() {
           <Route path="crm/speakers/new" element={<AddSpeaker user={user} />} />
           <Route path="crm/speakers/:id" element={<SpeakerProfile user={user} />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="shortcuts" element={<AdminShortcuts />} />
         </Route>
 
         <Route path="*" element={

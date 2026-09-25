@@ -27,7 +27,9 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  LayoutTemplate
+  LayoutTemplate,
+  Command,
+  Calendar
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -49,10 +51,11 @@ const NAV_SECTIONS = [
     title: 'Analytics & Growth',
     items: [
       { path: '/admin/revenue', label: 'Revenue', icon: DollarSign },
+      { path: '/admin/monthly-stats', label: 'Monthly Stats', icon: Calendar },
       { path: '/admin/analytics', label: 'Analytics', icon: TrendingUp },
       { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },
       { path: '/admin/milestones', label: 'Milestones', icon: Crown },
-      { path: '/admin/ai-analytics', label: 'AI Analytics', icon: Sparkles },
+
       { path: '/admin/ai-copilot', label: 'AI Copilot', icon: Sparkles },
     ]
   },
@@ -60,7 +63,6 @@ const NAV_SECTIONS = [
     title: 'Operations',
     items: [
       { path: '/admin/dis', label: 'DIS Reports', icon: FileText },
-      { path: '/admin/copystats', label: 'Copy Stats', icon: Copy },
       { path: '/admin/reviews', label: 'Reviews & Write-Ups', icon: Star },
       { path: '/admin/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
     ]
@@ -71,6 +73,7 @@ const NAV_SECTIONS = [
       { path: '/admin/auditlogs', label: 'Audit Logs', icon: ClipboardList },
       { path: '/admin/export-data', label: 'Export Data', icon: Download },
       { path: '/admin/settings', label: 'Settings', icon: Settings },
+      { path: '/admin/shortcuts', label: 'Shortcuts', icon: Command },
       { path: '/admin/role-manager', label: 'Specials', icon: Shield },
     ]
   },
@@ -150,7 +153,6 @@ export default function AdminLayout({ user, isDeactivated, isExecutive, featureA
         if (item.path === '/admin/role-manager') return false
 
         if (featureAccess) {
-          if (item.path === '/admin/ai-analytics') return !!featureAccess.aiAnalytics
           if (item.path === '/admin/attendance') return !!featureAccess.attendance
           if (item.path === '/admin/auditlogs') return !!featureAccess.auditLogs
           if (item.path === '/admin/settings') return !!featureAccess.settings

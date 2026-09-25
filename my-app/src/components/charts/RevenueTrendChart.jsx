@@ -78,6 +78,9 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
     if (revDistMode === 'custom') {
       return [toRevenueMonthString(revDistYear, revDistMonth)]
     }
+    if (revDistPeriod === 1) {
+      return getLastNMonths(1).reverse()
+    }
     return (includeCurrentMonth ? getLastNMonths(revDistPeriod) : getLastNCompletedMonths(revDistPeriod)).reverse()
   }, [revDistMode, revDistPeriod, revDistYear, revDistMonth, includeCurrentMonth])
 
@@ -176,18 +179,18 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
             gap: '6px',
             fontSize: '0.8rem',
             color: 'var(--apple-text-secondary)',
-            cursor: isCustomActive ? 'default' : 'pointer',
+            cursor: isCustomActive || revDistPeriod === 1 ? 'default' : 'pointer',
             marginLeft: '8px',
-            opacity: isCustomActive ? 0.5 : 1
+            opacity: isCustomActive || revDistPeriod === 1 ? 0.5 : 1
           }}>
             <input 
               type="checkbox" 
-              checked={includeCurrentMonth}
+              checked={revDistPeriod === 1 ? true : includeCurrentMonth}
               onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
-              disabled={isCustomActive}
+              disabled={isCustomActive || revDistPeriod === 1}
               style={{
                 accentColor: 'rgba(0, 113, 227, 1)',
-                cursor: isCustomActive ? 'default' : 'pointer'
+                cursor: isCustomActive || revDistPeriod === 1 ? 'default' : 'pointer'
               }}
             />
             Include this month
@@ -200,6 +203,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <select
             value={revDistYear}
             onChange={e => handleYearChange(e.target.value)}
+            onClick={() => setRevDistMode('custom')}
             style={{
               padding: '5px 26px 5px 10px',
               fontSize: '0.76rem',
@@ -223,6 +227,7 @@ export default function RevenueTrendChart({ revenues = [], teams = [] }) {
           <select
             value={revDistMonth}
             onChange={e => handleMonthChange(e.target.value)}
+            onClick={() => setRevDistMode('custom')}
             style={{
               padding: '5px 26px 5px 10px',
               fontSize: '0.76rem',

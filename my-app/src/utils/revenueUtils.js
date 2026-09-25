@@ -129,13 +129,16 @@ export function getEffectiveTarget(targets, userId, teamId, month) {
   const monthKey = normalizeMonth(month)
   if (!monthKey || !userId || !teamId) return null
 
-  return targets
-    .filter(t =>
-      t.user_id === userId &&
-      t.team_id === teamId &&
-      normalizeMonth(t.target_month) <= monthKey
-    )
-    .sort((a, b) => normalizeMonth(b.target_month).localeCompare(normalizeMonth(a.target_month)))[0] || null
+  // Find the absolute latest target for the user on or before this month
+  const latestTarget = targets
+    .filter(t => t.user_id === userId && normalizeMonth(t.target_month) <= monthKey)
+    .sort((a, b) => normalizeMonth(b.target_month).localeCompare(normalizeMonth(a.target_month)))[0]
+
+  // Only return it if their latest target was for the requested team
+  if (latestTarget && latestTarget.team_id === teamId) {
+    return latestTarget
+  }
+  return null
 }
 
 export function getEffectiveTargetAmount(targets, userId, teamId, month) {

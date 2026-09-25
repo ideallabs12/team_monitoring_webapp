@@ -1,0 +1,8 @@
+import base64
+
+rev_b64 = 'aW1wb3J0IHsgdXNlU3RhdGUsIHVzZU1lbW8sIHVzZVJlZiwgdXNlRWZmZWN0IH0gZnJvbSAncmVhY3QnCmltcG9ydCB7IENvcHksIENoZWNrLCBYLCBJbWFnZSBhcyBJbWFnZUljb24gfSBmcm9tICdsdWNpZGUtcmVhY3QnCmltcG9ydCBodG1sMmNhbnZhcyBmcm9tICdodG1sMmNhbnZhcycKaW1wb3J0IHsgbm9ybWFsaXplTW9udGgsIGdldEF2YWlsYWJsZVllYXJzLCBNT05USF9OQU1FUywgaXNGdXR1cmVNb250aCB9IGZyb20gJy4uLy4uL3V0aWxzL3JldmVudWVVdGlscycK'
+print('Script loaded OK')
+with open('src/components/stats/RevenueAnalysisModule.jsx', 'wb') as f:
+    f.write(base64.b64decode(rev_b64))
+    
+print('Done writing header')

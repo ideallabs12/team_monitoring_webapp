@@ -37,6 +37,18 @@ export default function AdminUserControlPanel() {
         if (profileRes.error) throw profileRes.error
         
         setUser(profileRes.data)
+
+        if (adminUser) {
+          supabase.from('audit_logs').insert([{
+            user_id: adminUser.id,
+            action_type: 'page_view',
+            details: { 
+              description: `Admin viewed user profile for ${profileRes.data.first_name || ''} ${profileRes.data.last_name || ''} (${profileRes.data.email || ''})`, 
+              target_user_id: id 
+            }
+          }]).then(({ error }) => { if (error) console.error(error) });
+        }
+
         setTeams(teamsRes.data || [])
         setRevenues(revRes.data || [])
         setDisReports(disRes.data || [])

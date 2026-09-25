@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient'
 import { 
   Sparkles, Send, User, Bot, RotateCcw, Copy, Check, 
   TrendingUp, DollarSign, Target, FileText, ArrowRight, 
-  Loader2, AlertCircle, Compass, Zap, ChevronDown
+  Loader2, AlertCircle, Compass, Zap, ChevronDown, Activity
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { normalizeMonth, MONTH_NAMES } from '../../utils/revenueUtils'
@@ -184,6 +184,11 @@ export default function AdminAiCopilot({ user }) {
       title: 'Pipeline Health',
       icon: FileText,
       prompt: 'Summarize the total active leads and expected revenue across all teams from the recent DIS logs. Are we pacing well?'
+    },
+    {
+      title: 'Platform Health Report',
+      icon: Activity,
+      prompt: 'Provide a brief, actionable "Platform Health Report". Highlight areas of success and potential areas for improvement.'
     }
   ]
 

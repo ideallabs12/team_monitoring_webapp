@@ -19,6 +19,7 @@ import {
   toRevenueMonthString,
   calculateDivisor
 } from '../../utils/revenueUtils'
+import RevenueTrendChart from '../../components/charts/RevenueTrendChart'
 
 let adminRevCache = { loaded: false, teams: [], profiles: [], revenues: [], targets: [] }
 
@@ -397,6 +398,11 @@ export default function AdminRevenue() {
         </div>
       </div>
 
+      {/* ── REVENUE DISTRIBUTION ── */}
+      <div style={{ width: '100%', marginBottom: '28px' }}>
+        <RevenueTrendChart revenues={nonAdminRevenues} teams={teams} />
+      </div>
+
       {/* ===== LAST 12 MONTHS BREAKDOWN GRID ===== */}
       <div className="apple-card" style={{ padding: '24px', marginBottom: '28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
@@ -602,39 +608,6 @@ export default function AdminRevenue() {
         </div>
       </div>
 
-      {/* ===== CREATIVE PERFORMANCE TREND COMPOSED CHART ===== */}
-      <div className="apple-card" style={{ padding: '24px 28px', borderRadius: '20px', marginBottom: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--apple-text-primary)', fontWeight: '700' }}>Performance Trend Analysis</h3>
-            <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--apple-text-secondary)' }}>
-              Creative overlay comparison: Combined actual sales (bars) vs target expectations (line) for last 12 months.
-            </p>
-          </div>
-          <span className="apple-badge apple-badge-blue" style={{ fontSize: '0.7rem', fontWeight: '600', padding: '3px 8px' }}>
-            TARGET VS ACTUAL
-          </span>
-        </div>
-
-        <div style={{ flex: 1, height: '240px', width: '100%', minWidth: 0, minHeight: 0 }}>
-          <ResponsiveContainer width="99%" height={240}>
-            <ComposedChart data={company12MonthTrend} margin={{ top: 20, right: 5, left: 5, bottom: 5 }}>
-              <defs>
-                <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0071e3" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#0071e3" stopOpacity={0.15} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.03)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fill: 'var(--apple-text-secondary)', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => fmtShort(v).replace('$', '')} tick={{ fill: 'var(--apple-text-secondary)', fontSize: 9 }} axisLine={false} tickLine={false} width={42} />
-              <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="actual" name="Actual Revenue" fill="url(#actualGrad)" radius={[6, 6, 0, 0]} barSize={24} />
-              <Line type="monotone" dataKey="expected" name="Target Expectation" stroke="#30d5c8" strokeWidth={3} dot={{ fill: '#30d5c8', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#fff', stroke: '#30d5c8', strokeWidth: 2 }} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
 
       {/* ===== TEAM MEMBERS EXPECTED VS ACTUAL ===== */}
       <div style={{ marginBottom: '28px' }}>
