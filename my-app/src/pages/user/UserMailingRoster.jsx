@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Mail, Calendar, AlertCircle, CheckCircle, RefreshCcw, Save, ChevronLeft, ChevronRight, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAILY_LIMIT = 300;
 
 export default function UserMailingRoster() {
@@ -51,7 +51,7 @@ export default function UserMailingRoster() {
           const newSchedule = {};
           DAYS.forEach((day, index) => {
             if (teamNames.length > 0) {
-              const teamIndex = (currentWeekNumber * 6 + index) % teamNames.length;
+              const teamIndex = (currentWeekNumber * DAYS.length + index) % teamNames.length;
               newSchedule[day] = teamNames[teamIndex];
             } else {
               newSchedule[day] = 'No Team Available';
@@ -197,7 +197,7 @@ export default function UserMailingRoster() {
   const assignedMembers = teamSlots.map(s => s.member).filter(Boolean);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', color: 'var(--apple-text-primary)' }}>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', color: 'var(--apple-text-primary)', width: '100%', minWidth: 0 }}>
       <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '8px', letterSpacing: '-0.02em' }}>Mass Mailing Roster</h1>
@@ -229,41 +229,40 @@ export default function UserMailingRoster() {
           <p style={{ color: 'var(--apple-text-secondary)', fontSize: '1.1rem' }}>No eligible teams found with assigned members.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', minWidth: 0 }}>
           
-          {/* Sidebar: Days */}
-          <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Topbar: Days */}
+          <div style={{ 
+            display: 'flex', gap: '8px', paddingBottom: '12px', width: '100%'
+          }}>
             {DAYS.map(day => (
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
                 style={{
-                  padding: '16px',
+                  padding: '12px 8px',
                   borderRadius: '16px',
                   background: selectedDay === day ? 'var(--apple-blue)' : 'var(--apple-card-bg)',
                   color: selectedDay === day ? '#fff' : 'var(--apple-text-primary)',
                   border: `1px solid ${selectedDay === day ? 'transparent' : 'var(--apple-border)'}`,
-                  textAlign: 'left',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   display: 'flex',
-                  justifyContent: 'space-between',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  boxShadow: selectedDay === day ? '0 4px 15px rgba(0, 122, 255, 0.3)' : 'none'
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  boxShadow: selectedDay === day ? '0 4px 15px rgba(0, 122, 255, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)'
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '1.1rem', marginBottom: '4px' }}>{day}</div>
-                  <div style={{ fontSize: '0.85rem', opacity: selectedDay === day ? 0.9 : 0.6 }}>{schedule[day]}</div>
-                </div>
-                <Calendar size={20} opacity={0.7} />
+                <div style={{ fontWeight: '600', fontSize: '1.05rem', marginBottom: '4px' }}>{day}</div>
+                <div style={{ fontSize: '0.8rem', opacity: selectedDay === day ? 0.9 : 0.6, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{schedule[day]}</div>
               </button>
             ))}
           </div>
 
           {/* Main Content: Allocations */}
           <div style={{ 
-            flex: '3 1 500px',
             background: 'var(--apple-card-bg)', 
             border: '1px solid var(--apple-border)', 
             borderRadius: '24px', 

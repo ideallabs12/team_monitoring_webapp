@@ -68,6 +68,8 @@ export default function Navbar({ user, userPagesAccess = {} }) {
   
   if (profile?.has_revenue_logging !== false && userPagesAccess.revenue !== false) navLinks.push({ to: '/revenue', label: 'Revenue' })
   if (profile?.has_dis_reporting !== false && userPagesAccess.dis !== false) navLinks.push({ to: '/dis', label: 'My DIS' })
+  
+  navLinks.push({ to: '/mailing-roster', label: 'Mailing Roster' })
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
