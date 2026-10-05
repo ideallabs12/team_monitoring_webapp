@@ -29,7 +29,8 @@ import {
   ChevronRight,
   LayoutTemplate,
   Command,
-  Calendar
+  Calendar,
+  Mail
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -63,6 +64,7 @@ const NAV_SECTIONS = [
     title: 'Operations',
     items: [
       { path: '/admin/dis', label: 'DIS Reports', icon: FileText },
+      { path: '/admin/mailing-roster', label: 'Mailing Roster', icon: Mail },
       { path: '/admin/reviews', label: 'Reviews & Write-Ups', icon: Star },
       { path: '/admin/virtual-events', label: 'Virtual Events', icon: LayoutTemplate },
     ]

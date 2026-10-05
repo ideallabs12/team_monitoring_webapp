@@ -9,7 +9,7 @@ import {
 import {
   TrendingUp, TrendingDown, Users, User, FileText, Target,
   Zap, Activity, ArrowUpRight, ArrowDownRight, Minus,
-  AlertCircle, CheckCircle, Clock, PhoneCall, Copy
+  AlertCircle, CheckCircle, Clock, PhoneCall, Copy, X
 } from 'lucide-react'
 import {
   getLastNMonths,
@@ -128,7 +128,7 @@ function TickerTape({ items }) {
 }
 
 /* ─── Stat Card ──────────────────────────────────────────────────────────────── */
-function StatCard({ label, value, sub, color, icon: Icon, change, pulse }) {
+function StatCard({ label, value, sub, color, icon: Icon, change, pulse, onClick }) {
   return (
     <div style={{
       background: 'var(--apple-card)',
@@ -138,8 +138,10 @@ function StatCard({ label, value, sub, color, icon: Icon, change, pulse }) {
       position: 'relative',
       overflow: 'hidden',
       boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-      transition: 'transform 0.3s var(--apple-ease), border-color 0.3s var(--apple-ease)'
+      transition: 'transform 0.3s var(--apple-ease), border-color 0.3s var(--apple-ease)',
+      cursor: onClick ? 'pointer' : 'default'
     }}
+    onClick={onClick}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-2px)'
       e.currentTarget.style.borderColor = 'var(--apple-border-strong)'
@@ -736,6 +738,7 @@ export default function AdminHome() {
           icon={TrendingUp}
           change={momChange}
           pulse
+          onClick={() => navigate('/admin/mtd-contributors')}
         />
 
         <StatCard

@@ -23,7 +23,8 @@ import {
   Sparkles,
   Search,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react'
 
 export default function UserSidebarLayout({ user, isDeactivated, featureAccess, userPagesAccess, RestrictedAccessView }) {
@@ -160,6 +161,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
     if (profile?.has_dis_reporting !== false && access.dis !== false) {
       operationsItems.push({ path: '/dis', label: 'My DIS', icon: FileText })
     }
+    operationsItems.push({ path: '/mailing-roster', label: 'Mailing Roster', icon: Mail })
     if (operationsItems.length > 0) {
       sections.push({
         title: 'Operations',

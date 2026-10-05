@@ -32,6 +32,7 @@ import Attendance from './pages/user/Attendance'
 import UserAnnouncements from './pages/user/UserAnnouncements'
 import Meetings from './pages/common/Meetings'
 import UserAiCopilot from './pages/user/UserAiCopilot'
+import UserMailingRoster from './pages/user/UserMailingRoster'
 
 import SpeakersList from './pages/crm/SpeakersList'
 import SpeakerProfile from './pages/crm/SpeakerProfile'
@@ -49,6 +50,7 @@ import AdminUserControlPanel from './pages/admin/AdminUserControlPanel'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminReviews from './pages/admin/AdminReviews'
+import MtdContributors from './pages/admin/MtdContributors'
 
 import AdminAiCopilot from './pages/admin/AdminAiCopilot'
 import AdminAttendance from './pages/admin/attendance/AdminAttendance'
@@ -460,6 +462,7 @@ function App() {
 
           <Route path="/announcements" element={hasProfile && !isAdmin ? withAccess('announcements', <UserAnnouncements user={user} />) : <Navigate to="/home" replace />} />
           <Route path="/meetings" element={hasProfile && !isAdmin ? withAccess('meetings', <Meetings user={user} />) : <Navigate to="/complete-profile" replace />} />
+          <Route path="/mailing-roster" element={hasProfile && !isAdmin ? <UserMailingRoster /> : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events" element={hasProfile && !isAdmin ? withAccess('virtualEvents', <VirtualTemplatesHome />) : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events/template3" element={hasProfile && !isAdmin ? withAccess('virtualEvents', <Template3 />) : <Navigate to="/complete-profile" replace />} />
           <Route path="/virtual-events/testing" element={hasProfile && !isAdmin ? withAccess('virtualEvents', <Testing />) : <Navigate to="/complete-profile" replace />} />
@@ -474,6 +477,8 @@ function App() {
         <Route path="/admin" element={isAdmin ? <AdminLayout user={user} isDeactivated={isDeactivated} isExecutive={isExecutive} featureAccess={featureAccess} /> : <Navigate to="/" replace />}>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<AdminHome />} />
+          <Route path="mailing-roster" element={<UserMailingRoster />} />
+          <Route path="mtd-contributors" element={<MtdContributors />} />
           <Route path="role-manager" element={<AdminRoleManager />} />
           <Route path="teams" element={<AdminTeams />} />
           <Route path="users" element={<AdminUsers />} />
