@@ -523,10 +523,11 @@ export default function AdminRevenue() {
           `}</style>
           
           {(() => {
-            const reversedTrend = [...company12MonthTrend].reverse()
+            const oldestSix = company12MonthTrend.slice(0, 6)
+            const newestSix = company12MonthTrend.slice(6, 12)
             return [
-              reversedTrend.slice(0, 6),
-              reversedTrend.slice(6, 12)
+              oldestSix,
+              newestSix
             ].map((group, groupIndex) => (
             <div key={`group-${groupIndex}`} style={{
               flex: '0 0 100%',
@@ -537,9 +538,8 @@ export default function AdminRevenue() {
               gap: '12px'
             }}>
               {group.map((d, i) => {
-                const globalIndex = groupIndex * 6 + i
                 const pct = companyMaxMonthRevenue > 0 ? (d.actual / companyMaxMonthRevenue) * 100 : 0
-                const isCurrentMonth = globalIndex === 0
+                const isCurrentMonth = groupIndex === 1 && i === 5
                 
                 return (
                   <div key={d.key} style={{

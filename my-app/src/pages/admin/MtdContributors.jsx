@@ -64,7 +64,7 @@ export default function MtdContributors() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: '24px' }}>
       <button 
         onClick={() => navigate('/admin/home')}
         style={{ 
@@ -85,7 +85,7 @@ export default function MtdContributors() {
 
       <div style={{ background: 'var(--apple-card)', borderRadius: '20px', border: '1px solid var(--apple-border)', padding: '20px' }}>
         {mtdContributors.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
             {mtdContributors.map((user, i) => (
               <div key={user.id || i} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
