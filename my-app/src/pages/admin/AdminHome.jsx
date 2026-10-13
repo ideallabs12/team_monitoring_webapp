@@ -837,9 +837,29 @@ export default function AdminHome() {
                   Top Contributors this Month
                 </div>
               </div>
-              <span className="apple-badge apple-badge-green" style={{ fontSize: '0.7rem', fontWeight: '600' }}>
-                REVENUE
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="apple-badge apple-badge-green" style={{ fontSize: '0.7rem', fontWeight: '600' }}>
+                  REVENUE
+                </span>
+                <button
+                  onClick={() => navigate('/admin/mtd-contributors')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--apple-accent-blue)',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,113,227,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  View All →
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
