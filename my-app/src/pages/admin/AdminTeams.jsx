@@ -10,7 +10,8 @@ import {
   formatRevenueMonth,
   toRevenueMonthString,
   formatRevenueMonthShort,
-  calculateDivisor
+  calculateDivisor,
+  fetchAllMonthlyRevenues
 } from '../../utils/revenueUtils'
 import UserRevenue from '../user/UserRevenue'
 import { ArrowLeft, Users, TrendingUp, Mail, Phone, Calendar, Shield, FileText, Activity, Copy } from 'lucide-react'
@@ -80,23 +81,26 @@ export default function AdminTeams() {
 
   useEffect(() => {
     async function loadData() {
-      const [teamsRes, profilesRes, revRes] = await Promise.all([
-        supabase.from('teams').select('*').order('created_at', { ascending: true }),
-        supabase.from('profiles').select('*'),
-        supabase.from('monthly_revenues').select('*')
-      ])
+      try {
+        const [teamsRes, profilesRes, r] = await Promise.all([
+          supabase.from('teams').select('*').order('created_at', { ascending: true }),
+          supabase.from('profiles').select('*'),
+          fetchAllMonthlyRevenues()
+        ])
 
-      const t = teamsRes.data || []
-      const p = profilesRes.data || []
-      const r = revRes.data || []
+        const t = teamsRes.data || []
+        const p = profilesRes.data || []
 
-      setTeams(t)
-      setProfiles(p)
-      setRevenues(r)
-      
-      adminTeamsCache = { loaded: true, teams: t, profiles: p, revenues: r }
+        setTeams(t)
+        setProfiles(p)
+        setRevenues(r || [])
         
-      setLoading(false)
+        adminTeamsCache = { loaded: true, teams: t, profiles: p, revenues: r || [] }
+      } catch (err) {
+        console.error('Error loading admin teams data:', err)
+      } finally {
+        setLoading(false)
+      }
     }
     loadData()
 
@@ -104,10 +108,14 @@ export default function AdminTeams() {
     const sub = supabase
       .channel('admin-teams-revenues')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, async () => {
-        const { data } = await supabase.from('monthly_revenues').select('*')
-        if (data) {
-          setRevenues(data)
-          adminTeamsCache = { ...adminTeamsCache, revenues: data }
+        try {
+          const freshRevenues = await fetchAllMonthlyRevenues()
+          if (freshRevenues) {
+            setRevenues(freshRevenues)
+            adminTeamsCache = { ...adminTeamsCache, revenues: freshRevenues }
+          }
+        } catch (err) {
+          console.error('Error refreshing revenues in realtime:', err)
         }
       })
       .subscribe()

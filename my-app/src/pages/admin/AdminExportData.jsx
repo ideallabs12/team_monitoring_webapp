@@ -6,6 +6,7 @@ import {
   ChevronDown, Layers, BarChart2, Sparkles, Check, AlertCircle, Eye, Table
 } from 'lucide-react'
 import { supabase } from '../../supabaseClient'
+import { fetchAllMonthlyRevenues } from '../../utils/revenueUtils'
 import * as XLSX from 'xlsx'
 
 // ─── Data Source Definitions (Standard Export) ────────────────────────────────
@@ -215,19 +216,18 @@ export default function AdminExportData() {
     setCustomLoading(true)
     setError('')
     try {
-      const [teamsRes, profilesRes, revsRes] = await Promise.all([
+      const [teamsRes, profilesRes, r] = await Promise.all([
         supabase.from('teams').select('*'),
         supabase.from('profiles').select('*'),
-        supabase.from('monthly_revenues').select('*').order('revenue_month', { ascending: true })
+        fetchAllMonthlyRevenues()
       ])
 
       if (teamsRes.error) throw teamsRes.error
       if (profilesRes.error) throw profilesRes.error
-      if (revsRes.error) throw revsRes.error
 
       setCustomTeams(teamsRes.data || [])
       setCustomProfiles(profilesRes.data || [])
-      setCustomRevs(revsRes.data || [])
+      setCustomRevs(r || [])
       setCustomDataLoaded(true)
     } catch (err) {
       setError(err.message || 'Failed to load report data')
@@ -266,11 +266,7 @@ export default function AdminExportData() {
         })))
 
       } else if (sourceId === 'revenue') {
-        const { data, error: e } = await supabase
-          .from('monthly_revenues')
-          .select('user_id, team_id, revenue_month, amount, created_at, profiles!user_id(first_name, last_name)')
-          .order('revenue_month', { ascending: false })
-        if (e) throw e
+        const data = await fetchAllMonthlyRevenues('user_id, team_id, revenue_month, amount, created_at, profiles!user_id(first_name, last_name)')
         setRawData((data || []).map(r => {
           const prof = r.profiles
           return {

@@ -1,3 +1,5 @@
+import { supabase } from '../supabaseClient'
+
 /**
  * Shared revenue utility functions.
  * All "month" values use the first of the month: 'YYYY-MM-01'
@@ -265,4 +267,39 @@ export function calculateAverageRevenueData(revenues, includeCurrentMonth = fals
       average: Number(average.toFixed(2))
     }
   })
+}
+
+/**
+ * Fetches all rows from monthly_revenues, bypassing PostgREST's default 1000-row limit
+ * by paginating in chunks of 1000 ordered deterministically by id.
+ */
+export async function fetchAllMonthlyRevenues(selectStr = '*', applyFilters = null) {
+  let allRows = []
+  let from = 0
+  const pageSize = 1000
+
+  while (true) {
+    let query = supabase
+      .from('monthly_revenues')
+      .select(selectStr)
+      .order('id', { ascending: true })
+
+    if (typeof applyFilters === 'function') {
+      query = applyFilters(query)
+    }
+
+    const { data, error } = await query.range(from, from + pageSize - 1)
+
+    if (error) {
+      console.error('Error fetching monthly_revenues batch:', error)
+      throw error
+    }
+    if (!data || data.length === 0) break
+
+    allRows.push(...data)
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+
+  return allRows
 }

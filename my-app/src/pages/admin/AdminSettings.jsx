@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
+import { fetchAllMonthlyRevenues } from '../../utils/revenueUtils'
 import { 
   Database, Users, Activity, FileText, Download, ShieldAlert,
   Lock, AlertTriangle, Trash2, CheckCircle2, Megaphone, Settings,
@@ -259,12 +260,11 @@ export default function AdminSettings() {
 
   const handleExportRevenue = async () => {
     try {
-      const [revenuesRes, profilesRes, teamsRes] = await Promise.all([
-        supabase.from('monthly_revenues').select('*'),
+      const [revData, profilesRes, teamsRes] = await Promise.all([
+        fetchAllMonthlyRevenues(),
         supabase.from('profiles').select('id, email, team_id'),
         supabase.from('teams').select('id, name')
       ])
-      if (revenuesRes.error) throw revenuesRes.error
       
       const teamMap = {}
       if (teamsRes.data) teamsRes.data.forEach(t => teamMap[t.id] = t.name)
@@ -273,7 +273,7 @@ export default function AdminSettings() {
       if (profilesRes.data) profilesRes.data.forEach(p => profileMap[p.id] = p)
 
       let csv = 'ID,User Email,Team,Amount,Month,Created At\n'
-      revenuesRes.data.forEach(r => {
+      ;(revData || []).forEach(r => {
         const profile = profileMap[r.user_id] || {}
         const teamName = teamMap[profile.team_id] || ''
         csv += `${r.id},"${profile.email || r.user_id}","${teamName}","${r.amount}","${r.revenue_month}","${r.created_at}"\n`

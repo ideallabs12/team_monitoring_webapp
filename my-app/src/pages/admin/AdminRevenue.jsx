@@ -17,7 +17,8 @@ import {
   TIME_PERIOD_OPTIONS,
   formatRevenueMonthShort,
   toRevenueMonthString,
-  calculateDivisor
+  calculateDivisor,
+  fetchAllMonthlyRevenues
 } from '../../utils/revenueUtils'
 import RevenueTrendChart from '../../components/charts/RevenueTrendChart'
 
@@ -96,21 +97,21 @@ export default function AdminRevenue() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [teamsRes, profilesRes, revRes] = await Promise.all([
+        const [teamsRes, profilesRes, r] = await Promise.all([
           supabase.from('teams').select('*'),
           supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*')
+          fetchAllMonthlyRevenues()
         ])
 
-        const t = teamsRes.data || []; const p = profilesRes.data || []; const r = revRes.data || []
-        setTeams(t); setProfiles(p); setRevenues(r)
+        const t = teamsRes.data || []; const p = profilesRes.data || [];
+        setTeams(t); setProfiles(p); setRevenues(r || [])
 
         const { data: targetData, error: targetError } = await supabase
           .from('monthly_targets')
           .select('*')
         const tgt = (!targetError && targetData) ? targetData : []
         setTargets(tgt)
-        adminRevCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tgt }
+        adminRevCache = { loaded: true, teams: t, profiles: p, revenues: r || [], targets: tgt }
       } catch (err) {
         console.error('Error loading admin revenue data:', err)
       } finally {
@@ -118,6 +119,24 @@ export default function AdminRevenue() {
       }
     }
     loadData()
+
+    // Real-time subscription: keep revenues fresh
+    const sub = supabase
+      .channel('admin-revenue-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, async () => {
+        try {
+          const freshRevenues = await fetchAllMonthlyRevenues()
+          if (freshRevenues) {
+            setRevenues(freshRevenues)
+            adminRevCache = { ...adminRevCache, revenues: freshRevenues }
+          }
+        } catch (err) {
+          console.error('Error refreshing admin revenues in realtime:', err)
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [])
 
   const nonAdminProfiles = useMemo(

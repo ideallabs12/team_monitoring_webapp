@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../../supabaseClient'
+import { fetchAllMonthlyRevenues } from '../../utils/revenueUtils'
 import { 
   Users, 
   FileText, 
@@ -14,7 +16,9 @@ import {
   UsersRound, 
   Activity, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Copy,
+  Check 
 } from 'lucide-react'
 
 let adminDisCache = { loaded: false, teams: [], profiles: [], revenues: [], reports: [], submittedToday: new Set() }
@@ -32,6 +36,8 @@ export default function AdminDis() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedTeamId, setSelectedTeamId] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState('metrics') // 'metrics' | 'text'
+  const [copiedId, setCopiedId] = useState(null)
 
   const loadData = async () => {
     try {
@@ -74,10 +80,10 @@ export default function AdminDis() {
         .gte('report_date', startOfMonth)
         .lt('report_date', nextMonthStr)
 
-      const [teamsRes, profilesRes, revenuesRes, reportsRes, selectedDateReportsRes, holidaysRes, monthReportsRes] = await Promise.all([
+      const [teamsRes, profilesRes, r, reportsRes, selectedDateReportsRes, holidaysRes, monthReportsRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
-        supabase.from('monthly_revenues').select('*'),
+        fetchAllMonthlyRevenues(),
         query,
         missingReportsQuery,
         holidaysQuery,
@@ -86,7 +92,7 @@ export default function AdminDis() {
 
       const teamsData = teamsRes.data || []
       const profilesData = profilesRes.data || []
-      const revenuesData = revenuesRes.data || []
+      const revenuesData = r || []
       const reportsData = reportsRes.data || []
       const selectedDateReports = selectedDateReportsRes.data || []
 
@@ -583,12 +589,62 @@ export default function AdminDis() {
 
       {/* ===== SUBMITTED REPORTS SECTION (FIRST) ===== */}
       <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <CheckCircle2 size={18} style={{ color: 'var(--apple-accent-green)' }} />
-          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>Submitted Reports</h3>
-          <span className="apple-badge apple-badge-green" style={{ fontSize: '0.75rem' }}>
-            {filteredSubmissions.length}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CheckCircle2 size={18} style={{ color: 'var(--apple-accent-green)' }} />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', fontWeight: '700' }}>
+              Submitted Reports
+            </h3>
+            <span className="apple-badge apple-badge-green" style={{ fontSize: '0.75rem' }}>
+              {filteredSubmissions.length}
+            </span>
+          </div>
+
+          {/* Quick toggle directly in the section header */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px', borderRadius: '999px', border: '1px solid var(--apple-border)' }}>
+            <button
+              type="button"
+              onClick={() => setViewMode('metrics')}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+                borderRadius: '999px',
+                background: viewMode === 'metrics' ? 'var(--apple-accent-blue)' : 'transparent',
+                color: viewMode === 'metrics' ? '#fff' : 'var(--apple-text-secondary)',
+                border: 'none',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Activity size={13} />
+              <span>Metrics</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('text')}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+                borderRadius: '999px',
+                background: viewMode === 'text' ? 'linear-gradient(135deg, #0071e3, #30d5c8)' : 'transparent',
+                color: viewMode === 'text' ? '#fff' : 'var(--apple-text-secondary)',
+                border: 'none',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <FileText size={13} />
+              <span>Text</span>
+            </button>
+          </div>
         </div>
 
         {filteredSubmissions.length > 0 ? (
@@ -630,12 +686,42 @@ export default function AdminDis() {
                     border: '1px solid var(--apple-border)'
                   }}
                 >
-                  <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
-                    <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.98rem' }}>
-                      {row.profiles?.first_name} {row.profiles?.last_name}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', wordBreak: 'break-all', marginTop: '2px' }}>
-                      {row.profiles?.email}
+                    <div style={{ borderBottom: '1px solid var(--apple-border)', paddingBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div>
+                        <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.98rem' }}>
+                          {row.profiles?.first_name} {row.profiles?.last_name}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--apple-text-secondary)', wordBreak: 'break-all', marginTop: '2px' }}>
+                          {row.profiles?.email}
+                        </div>
+                      </div>
+                      {row.dis_text && viewMode === 'metrics' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setViewMode('text')
+                          }}
+                          className="apple-badge"
+                          style={{
+                            fontSize: '0.68rem',
+                            background: 'rgba(0, 113, 227, 0.18)',
+                            color: '#60a5fa',
+                            border: '1px solid rgba(0, 113, 227, 0.38)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer',
+                            padding: '3px 8px',
+                            borderRadius: '999px',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Click to view notes"
+                        >
+                          <FileText size={11} /> Note
+                        </button>
+                      )}
                     </div>
                     {isAllTeams && displayTeamName && (
                       <div style={{ marginTop: '8px' }}>
@@ -646,26 +732,104 @@ export default function AdminDis() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Zap size={13} style={{ color: 'var(--apple-accent-orange)' }} /> Positive Leads:
-                      </span>
-                      <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-orange)' }}>{row.positive_leads}</span>
+                  {viewMode === 'text' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--apple-accent-blue)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <FileText size={12} /> Daily Text Report
+                        </span>
+                        {row.dis_text && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigator.clipboard.writeText(row.dis_text)
+                              setCopiedId(row.id)
+                              setTimeout(() => setCopiedId(null), 1800)
+                            }}
+                            className="apple-btn apple-btn-secondary"
+                            style={{ padding: '3px 8px', fontSize: '0.72rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Copy text to clipboard"
+                          >
+                            {copiedId === row.id ? (
+                              <>
+                                <Check size={11} style={{ color: 'var(--apple-accent-green)' }} />
+                                <span style={{ color: 'var(--apple-accent-green)' }}>Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={11} />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+
+                      {row.dis_text ? (
+                        <div
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid var(--apple-border)',
+                            borderRadius: '10px',
+                            padding: '12px',
+                            fontSize: '0.86rem',
+                            lineHeight: '1.55',
+                            color: 'var(--apple-text-primary)',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            maxHeight: '220px',
+                            overflowY: 'auto'
+                          }}
+                        >
+                          {row.dis_text}
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.015)',
+                            border: '1px dashed var(--apple-border)',
+                            borderRadius: '10px',
+                            padding: '24px 14px',
+                            fontSize: '0.82rem',
+                            color: 'var(--apple-text-secondary)',
+                            textAlign: 'center',
+                            fontStyle: 'italic'
+                          }}
+                        >
+                          No text notes provided for this date.
+                        </div>
+                      )}
+
+                      {/* Compact metrics footer in text view */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--apple-border)', fontSize: '0.74rem', color: 'var(--apple-text-secondary)', marginTop: 'auto' }}>
+                        <span>Leads: <strong style={{ color: 'var(--apple-accent-orange)' }}>{row.positive_leads}</strong></span>
+                        <span>MTD: <strong style={{ color: 'var(--apple-accent-green)' }}>${teamSpecificRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong></span>
+                        <span>Exp: <strong style={{ color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong></span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <DollarSign size={13} style={{ color: 'var(--apple-accent-green)' }} /> MTD Revenue:
-                      </span>
-                      <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-green)' }}>${teamSpecificRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Zap size={13} style={{ color: 'var(--apple-accent-orange)' }} /> Positive Leads:
+                        </span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-orange)' }}>{row.positive_leads}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <DollarSign size={13} style={{ color: 'var(--apple-accent-green)' }} /> MTD Revenue:
+                        </span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-green)' }}>${teamSpecificRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Activity size={13} style={{ color: 'var(--apple-accent-blue)' }} /> Expected Revenue:
+                        </span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--apple-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Activity size={13} style={{ color: 'var(--apple-accent-blue)' }} /> Expected Revenue:
-                      </span>
-                      <span style={{ fontWeight: 'bold', color: 'var(--apple-accent-blue)' }}>${Number(row.expected_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )
             })}
@@ -737,6 +901,61 @@ export default function AdminDis() {
           </div>
         )}
       </div>
+
+      {/* ===== FLOATING ACTION BUTTON (PORTALED TO DOCUMENT.BODY) ===== */}
+      {typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '28px',
+            right: '28px',
+            zIndex: 999999
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setViewMode(prev => prev === 'metrics' ? 'text' : 'metrics')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '13px 24px',
+              borderRadius: '999px',
+              background: viewMode === 'text'
+                ? 'linear-gradient(135deg, #0071e3, #30d5c8)'
+                : 'rgba(28, 28, 30, 0.95)',
+              color: '#ffffff',
+              fontWeight: '700',
+              fontSize: '0.94rem',
+              border: viewMode === 'text'
+                ? '1px solid rgba(255, 255, 255, 0.38)'
+                : '1px solid rgba(255, 255, 255, 0.22)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: viewMode === 'text'
+                ? '0 10px 30px rgba(0, 113, 227, 0.55)'
+                : '0 10px 30px rgba(0, 0, 0, 0.75)',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+            className="apple-btn-hover"
+            title={viewMode === 'metrics' ? "Click to view text reports" : "Click to view normal metrics"}
+          >
+            {viewMode === 'metrics' ? (
+              <>
+                <FileText size={18} style={{ color: 'var(--apple-accent-blue)' }} />
+                <span>Text</span>
+              </>
+            ) : (
+              <>
+                <Activity size={18} style={{ color: '#ffffff' }} />
+                <span>Metrics</span>
+              </>
+            )}
+          </button>
+        </div>,
+        document.body
+      )}
 
     </div>
   )

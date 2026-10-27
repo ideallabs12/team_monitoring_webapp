@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient'
 import { Users, Search, Shield, Key, AlertTriangle, Activity, X, Plus, Trash2, ArrowLeft, Mail, Phone, FileText, User as UserIcon, MapPin, Calendar, LayoutGrid, List, Star, Camera } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import UserRevenue from '../user/UserRevenue'
+import { fetchAllMonthlyRevenues } from '../../utils/revenueUtils'
 
 let adminUsersCache = { loaded: false, users: [], teams: [], revenues: [], disReports: [] }
 
@@ -511,10 +512,10 @@ export default function AdminUsers() {
 
   const loadData = async () => {
     try {
-      const [profilesRes, teamsRes, revRes, disRes] = await Promise.all([
+      const [profilesRes, teamsRes, r, disRes] = await Promise.all([
         supabase.from('profiles').select('*').order('first_name', { ascending: true }),
         supabase.from('teams').select('*').order('name', { ascending: true }),
-        supabase.from('monthly_revenues').select('*'),
+        fetchAllMonthlyRevenues(),
         supabase.from('dis_reports').select('*')
       ])
 
@@ -523,15 +524,14 @@ export default function AdminUsers() {
 
       const u = profilesRes.data || []
       const t = teamsRes.data || []
-      const r = revRes.data || []
       const d = disRes.data || []
 
       setUsers(u)
       setTeams(t)
-      setRevenues(r)
+      setRevenues(r || [])
       setDisReports(d)
 
-      adminUsersCache = { loaded: true, users: u, teams: t, revenues: r, disReports: d }
+      adminUsersCache = { loaded: true, users: u, teams: t, revenues: r || [], disReports: d }
     } catch (err) {
       console.error('Error loading admin users data:', err)
     } finally {

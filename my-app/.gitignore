@@ -73,3 +73,5 @@ public/Monthly_Revenue_Summary.xlsx
 public/Revenue_Data_Jan_Aug_2026.xlsx
 *.xlsx
 
+# DIS page updates (ignored for now)
+src/pages/user/UserDis.jsx

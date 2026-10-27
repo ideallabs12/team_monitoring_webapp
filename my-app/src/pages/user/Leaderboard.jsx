@@ -76,6 +76,16 @@ export default function Leaderboard({ user }) {
       }
     }
     fetchLeaderboardData()
+
+    // Real-time subscription: keep leaderboard fresh when revenues change
+    const sub = supabase
+      .channel('leaderboard-revenues-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, () => {
+        fetchLeaderboardData()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [user, selectedYear, selectedMonth])
 
   // Top Performing Individual

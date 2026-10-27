@@ -5,7 +5,8 @@ import { ArrowLeft } from 'lucide-react'
 import {
   getLastNMonths,
   normalizeMonth,
-  sumRevenues
+  sumRevenues,
+  fetchAllMonthlyRevenues
 } from '../../utils/revenueUtils'
 
 const fmtFull = (n) =>
@@ -21,14 +22,14 @@ export default function MtdContributors() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [teamsRes, profilesRes, revRes] = await Promise.all([
+        const [teamsRes, profilesRes, r] = await Promise.all([
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*')
+          fetchAllMonthlyRevenues()
         ])
         setTeams(teamsRes.data || [])
         setProfiles(profilesRes.data || [])
-        setRevenues(revRes.data || [])
+        setRevenues(r || [])
       } catch (err) {
         console.error('Error loading MTD contributors data:', err)
       } finally {
@@ -36,6 +37,20 @@ export default function MtdContributors() {
       }
     }
     loadData()
+
+    const sub = supabase
+      .channel('mtd-contributors-revenues')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, async () => {
+        try {
+          const freshRevenues = await fetchAllMonthlyRevenues()
+          if (freshRevenues) setRevenues(freshRevenues)
+        } catch (err) {
+          console.error('Error refreshing MTD revenues:', err)
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [])
 
   const currentMonthStr = useMemo(() => getLastNMonths(1)[0], [])

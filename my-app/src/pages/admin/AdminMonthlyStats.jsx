@@ -5,7 +5,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import {
   sumRevenues,
   normalizeMonth,
-  toRevenueMonthString
+  toRevenueMonthString,
+  fetchAllMonthlyRevenues
 } from '../../utils/revenueUtils'
 import RevenueAnalysisModule from '../../components/stats/RevenueAnalysisModule'
 import DisSubmissionStatsModule from '../../components/stats/DisSubmissionStatsModule'
@@ -49,16 +50,16 @@ export default function AdminMonthlyStats() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [teamsRes, profilesRes, revRes, disRes] = await Promise.all([
+        const [teamsRes, profilesRes, revData, disRes] = await Promise.all([
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*'),
+          fetchAllMonthlyRevenues(),
           supabase.from('dis_reports').select('*')
         ])
         
         if (teamsRes.data) setTeams(teamsRes.data)
         if (profilesRes.data) setProfiles(profilesRes.data)
-        if (revRes.data) setRevenues(revRes.data)
+        if (revData) setRevenues(revData)
         if (disRes.data) setDisReports(disRes.data)
       } catch (err) {
         console.error('Error loading monthly stats data:', err)
@@ -67,6 +68,20 @@ export default function AdminMonthlyStats() {
       }
     }
     loadData()
+
+    const sub = supabase
+      .channel('admin-monthly-stats-revenues')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, async () => {
+        try {
+          const freshRevenues = await fetchAllMonthlyRevenues()
+          if (freshRevenues) setRevenues(freshRevenues)
+        } catch (err) {
+          console.error('Error refreshing monthly stats revenues:', err)
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [])
 
   const currentMonthStr = useMemo(() => {

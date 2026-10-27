@@ -6,7 +6,7 @@ import {
   Loader2, AlertCircle, Compass, Zap, ChevronDown, Activity
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { normalizeMonth, MONTH_NAMES } from '../../utils/revenueUtils'
+import { normalizeMonth, MONTH_NAMES, fetchAllMonthlyRevenues } from '../../utils/revenueUtils'
 
 export default function AdminAiCopilot({ user }) {
   const [loadingContext, setLoadingContext] = useState(true)
@@ -71,9 +71,9 @@ export default function AdminAiCopilot({ user }) {
       if (!user?.id) return
       try {
         setLoadingContext(true)
-        const [profRes, revRes, disRes, teamRes] = await Promise.all([
+        const [profRes, r, disRes, teamRes] = await Promise.all([
           supabase.from('profiles').select('*, teams(id, name)').eq('id', user.id).single(),
-          supabase.from('monthly_revenues').select('*').order('revenue_month', { ascending: false }),
+          fetchAllMonthlyRevenues(),
           supabase.from('dis_reports').select('*').order('report_date', { ascending: false }).limit(500),
           supabase.from('teams').select('*')
         ])
@@ -81,7 +81,7 @@ export default function AdminAiCopilot({ user }) {
         const profile = profRes.data || null
         setUserProfile(profile)
         setUserTeam(profile?.teams || null)
-        setUserRevenues(revRes.data || [])
+        setUserRevenues(r || [])
         setUserDisReports(disRes.data || [])
         setAllTeams(teamRes.data || [])
 

@@ -15,7 +15,8 @@ import {
   getLastNMonths,
   normalizeMonth,
   formatRevenueMonthShort,
-  sumRevenues
+  sumRevenues,
+  fetchAllMonthlyRevenues
 } from '../../utils/revenueUtils'
 import ThemeSwitch from '../../components/ThemeSwitch'
 import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
@@ -232,22 +233,21 @@ export default function AdminHome() {
     async function loadData() {
       try {
         const today = new Date().toISOString().split('T')[0]
-        const [teamsRes, profilesRes, revRes, targetRes, disRes, salesRes] = await Promise.all([
+        const [teamsRes, profilesRes, r, targetRes, disRes, salesRes] = await Promise.all([
           supabase.from('teams').select('*').order('name', { ascending: true }),
           supabase.from('profiles').select('*'),
-          supabase.from('monthly_revenues').select('*'),
+          fetchAllMonthlyRevenues(),
           supabase.from('monthly_targets').select('*'),
           supabase.from('dis_reports').select('user_id').eq('report_date', today),
           supabase.from('sales_analytics').select('entered_by, sales_revenue, call_date')
         ])
         const t  = teamsRes.data   || []
         const p  = profilesRes.data || []
-        const r  = revRes.data      || []
         const tg = targetRes.data   || []
         const d  = disRes.data      || []
         const sl = salesRes.data    || []
-        setTeams(t); setProfiles(p); setRevenues(r); setTargets(tg); setDisReports(d); setSalesLogs(sl)
-        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r, targets: tg, disReports: d, salesLogs: sl }
+        setTeams(t); setProfiles(p); setRevenues(r || []); setTargets(tg); setDisReports(d); setSalesLogs(sl)
+        adminHomeCache = { loaded: true, teams: t, profiles: p, revenues: r || [], targets: tg, disReports: d, salesLogs: sl }
       } catch (err) {
         console.error('Error loading admin home data:', err)
       } finally {
@@ -255,6 +255,24 @@ export default function AdminHome() {
       }
     }
     loadData()
+
+    // Real-time subscription: keep revenues fresh
+    const sub = supabase
+      .channel('admin-home-revenues-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, async () => {
+        try {
+          const freshRevenues = await fetchAllMonthlyRevenues()
+          if (freshRevenues) {
+            setRevenues(freshRevenues)
+            adminHomeCache = { ...adminHomeCache, revenues: freshRevenues }
+          }
+        } catch (err) {
+          console.error('Error refreshing admin home revenues:', err)
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [])
 
   /* ── derived data ── */

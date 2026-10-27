@@ -7,7 +7,7 @@ import {
   TrendingDown,
   UserCheck
 } from 'lucide-react'
-import { getLastNMonths, normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth } from '../../utils/revenueUtils'
+import { getLastNMonths, normalizeMonth, getAvailableYears, MONTH_NAMES, isFutureMonth, fetchAllMonthlyRevenues } from '../../utils/revenueUtils'
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 import {
   calculateTeamRadarScores,
@@ -67,10 +67,10 @@ export default function AdminAnalytics() {
   // ── LOAD DATA ──────────────────────────────────────────────────
   const loadAllData = async () => {
     try {
-      const [teamsRes, profilesRes, revRes, disRes, targetsRes, holidaysRes] = await Promise.all([
+      const [teamsRes, profilesRes, r, disRes, targetsRes, holidaysRes] = await Promise.all([
         supabase.from('teams').select('*').order('name', { ascending: true }),
         supabase.from('profiles').select('*'),
-        supabase.from('monthly_revenues').select('*'),
+        fetchAllMonthlyRevenues(),
         supabase.from('dis_reports').select('*').order('report_date', { ascending: false }),
         supabase.from('monthly_targets').select('*'),
         supabase.from('holidays').select('*'),
@@ -78,7 +78,7 @@ export default function AdminAnalytics() {
 
       if (teamsRes.data) setTeams(teamsRes.data)
       if (profilesRes.data) setProfiles(profilesRes.data)
-      if (revRes.data) setRevenues(revRes.data)
+      if (r) setRevenues(r)
       if (disRes.data) setDisReports(disRes.data)
       if (targetsRes.data) setTargets(targetsRes.data)
       const fetchedHolidays = holidaysRes?.data || []

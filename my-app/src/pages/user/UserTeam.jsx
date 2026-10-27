@@ -97,6 +97,15 @@ export default function UserTeam({ user }) {
     }
 
     fetchTeamData()
+
+    const sub = supabase
+      .channel('user-team-revenues-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_revenues' }, () => {
+        fetchTeamData()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
   }, [user])
 
   if (loading) return <div style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>Loading team data...</div>
