@@ -911,7 +911,7 @@ export default function AdminHome() {
                       </div>
                     </div>
                     <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--apple-accent-green)' }}>
-                      ${p.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      ${Math.round(p.amount).toLocaleString()}
                     </div>
                   </div>
                 )

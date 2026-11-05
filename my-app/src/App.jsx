@@ -60,6 +60,7 @@ import VirtualTemplatesHome from './pages/admin/virtualtemplates/VirtualTemplate
 import Template3 from './pages/admin/virtualtemplates/Template3'
 import Testing from './pages/admin/virtualtemplates/Testing'
 import AdminShortcuts from './pages/admin/AdminShortcuts'
+import AnalyticsBentoPreview from './pages/admin/AnalyticsBentoPreview'
 
 import { PresenceProvider } from './components/PresenceProvider'
 
@@ -427,6 +428,7 @@ function App() {
         />
         <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/bento-preview" element={<AnalyticsBentoPreview />} />
 
         {/* Complete Profile */}
         <Route
@@ -512,6 +514,7 @@ function App() {
           <Route path="crm/speakers/:id" element={<SpeakerProfile user={user} />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="shortcuts" element={<AdminShortcuts />} />
+          <Route path="bento-preview" element={<AnalyticsBentoPreview />} />
         </Route>
 
         <Route path="*" element={

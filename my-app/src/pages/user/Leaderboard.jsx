@@ -231,7 +231,7 @@ export default function Leaderboard({ user }) {
                     {team ? team.name : 'Unknown Team'}
                   </div>
                   <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80', letterSpacing: '-0.03em', marginTop: 'auto' }}>
-                    ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${Math.round(indiv.total).toLocaleString()}
                   </div>
                 </div>
               )
@@ -276,7 +276,7 @@ export default function Leaderboard({ user }) {
                   {team.name}
                 </div>
                 <div style={{ fontSize: '2.2rem', fontWeight: '800', color: '#4ade80', letterSpacing: '-0.03em', marginTop: 'auto' }}>
-                  ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(team.total).toLocaleString()}
                 </div>
               </div>
             ))
@@ -376,7 +376,7 @@ export default function Leaderboard({ user }) {
                     {team.name}
                   </td>
                   <td style={{ padding: '20px 24px', textAlign: 'right', fontWeight: '700', color: team.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)' }}>
-                    ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${Math.round(team.total).toLocaleString()}
                   </td>
                 </tr>
               )
@@ -421,7 +421,7 @@ export default function Leaderboard({ user }) {
                   </div>
                 </div>
                 <div style={{ fontWeight: '700', color: team.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.95rem', flexShrink: 0, textAlign: 'right' }}>
-                  ${team.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(team.total).toLocaleString()}
                 </div>
               </div>
             )
@@ -489,7 +489,7 @@ export default function Leaderboard({ user }) {
                     {teamObj ? teamObj.name : 'Unknown'}
                   </td>
                   <td style={{ padding: '20px 24px', textAlign: 'right', fontWeight: '700', color: indiv.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)' }}>
-                    ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${Math.round(indiv.total).toLocaleString()}
                   </td>
                 </tr>
               )
@@ -538,7 +538,7 @@ export default function Leaderboard({ user }) {
                   </div>
                 </div>
                 <div style={{ fontWeight: '700', color: indiv.total > 0 ? '#4ade80' : 'var(--apple-text-secondary)', fontSize: '0.95rem', flexShrink: 0, textAlign: 'right' }}>
-                  ${indiv.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(indiv.total).toLocaleString()}
                 </div>
               </div>
             )

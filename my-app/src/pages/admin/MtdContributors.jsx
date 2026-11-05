@@ -10,7 +10,7 @@ import {
 } from '../../utils/revenueUtils'
 
 const fmtFull = (n) =>
-  `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  `$${Math.round(n).toLocaleString()}`
 
 export default function MtdContributors() {
   const [loading, setLoading] = useState(true)
