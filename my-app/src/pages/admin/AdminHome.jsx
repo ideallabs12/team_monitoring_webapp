@@ -25,7 +25,7 @@ import { getSystemTheme, setSystemTheme } from '../../utils/themeHelper'
 const fmt = (n) =>
   n >= 1000
     ? `$${(n / 1000).toFixed(1)}k`
-    : `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    : `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const fmtFull = (n) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

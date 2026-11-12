@@ -21,6 +21,7 @@ import {
   MapPin,
   Shield,
   Megaphone,
+  Bell,
   Download,
   Video,
   Copy,
@@ -39,6 +40,7 @@ const NAV_SECTIONS = [
     items: [
       { path: '/admin/home', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+      { path: '/admin/push-notifications', label: 'Push Manager', icon: Bell },
     ]
   },
   {

@@ -61,6 +61,8 @@ import Template3 from './pages/admin/virtualtemplates/Template3'
 import Testing from './pages/admin/virtualtemplates/Testing'
 import AdminShortcuts from './pages/admin/AdminShortcuts'
 import AnalyticsBentoPreview from './pages/admin/AnalyticsBentoPreview'
+import AdminPushManager from './pages/admin/AdminPushManager'
+import { registerServiceWorker } from './utils/pushNotificationHelper'
 
 import { PresenceProvider } from './components/PresenceProvider'
 
@@ -120,6 +122,10 @@ function App() {
 
   // Prevent duplicate profile checks
   const profileFetchedFor = useRef(null)
+
+  useEffect(() => {
+    registerServiceWorker()
+  }, [])
 
   useEffect(() => {
     // On mount — restore session from localStorage, no loading flash
@@ -498,6 +504,7 @@ function App() {
           <Route path="auditlogs" element={<AdminAuditLogs />} />
           <Route path="writeups" element={<Navigate to="/admin/reviews?tab=write-ups" replace />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="push-notifications" element={<AdminPushManager user={user} />} />
 
           <Route path="virtual-events" element={<VirtualTemplatesHome />} />
           <Route path="export-data" element={<AdminExportData />} />
@@ -507,7 +514,6 @@ function App() {
             <Route path="testing" element={<Testing />} />
           </Route>
           <Route path="attendance" element={<AdminAttendance />} />
-          <Route path="announcements" element={<AdminAnnouncements />} />
           <Route path="meetings" element={<Meetings user={user} />} />
           <Route path="crm/speakers" element={<SpeakersList user={user} />} />
           <Route path="crm/speakers/new" element={<AddSpeaker user={user} />} />
