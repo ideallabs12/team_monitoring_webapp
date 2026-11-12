@@ -57,8 +57,10 @@ export default function PullToRefresh({ children }) {
       style={{ 
         minHeight: '100vh', 
         width: '100%',
-        transform: `translateY(${translateY}px)`,
-        transition: isPulling ? 'none' : 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)', // Smooth snap back
+        ...(isPulling && translateY > 0 ? {
+          transform: `translateY(${translateY}px)`,
+          transition: 'none'
+        } : {})
       }}
     >
       {children}

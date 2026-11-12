@@ -16,6 +16,7 @@ import {
   PhoneCall,
   Star,
   Megaphone,
+  Bell,
   LayoutTemplate,
   Flag,
   CheckSquare,
@@ -149,6 +150,7 @@ export default function UserSidebarLayout({ user, isDeactivated, featureAccess, 
       { path: '/home', label: 'Home', icon: Home },
     ]
     if (access.announcements !== false) workspaceItems.push({ path: '/announcements', label: 'Announcements', icon: Megaphone, badge: unreadCount })
+    workspaceItems.push({ path: '/push-notifications', label: 'Push Notifications', icon: Bell })
     if (access.aiCopilot !== false) workspaceItems.push({ path: '/ai-copilot', label: 'AI Copilot', icon: Sparkles })
     
     sections.push({

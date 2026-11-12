@@ -73,7 +73,8 @@ export default function Navbar({ user, userPagesAccess = {} }) {
 
   // Sub-links under "Others" — easy to extend later
   const othersLinks = [
-    { to: '/profile', label: 'Profile & Preferences', desc: 'Personal details, theme & navigation layout' }
+    { to: '/profile', label: 'Profile & Preferences', desc: 'Personal details, theme & navigation layout' },
+    { to: '/push-notifications', label: 'Push Notifications', desc: 'Enable native notifications on this device' }
   ]
   if (userPagesAccess.reviews !== false) {
     othersLinks.push({ to: '/reviews', label: 'Reviews', desc: 'Submit and view your event reviews' })
