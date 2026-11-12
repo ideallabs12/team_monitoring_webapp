@@ -1,4 +1,4 @@
-import webpush from 'web-push'
+import { setVapidDetails, sendNotification } from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://pzalalbpxlwtcnmkaegb.supabase.co'
@@ -8,9 +8,22 @@ const VAPID_PUBLIC_KEY = process.env.VITE_VAPID_PUBLIC_KEY || 'BNq5WduHm2qQd0Frr
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'c5R-W7dxCGL_tzyntfkx6k8Q248A4ACWKHwILcmn1Xg'
 const VAPID_SUBJECT = 'mailto:admin@ideallabs.com'
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+try {
+  setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+} catch (vErr) {
+  console.warn('VAPID setup warning:', vErr.message)
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+function sendJSON(res, status, data) {
+  if (typeof res.status === 'function') {
+    return res.status(status).json(data)
+  }
+  res.statusCode = status
+  res.setHeader('Content-Type', 'application/json')
+  res.end(JSON.stringify(data))
+}
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -23,19 +36,39 @@ export default async function handler(req, res) {
   )
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end()
+    res.statusCode = 200
+    return res.end()
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed. POST is required.' })
+    return sendJSON(res, 405, { error: 'Method Not Allowed. POST is required.' })
   }
 
   try {
-    const { targetUserId, title, body, url, sentBy } = req.body || {}
+    // Parse body if stream (for Vite / Node dev server)
+    let bodyData = req.body
+    if (!bodyData || Object.keys(bodyData).length === 0) {
+      try {
+        const buffers = []
+        for await (const chunk of req) {
+          buffers.push(chunk)
+        }
+        const raw = Buffer.concat(buffers).toString('utf8')
+        if (raw) {
+          bodyData = JSON.parse(raw)
+        }
+      } catch (parseErr) {
+        bodyData = {}
+      }
+    }
+
+    const { targetUserId, title, body, url, sentBy } = bodyData || {}
 
     if (!title) {
-      return res.status(400).json({ error: 'Notification title is required.' })
+      return sendJSON(res, 400, { error: 'Notification title is required.' })
     }
+
+    console.log(`[send-push] Request received for target: ${targetUserId || 'all'}, title: "${title}"`)
 
     // Query target subscriptions
     let query = supabase.from('user_push_subscriptions').select('*')
@@ -45,13 +78,15 @@ export default async function handler(req, res) {
 
     const { data: subscriptions, error: fetchErr } = await query
     if (fetchErr) {
-      return res.status(500).json({ error: 'Failed to fetch target push subscriptions: ' + fetchErr.message })
+      console.error('[send-push] Error fetching subscriptions:', fetchErr)
+      return sendJSON(res, 500, { error: 'Failed to fetch target push subscriptions: ' + fetchErr.message })
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      return res.status(200).json({
+      console.warn(`[send-push] No subscriptions found for user_id: ${targetUserId}`)
+      return sendJSON(res, 200, {
         success: false,
-        message: 'No registered push devices found for the selected recipient.',
+        message: `No registered push devices found for the selected recipient (${targetUserId}).`,
         targeted: 0,
         delivered: 0,
         failed: 0
@@ -82,7 +117,7 @@ export default async function handler(req, res) {
       }
 
       try {
-        const result = await webpush.sendNotification(pushSubscription, payload)
+        const result = await sendNotification(pushSubscription, payload)
         successCount++
         results.push({ id: sub.id, endpoint: sub.endpoint, status: result.statusCode || 201 })
       } catch (err) {
@@ -122,7 +157,7 @@ export default async function handler(req, res) {
       console.warn('Could not write to push_notifications_log:', logErr.message)
     }
 
-    return res.status(200).json({
+    return sendJSON(res, 200, {
       success: successCount > 0,
       targeted: subscriptions.length,
       delivered: successCount,
@@ -132,7 +167,6 @@ export default async function handler(req, res) {
     })
   } catch (error) {
     console.error('Unhandled push dispatch error:', error)
-    return res.status(500).json({ error: error.message || 'Internal server error' })
+    return sendJSON(res, 500, { error: error.message || 'Internal server error' })
   }
 }
-

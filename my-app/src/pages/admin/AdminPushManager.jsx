@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../supabaseClient'
-import { 
-  Bell, Send, Smartphone, Laptop, CheckCircle, AlertCircle, 
+import {
+  Bell, Send, Smartphone, Laptop, CheckCircle, AlertCircle,
   Clock, RefreshCw, Trash2, ShieldCheck, Zap, User, ArrowRight
 } from 'lucide-react'
-import { 
-  isPushSupported, 
-  getNotificationPermission, 
-  detectDeviceType, 
-  getExistingSubscription, 
-  subscribeToPush, 
-  unsubscribeFromPush 
+import {
+  isPushSupported,
+  getNotificationPermission,
+  detectDeviceType,
+  getExistingSubscription,
+  subscribeToPush,
+  unsubscribeFromPush
 } from '../../utils/pushNotificationHelper'
 
 export default function AdminPushManager({ user }) {
@@ -132,7 +132,7 @@ export default function AdminPushManager({ user }) {
     if (rosterFilter === 'unsubscribed') list = list.filter(u => !u.isSubscribed)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
-      list = list.filter(u => 
+      list = list.filter(u =>
         (u.first_name + ' ' + u.last_name).toLowerCase().includes(q) ||
         u.email?.toLowerCase().includes(q)
       )
@@ -150,9 +150,11 @@ export default function AdminPushManager({ user }) {
   }, [subscriptions])
 
   // Dispatch Push Request
-  async function executePush(delaySeconds = 0) {
+  async function executePush(delaySeconds = 0, explicitTargetId = null) {
     if (sending || countdown !== null) return
     setResultMessage(null)
+
+    const targetToUse = explicitTargetId || targetUserId
 
     if (delaySeconds > 0) {
       let remaining = delaySeconds
@@ -162,19 +164,39 @@ export default function AdminPushManager({ user }) {
         if (remaining <= 0) {
           clearInterval(timer)
           setCountdown(null)
-          sendPushPayload()
+          sendPushPayload(targetToUse)
         } else {
           setCountdown(remaining)
         }
       }, 1000)
     } else {
-      sendPushPayload()
+      sendPushPayload(targetToUse)
     }
   }
 
-  async function sendPushPayload() {
+  async function sendPushPayload(targetToUse) {
     setSending(true)
-    const effectiveTargetId = targetUserId === 'self' ? user?.id : targetUserId
+    const effectiveTarget = targetToUse || targetUserId
+    const finalUserId = effectiveTarget === 'self' ? user?.id : effectiveTarget
+
+    // Check target profile & devices
+    const targetProfile = profiles.find(p => p.id === finalUserId)
+    const targetName = finalUserId === 'all'
+      ? 'All Users'
+      : (effectiveTarget === 'self' ? 'Your Device' : (targetProfile ? `${targetProfile.first_name} ${targetProfile.last_name}` : 'Selected User'))
+
+    // Pre-flight check: ensure target has at least one subscription
+    if (finalUserId !== 'all') {
+      const userSubs = subscriptions.filter(s => s.user_id === finalUserId)
+      if (userSubs.length === 0) {
+        setSending(false)
+        setResultMessage({
+          type: 'error',
+          text: `⚠️ ${targetName} does not have any registered push devices yet. Open the app on their device and click "Enable on this Device" first.`
+        })
+        return
+      }
+    }
 
     try {
       // 1. Try Vercel Serverless Function or Local API
@@ -187,7 +209,7 @@ export default function AdminPushManager({ user }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            targetUserId: effectiveTargetId,
+            targetUserId: finalUserId,
             title,
             body,
             url: targetUrl,
@@ -196,31 +218,37 @@ export default function AdminPushManager({ user }) {
         })
         if (res.ok) {
           responseData = await res.json()
-          sentSuccessfully = true
+          if (responseData && responseData.success !== false) {
+            sentSuccessfully = true
+          }
         }
       } catch (apiErr) {
-        // Fallback to Supabase Edge Function
+        console.warn('Local /api/send-push fetch failed, falling back:', apiErr.message)
       }
 
       // 2. Fallback to Supabase Edge Function if /api/send-push is not hosted locally
       if (!sentSuccessfully) {
-        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('send-push', {
-          body: {
-            targetUserId: effectiveTargetId,
-            title,
-            body,
-            url: targetUrl,
-            sentBy: user?.id
+        try {
+          const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('send-push', {
+            body: {
+              targetUserId: finalUserId,
+              title,
+              body,
+              url: targetUrl,
+              sentBy: user?.id
+            }
+          })
+          if (!edgeErr && edgeData && edgeData.success !== false) {
+            responseData = edgeData
+            sentSuccessfully = true
           }
-        })
-        if (!edgeErr && edgeData) {
-          responseData = edgeData
-          sentSuccessfully = true
+        } catch (edgeInvokeErr) {
+          console.warn('Supabase edge function invoke failed:', edgeInvokeErr.message)
         }
       }
 
       // 3. Fallback: Local Service Worker direct showNotification test for 'self'
-      if (!sentSuccessfully && targetUserId === 'self' && isPushSupported()) {
+      if (!sentSuccessfully && effectiveTarget === 'self' && isPushSupported()) {
         const reg = await navigator.serviceWorker.ready
         if (reg) {
           await reg.showNotification(title, {
@@ -238,12 +266,12 @@ export default function AdminPushManager({ user }) {
       if (sentSuccessfully && responseData?.success !== false) {
         setResultMessage({
           type: 'success',
-          text: `✅ Push successfully sent! Targeted ${responseData?.targeted ?? 1} device(s). Check your lock screen / notification center!`
+          text: `✅ Push successfully sent to ${targetName}! Targeted ${responseData?.targeted ?? 1} device(s). Check the lock screen / notification center!`
         })
       } else {
         setResultMessage({
           type: 'error',
-          text: responseData?.message || responseData?.error || 'Push failed. Ensure the target user has registered a device.'
+          text: responseData?.message || responseData?.error || `Push failed to deliver to ${targetName}. Ensure device is online.`
         })
       }
       await loadLogs()
@@ -262,7 +290,7 @@ export default function AdminPushManager({ user }) {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1280px', margin: '0 auto' }}>
-      
+
       {/* ── Page Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -288,8 +316,8 @@ export default function AdminPushManager({ user }) {
               {isCurrentSubscribed ? '🟢 Registered for Push' : '⚪ Not Registered'}
             </div>
           </div>
-          <button 
-            onClick={handleToggleCurrentDevice} 
+          <button
+            onClick={handleToggleCurrentDevice}
             disabled={subscribing}
             className={`apple-btn ${isCurrentSubscribed ? 'apple-btn-secondary' : 'apple-btn-primary'}`}
             style={{ fontSize: '0.78rem', padding: '6px 12px' }}
@@ -330,7 +358,7 @@ export default function AdminPushManager({ user }) {
 
       {/* ── Main Two-Column Layout: Dispatch Form + Devices Roster ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 440px) 1fr', gap: '24px', alignItems: 'start' }}>
-        
+
         {/* LEFT COLUMN: Dispatch Form & Testing Controls */}
         <div className="apple-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--apple-border)', paddingBottom: '12px' }}>
@@ -453,7 +481,7 @@ export default function AdminPushManager({ user }) {
           {/* Action Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
             <button
-              onClick={() => executePush(0)}
+              onClick={() => executePush(0, targetUserId)}
               disabled={sending || countdown !== null}
               className="apple-btn apple-btn-primary"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}
@@ -463,7 +491,7 @@ export default function AdminPushManager({ user }) {
             </button>
 
             <button
-              onClick={() => executePush(10)}
+              onClick={() => executePush(10, 'self')}
               disabled={sending || countdown !== null}
               className="apple-btn apple-btn-secondary"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', color: '#ff9f0a' }}
@@ -480,7 +508,7 @@ export default function AdminPushManager({ user }) {
 
         {/* RIGHT COLUMN: Registered Users & Device Roster */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
+
           {/* User Devices Card */}
           <div className="apple-card" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -575,7 +603,7 @@ export default function AdminPushManager({ user }) {
                     <button
                       onClick={() => {
                         setTargetUserId(u.id)
-                        executePush(0)
+                        executePush(0, u.id)
                       }}
                       disabled={!u.isSubscribed || sending}
                       className="apple-btn apple-btn-secondary"
