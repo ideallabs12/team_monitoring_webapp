@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const { targetUserId, title, body, url, sentBy } = bodyData || {}
+    const { targetUserId, title, body, url, sentBy, subscriptions: directSubscriptions } = bodyData || {}
 
     if (!title) {
       return sendJSON(res, 400, { error: 'Notification title is required.' })
@@ -70,16 +70,26 @@ export default async function handler(req, res) {
 
     console.log(`[send-push] Request received for target: ${targetUserId || 'all'}, title: "${title}"`)
 
-    // Query target subscriptions
-    let query = supabase.from('user_push_subscriptions').select('*')
-    if (targetUserId && targetUserId !== 'all') {
-      query = query.eq('user_id', targetUserId)
-    }
+    let subscriptions = directSubscriptions
 
-    const { data: subscriptions, error: fetchErr } = await query
-    if (fetchErr) {
-      console.error('[send-push] Error fetching subscriptions:', fetchErr)
-      return sendJSON(res, 500, { error: 'Failed to fetch target push subscriptions: ' + fetchErr.message })
+    // If subscriptions were not passed directly in payload, query Supabase
+    if (!subscriptions || subscriptions.length === 0) {
+      const authHeader = req.headers['authorization']
+      const client = authHeader
+        ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { global: { headers: { Authorization: authHeader } } })
+        : supabase
+
+      let query = client.from('user_push_subscriptions').select('*')
+      if (targetUserId && targetUserId !== 'all') {
+        query = query.eq('user_id', targetUserId)
+      }
+
+      const { data: dbSubs, error: fetchErr } = await query
+      if (fetchErr) {
+        console.error('[send-push] Error fetching subscriptions:', fetchErr)
+        return sendJSON(res, 500, { error: 'Failed to fetch target push subscriptions: ' + fetchErr.message })
+      }
+      subscriptions = dbSubs || []
     }
 
     if (!subscriptions || subscriptions.length === 0) {

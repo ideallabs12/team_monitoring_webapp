@@ -185,20 +185,25 @@ export default function AdminPushManager({ user }) {
       ? 'All Users'
       : (effectiveTarget === 'self' ? 'Your Device' : (targetProfile ? `${targetProfile.first_name} ${targetProfile.last_name}` : 'Selected User'))
 
+    // Filter target subscriptions from local state
+    const targetSubs = finalUserId === 'all'
+      ? subscriptions
+      : subscriptions.filter(s => s.user_id === finalUserId)
+
     // Pre-flight check: ensure target has at least one subscription
-    if (finalUserId !== 'all') {
-      const userSubs = subscriptions.filter(s => s.user_id === finalUserId)
-      if (userSubs.length === 0) {
-        setSending(false)
-        setResultMessage({
-          type: 'error',
-          text: `⚠️ ${targetName} does not have any registered push devices yet. Open the app on their device and click "Enable on this Device" first.`
-        })
-        return
-      }
+    if (finalUserId !== 'all' && targetSubs.length === 0) {
+      setSending(false)
+      setResultMessage({
+        type: 'error',
+        text: `⚠️ ${targetName} does not have any registered push devices yet. Open the app on their device and click "Enable on this Device" first.`
+      })
+      return
     }
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+
       // 1. Try Vercel Serverless Function or Local API
       let res
       let sentSuccessfully = false
@@ -207,9 +212,13 @@ export default function AdminPushManager({ user }) {
       try {
         res = await fetch('/api/send-push', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({
             targetUserId: finalUserId,
+            subscriptions: targetSubs,
             title,
             body,
             url: targetUrl,
@@ -232,6 +241,7 @@ export default function AdminPushManager({ user }) {
           const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('send-push', {
             body: {
               targetUserId: finalUserId,
+              subscriptions: targetSubs,
               title,
               body,
               url: targetUrl,

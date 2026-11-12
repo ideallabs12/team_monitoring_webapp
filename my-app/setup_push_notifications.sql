@@ -35,17 +35,12 @@ TO authenticated
 USING (auth.uid() = user_id) 
 WITH CHECK (auth.uid() = user_id);
 
--- Policy: Admins can view all subscriptions to select targets
-CREATE POLICY "Admins can view all subscriptions" 
+-- Policy: Allow reading subscriptions for push delivery
+DROP POLICY IF EXISTS "Allow push delivery to read subscriptions" ON public.user_push_subscriptions;
+CREATE POLICY "Allow push delivery to read subscriptions" 
 ON public.user_push_subscriptions 
 FOR SELECT 
-TO authenticated 
-USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE id = auth.uid() AND platform_role = 'admin'
-  )
-);
+USING (true);
 
 -- Policy: Admins can clean up stale subscriptions
 CREATE POLICY "Admins can delete any subscriptions" 
